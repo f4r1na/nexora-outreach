@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       customer_email: user.email,
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: "https://nexora-outreach-y8s4.vercel.app/dashboard?success=true",
-      cancel_url: "https://nexora-outreach-y8s4.vercel.app/settings",
+      cancel_url: "https://nexora-outreach-y8s4.vercel.app/dashboard",
       metadata: { user_id: user.id, plan },
     })
 
