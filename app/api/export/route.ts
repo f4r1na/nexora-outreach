@@ -168,7 +168,7 @@ export async function GET(req: NextRequest) {
 
   if (format === "pdf") {
     const buf = buildPDF(leads, campaignId);
-    return new Response(buf, {
+    return new Response(new Uint8Array(buf), {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="nexora-campaign-${slug}.pdf"`,
