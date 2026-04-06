@@ -79,7 +79,7 @@ function IconLogout() {
 
 const navLinks = [
   { label: "Dashboard", href: "/dashboard", icon: <IconDashboard /> },
-  { label: "Campaigns", href: "/dashboard/campaigns/new", icon: <IconCampaigns /> },
+  { label: "Campaigns", href: "/dashboard/campaigns", icon: <IconCampaigns /> },
   { label: "Settings", href: "/dashboard/settings", icon: <IconSettings /> },
 ];
 
