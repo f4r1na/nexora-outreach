@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import VerifyBanner from "./verify-banner";
+import PaymentBanner from "./payment-banner";
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -131,7 +132,12 @@ function StatCard({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ success?: string; canceled?: string }>;
+}) {
+  const params = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -221,6 +227,10 @@ export default async function DashboardPage() {
 
       {/* Page body */}
       <main style={{ flex: 1, padding: "28px 32px 48px" }}>
+        {/* Payment banners */}
+        {params.success === "true" && <PaymentBanner type="success" />}
+        {params.canceled === "true" && <PaymentBanner type="canceled" />}
+
         {/* Verify banner */}
         {!user.email_confirmed_at && <VerifyBanner />}
 
