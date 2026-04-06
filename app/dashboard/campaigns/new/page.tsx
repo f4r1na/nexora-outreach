@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { UpgradeModal } from "@/components/upgrade-modal";
 import type { PlanKey } from "@/lib/plans";
 
@@ -245,6 +246,8 @@ function IconArrowLeft() {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function NewCampaignPage() {
+  const router = useRouter();
+
   // ── Step 1 state
   const [name, setName] = useState("");
   const [tone, setTone] = useState<string>("Professional");
@@ -446,11 +449,11 @@ export default function NewCampaignPage() {
           </span>
         </div>
 
-        {/* Export buttons row — only in review state */}
+        {/* Export buttons — only in review state */}
         {step === 3 && !isGenerating && emails.length > 0 && campaignId && (
-          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
 
-            {/* CSV — always available */}
+            {/* CSV — always available, orange */}
             <button
               onClick={() => handleDownload("csv")}
               disabled={downloading === "csv"}
@@ -462,75 +465,73 @@ export default function NewCampaignPage() {
                 opacity: downloading === "csv" ? 0.7 : 1,
               }}
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              {downloading === "csv" ? "…" : "CSV"}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {downloading === "csv" ? "Downloading…" : "Export CSV"}
             </button>
 
-            {/* PDF — Pro+ */}
-            {(userPlan === "free" || userPlan === "starter") ? (
-              <button
-                onClick={() => setUpgradeModal("pro")}
-                style={{
-                  display: "flex", alignItems: "center", gap: 6,
-                  padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
-                  fontFamily: "var(--font-outfit)", cursor: "pointer",
-                  backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.35)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                }}
-              >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" strokeLinecap="round" /></svg>
-                PDF
-                <span style={{ fontSize: 9, fontWeight: 700, color: "#FF5200", background: "rgba(255,82,0,0.14)", padding: "1px 5px", borderRadius: 3 }}>Pro</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => handleDownload("pdf")}
-                disabled={downloading === "pdf"}
-                style={{
-                  display: "flex", alignItems: "center", gap: 6,
-                  padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
-                  fontFamily: "var(--font-outfit)", cursor: "pointer",
-                  backgroundColor: "#FF5200", color: "#fff", border: "none",
-                  opacity: downloading === "pdf" ? 0.7 : 1,
-                }}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                {downloading === "pdf" ? "…" : "PDF"}
-              </button>
-            )}
+            {/* PDF — dark + orange border, "Pro" badge; redirects to settings if not pro+ */}
+            <button
+              onClick={() => {
+                if (userPlan === "free" || userPlan === "starter") {
+                  router.push("/dashboard/settings");
+                } else {
+                  handleDownload("pdf");
+                }
+              }}
+              disabled={downloading === "pdf"}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+                fontFamily: "var(--font-outfit)", cursor: "pointer",
+                backgroundColor: "rgba(255,82,0,0.08)", color: "#fff",
+                border: "1px solid rgba(255,82,0,0.35)",
+                opacity: downloading === "pdf" ? 0.7 : 1,
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {downloading === "pdf" ? "Downloading…" : "Export PDF"}
+              {(userPlan === "free" || userPlan === "starter") && (
+                <span style={{
+                  fontSize: 9, fontWeight: 800, color: "#FF5200",
+                  background: "rgba(255,82,0,0.15)", padding: "1px 6px", borderRadius: 3,
+                }}>Pro</span>
+              )}
+            </button>
 
-            {/* Word — Agency only */}
-            {userPlan !== "agency" ? (
-              <button
-                onClick={() => setUpgradeModal("agency")}
-                style={{
-                  display: "flex", alignItems: "center", gap: 6,
-                  padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
-                  fontFamily: "var(--font-outfit)", cursor: "pointer",
-                  backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.35)",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                }}
-              >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" strokeLinecap="round" /></svg>
-                Word
-                <span style={{ fontSize: 9, fontWeight: 700, color: "#FF5200", background: "rgba(255,82,0,0.14)", padding: "1px 5px", borderRadius: 3 }}>Agency</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => handleDownload("docx")}
-                disabled={downloading === "docx"}
-                style={{
-                  display: "flex", alignItems: "center", gap: 6,
-                  padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
-                  fontFamily: "var(--font-outfit)", cursor: "pointer",
-                  backgroundColor: "#FF5200", color: "#fff", border: "none",
-                  opacity: downloading === "docx" ? 0.7 : 1,
-                }}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                {downloading === "docx" ? "…" : "Word"}
-              </button>
-            )}
+            {/* Word — dark + orange border, "Agency" badge; redirects to settings if not agency */}
+            <button
+              onClick={() => {
+                if (userPlan !== "agency") {
+                  router.push("/dashboard/settings");
+                } else {
+                  handleDownload("docx");
+                }
+              }}
+              disabled={downloading === "docx"}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+                fontFamily: "var(--font-outfit)", cursor: "pointer",
+                backgroundColor: "rgba(255,82,0,0.08)", color: "#fff",
+                border: "1px solid rgba(255,82,0,0.35)",
+                opacity: downloading === "docx" ? 0.7 : 1,
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {downloading === "docx" ? "Downloading…" : "Export Word"}
+              {userPlan !== "agency" && (
+                <span style={{
+                  fontSize: 9, fontWeight: 800, color: "#FF5200",
+                  background: "rgba(255,82,0,0.15)", padding: "1px 6px", borderRadius: 3,
+                }}>Agency</span>
+              )}
+            </button>
 
           </div>
         )}
