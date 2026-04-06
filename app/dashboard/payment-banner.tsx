@@ -31,7 +31,7 @@ export default function PaymentBanner({ type }: { type: "success" | "canceled" }
         }}
       >
         {isSuccess
-          ? "🎉 Welcome to Starter! Your plan is now active."
+          ? "Welcome to Starter! Your plan is now active."
           : "Payment canceled. No charge was made."}
       </p>
       <button
