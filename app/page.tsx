@@ -37,9 +37,7 @@ export default async function Home() {
         {/* Nav links */}
         <div style={{ display: "flex", alignItems: "center", gap: 36 }}>
           {[["How it works", "#how"], ["Features", "#features"], ["Pricing", "#pricing"]].map(([label, href]) => (
-            <a key={label} href={href} style={{ fontSize: 13, color: "rgba(255,255,255,0.48)", textDecoration: "none", transition: "color 0.15s" }}
-              onMouseEnter={e => (e.currentTarget.style.color = "#fff")}
-              onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.48)")}>
+            <a key={label} href={href} style={{ fontSize: 13, color: "rgba(255,255,255,0.48)", textDecoration: "none" }}>
               {label}
             </a>
           ))}
