@@ -1066,6 +1066,27 @@ export default function NewCampaignPage() {
               </Link>
             </div>
 
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+              <button
+                onClick={() => alert('CSV export')}
+                style={{ background: '#FF5200', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}
+              >
+                Export CSV
+              </button>
+              <button
+                onClick={() => alert('PDF export')}
+                style={{ background: '#0E0E0E', color: 'white', border: '1px solid #FF5200', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}
+              >
+                Export PDF · Pro
+              </button>
+              <button
+                onClick={() => alert('Word export')}
+                style={{ background: '#0E0E0E', color: 'white', border: '1px solid #FF5200', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}
+              >
+                Export Word · Agency
+              </button>
+            </div>
+
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               {emails.map((email) => {
                 const isEditing = editingId === email.lead_id;
