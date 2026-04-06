@@ -267,6 +267,7 @@ export default function NewCampaignPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [upgradeModal, setUpgradeModal] = useState<PlanKey | null>(null);
   const [userPlan, setUserPlan] = useState<string>("free");
+  const [downloading, setDownloading] = useState<string | null>(null);
 
   // Fetch user plan for export gate
   useEffect(() => {
@@ -275,6 +276,32 @@ export default function NewCampaignPage() {
       .then((d) => setUserPlan(d.subscription?.plan ?? "free"))
       .catch(() => {});
   }, []);
+
+  async function handleDownload(format: "csv" | "pdf" | "docx") {
+    if (!campaignId) return;
+    setDownloading(format);
+    try {
+      const res = await fetch(`/api/export?campaignId=${campaignId}&format=${format}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Export failed" }));
+        alert(err.error ?? "Export failed");
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `nexora-campaign-${campaignId.slice(0, 8)}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("Download failed. Please try again.");
+    } finally {
+      setDownloading(null);
+    }
+  }
 
   // ── CSV handling
   const handleFile = useCallback((file: File) => {
@@ -424,18 +451,20 @@ export default function NewCampaignPage() {
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
 
             {/* CSV — always available */}
-            <a
-              href={`/api/export?campaignId=${campaignId}&format=csv`}
+            <button
+              onClick={() => handleDownload("csv")}
+              disabled={downloading === "csv"}
               style={{
                 display: "flex", alignItems: "center", gap: 6,
                 padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
-                fontFamily: "var(--font-outfit)", textDecoration: "none",
-                backgroundColor: "#FF5200", color: "#fff",
+                fontFamily: "var(--font-outfit)", cursor: "pointer",
+                backgroundColor: "#FF5200", color: "#fff", border: "none",
+                opacity: downloading === "csv" ? 0.7 : 1,
               }}
             >
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              CSV
-            </a>
+              {downloading === "csv" ? "…" : "CSV"}
+            </button>
 
             {/* PDF — Pro+ */}
             {(userPlan === "free" || userPlan === "starter") ? (
@@ -454,18 +483,20 @@ export default function NewCampaignPage() {
                 <span style={{ fontSize: 9, fontWeight: 700, color: "#FF5200", background: "rgba(255,82,0,0.14)", padding: "1px 5px", borderRadius: 3 }}>Pro</span>
               </button>
             ) : (
-              <a
-                href={`/api/export?campaignId=${campaignId}&format=pdf`}
+              <button
+                onClick={() => handleDownload("pdf")}
+                disabled={downloading === "pdf"}
                 style={{
                   display: "flex", alignItems: "center", gap: 6,
                   padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
-                  fontFamily: "var(--font-outfit)", textDecoration: "none",
-                  backgroundColor: "#FF5200", color: "#fff",
+                  fontFamily: "var(--font-outfit)", cursor: "pointer",
+                  backgroundColor: "#FF5200", color: "#fff", border: "none",
+                  opacity: downloading === "pdf" ? 0.7 : 1,
                 }}
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                PDF
-              </a>
+                {downloading === "pdf" ? "…" : "PDF"}
+              </button>
             )}
 
             {/* Word — Agency only */}
@@ -485,18 +516,20 @@ export default function NewCampaignPage() {
                 <span style={{ fontSize: 9, fontWeight: 700, color: "#FF5200", background: "rgba(255,82,0,0.14)", padding: "1px 5px", borderRadius: 3 }}>Agency</span>
               </button>
             ) : (
-              <a
-                href={`/api/export?campaignId=${campaignId}&format=docx`}
+              <button
+                onClick={() => handleDownload("docx")}
+                disabled={downloading === "docx"}
                 style={{
                   display: "flex", alignItems: "center", gap: 6,
                   padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
-                  fontFamily: "var(--font-outfit)", textDecoration: "none",
-                  backgroundColor: "#FF5200", color: "#fff",
+                  fontFamily: "var(--font-outfit)", cursor: "pointer",
+                  backgroundColor: "#FF5200", color: "#fff", border: "none",
+                  opacity: downloading === "docx" ? 0.7 : 1,
                 }}
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                Word
-              </a>
+                {downloading === "docx" ? "…" : "Word"}
+              </button>
             )}
 
           </div>
