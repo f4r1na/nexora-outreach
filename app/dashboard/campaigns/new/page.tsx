@@ -265,7 +265,6 @@ export default function NewCampaignPage() {
   const [editBody, setEditBody] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [exportOpen, setExportOpen] = useState(false);
   const [upgradeModal, setUpgradeModal] = useState<PlanKey | null>(null);
   const [userPlan, setUserPlan] = useState<string>("free");
 
@@ -420,110 +419,86 @@ export default function NewCampaignPage() {
           </span>
         </div>
 
-        {/* Export dropdown — only in review state */}
+        {/* Export buttons row — only in review state */}
         {step === 3 && !isGenerating && emails.length > 0 && campaignId && (
-          <div style={{ position: "relative" }}>
-            <button
-              onClick={() => setExportOpen((o) => !o)}
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+
+            {/* CSV — always available */}
+            <a
+              href={`/api/export?campaignId=${campaignId}&format=csv`}
               style={{
-                display: "flex", alignItems: "center", gap: 7,
-                padding: "8px 16px",
-                backgroundColor: "rgba(255,82,0,0.1)", color: "#FF5200",
-                border: "1px solid rgba(255,82,0,0.25)", borderRadius: 8,
-                fontSize: 13, fontWeight: 600, fontFamily: "var(--font-outfit)", cursor: "pointer",
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+                fontFamily: "var(--font-outfit)", textDecoration: "none",
+                backgroundColor: "#FF5200", color: "#fff",
               }}
             >
-              <IconExport />
-              Export
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ marginLeft: 2 }}>
-                <path d="m6 9 6 6 6-6" />
-              </svg>
-            </button>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              CSV
+            </a>
 
-            {exportOpen && (
-              <>
-                {/* Backdrop to close */}
-                <div
-                  style={{ position: "fixed", inset: 0, zIndex: 40 }}
-                  onClick={() => setExportOpen(false)}
-                />
-                <div style={{
-                  position: "absolute", top: "calc(100% + 6px)", right: 0,
-                  background: "#161616", border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 12, overflow: "hidden", minWidth: 200,
-                  zIndex: 50, boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
-                }}>
-                  {/* ── CSV — always available ── */}
-                  <a
-                    href={`/api/export?campaignId=${campaignId}&format=csv`}
-                    onClick={() => setExportOpen(false)}
-                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 16px", color: "#fff", textDecoration: "none", fontSize: 13, gap: 12 }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" strokeLinecap="round" /><path d="M14 2v6h6M12 18v-6M9 15h6" strokeLinecap="round" /></svg>
-                      CSV
-                    </div>
-                    <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.07)", padding: "2px 7px", borderRadius: 4 }}>Free</span>
-                  </a>
-
-                  <div style={{ height: 1, background: "rgba(255,255,255,0.06)" }} />
-
-                  {/* ── PDF — Pro+ ── */}
-                  {(userPlan === "free" || userPlan === "starter") ? (
-                    <button
-                      onClick={() => { setExportOpen(false); setUpgradeModal("pro"); }}
-                      style={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between", padding: "11px 16px", color: "rgba(255,255,255,0.38)", background: "none", border: "none", cursor: "pointer", fontSize: 13, gap: 12 }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" strokeLinecap="round" /><path d="M14 2v6h6" strokeLinecap="round" /></svg>
-                        PDF
-                      </div>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: "#ff5200", background: "rgba(255,82,0,0.12)", padding: "2px 7px", borderRadius: 4 }}>Pro</span>
-                    </button>
-                  ) : (
-                    <a
-                      href={`/api/export?campaignId=${campaignId}&format=pdf`}
-                      onClick={() => setExportOpen(false)}
-                      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 16px", color: "#fff", textDecoration: "none", fontSize: 13, gap: 12 }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" strokeLinecap="round" /><path d="M14 2v6h6" strokeLinecap="round" /></svg>
-                        PDF
-                      </div>
-                      <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.07)", padding: "2px 7px", borderRadius: 4 }}>Pro</span>
-                    </a>
-                  )}
-
-                  <div style={{ height: 1, background: "rgba(255,255,255,0.06)" }} />
-
-                  {/* ── Word — Agency only ── */}
-                  {userPlan !== "agency" ? (
-                    <button
-                      onClick={() => { setExportOpen(false); setUpgradeModal("agency"); }}
-                      style={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between", padding: "11px 16px", color: "rgba(255,255,255,0.38)", background: "none", border: "none", cursor: "pointer", fontSize: 13, gap: 12 }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" strokeLinecap="round" /><path d="M14 2v6h6M8 13h8M8 17h5" strokeLinecap="round" /></svg>
-                        Word (.docx)
-                      </div>
-                      <span style={{ fontSize: 10, fontWeight: 700, color: "#ff5200", background: "rgba(255,82,0,0.12)", padding: "2px 7px", borderRadius: 4 }}>Agency</span>
-                    </button>
-                  ) : (
-                    <a
-                      href={`/api/export?campaignId=${campaignId}&format=docx`}
-                      onClick={() => setExportOpen(false)}
-                      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 16px", color: "#fff", textDecoration: "none", fontSize: 13, gap: 12 }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" strokeLinecap="round" /><path d="M14 2v6h6M8 13h8M8 17h5" strokeLinecap="round" /></svg>
-                        Word (.docx)
-                      </div>
-                      <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.07)", padding: "2px 7px", borderRadius: 4 }}>Agency</span>
-                    </a>
-                  )}
-                </div>
-              </>
+            {/* PDF — Pro+ */}
+            {(userPlan === "free" || userPlan === "starter") ? (
+              <button
+                onClick={() => setUpgradeModal("pro")}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+                  fontFamily: "var(--font-outfit)", cursor: "pointer",
+                  backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.35)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" strokeLinecap="round" /></svg>
+                PDF
+                <span style={{ fontSize: 9, fontWeight: 700, color: "#FF5200", background: "rgba(255,82,0,0.14)", padding: "1px 5px", borderRadius: 3 }}>Pro</span>
+              </button>
+            ) : (
+              <a
+                href={`/api/export?campaignId=${campaignId}&format=pdf`}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+                  fontFamily: "var(--font-outfit)", textDecoration: "none",
+                  backgroundColor: "#FF5200", color: "#fff",
+                }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                PDF
+              </a>
             )}
+
+            {/* Word — Agency only */}
+            {userPlan !== "agency" ? (
+              <button
+                onClick={() => setUpgradeModal("agency")}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+                  fontFamily: "var(--font-outfit)", cursor: "pointer",
+                  backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.35)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0110 0v4" strokeLinecap="round" /></svg>
+                Word
+                <span style={{ fontSize: 9, fontWeight: 700, color: "#FF5200", background: "rgba(255,82,0,0.14)", padding: "1px 5px", borderRadius: 3 }}>Agency</span>
+              </button>
+            ) : (
+              <a
+                href={`/api/export?campaignId=${campaignId}&format=docx`}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+                  fontFamily: "var(--font-outfit)", textDecoration: "none",
+                  backgroundColor: "#FF5200", color: "#fff",
+                }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                Word
+              </a>
+            )}
+
           </div>
         )}
 
