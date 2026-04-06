@@ -426,18 +426,11 @@ export default function NewCampaignPage() {
             <button
               onClick={() => setExportOpen((o) => !o)}
               style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 7,
+                display: "flex", alignItems: "center", gap: 7,
                 padding: "8px 16px",
-                backgroundColor: "rgba(255,82,0,0.1)",
-                color: "#FF5200",
-                border: "1px solid rgba(255,82,0,0.25)",
-                borderRadius: 8,
-                fontSize: 13,
-                fontWeight: 600,
-                fontFamily: "var(--font-outfit)",
-                cursor: "pointer",
+                backgroundColor: "rgba(255,82,0,0.1)", color: "#FF5200",
+                border: "1px solid rgba(255,82,0,0.25)", borderRadius: 8,
+                fontSize: 13, fontWeight: 600, fontFamily: "var(--font-outfit)", cursor: "pointer",
               }}
             >
               <IconExport />
@@ -448,70 +441,88 @@ export default function NewCampaignPage() {
             </button>
 
             {exportOpen && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: "calc(100% + 6px)",
-                  right: 0,
-                  background: "#161616",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 10,
-                  overflow: "hidden",
-                  minWidth: 180,
-                  zIndex: 50,
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
-                }}
-              >
-                {/* CSV — always available */}
-                <a
-                  href={`/api/export?campaignId=${campaignId}&format=csv`}
+              <>
+                {/* Backdrop to close */}
+                <div
+                  style={{ position: "fixed", inset: 0, zIndex: 40 }}
                   onClick={() => setExportOpen(false)}
-                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", color: "#fff", textDecoration: "none", fontSize: 13, gap: 8 }}
-                >
-                  <span>CSV</span>
-                  <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.06)", padding: "2px 6px", borderRadius: 4 }}>Free</span>
-                </a>
-
-                {/* PDF — Starter+ */}
-                {userPlan === "free" ? (
-                  <button
-                    onClick={() => { setExportOpen(false); setUpgradeModal("starter"); }}
-                    style={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", color: "rgba(255,255,255,0.4)", background: "none", border: "none", cursor: "pointer", fontSize: 13, gap: 8 }}
-                  >
-                    <span>PDF</span>
-                    <span style={{ fontSize: 10, color: "#ff5200", background: "rgba(255,82,0,0.1)", padding: "2px 6px", borderRadius: 4 }}>Starter+</span>
-                  </button>
-                ) : (
+                />
+                <div style={{
+                  position: "absolute", top: "calc(100% + 6px)", right: 0,
+                  background: "#161616", border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: 12, overflow: "hidden", minWidth: 200,
+                  zIndex: 50, boxShadow: "0 12px 40px rgba(0,0,0,0.6)",
+                }}>
+                  {/* ── CSV — always available ── */}
                   <a
-                    href={`/api/export?campaignId=${campaignId}&format=pdf`}
+                    href={`/api/export?campaignId=${campaignId}&format=csv`}
                     onClick={() => setExportOpen(false)}
-                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", color: "#fff", textDecoration: "none", fontSize: 13, gap: 8 }}
+                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 16px", color: "#fff", textDecoration: "none", fontSize: 13, gap: 12 }}
                   >
-                    <span>PDF</span>
-                    <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.06)", padding: "2px 6px", borderRadius: 4 }}>Starter+</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" strokeLinecap="round" /><path d="M14 2v6h6M12 18v-6M9 15h6" strokeLinecap="round" /></svg>
+                      CSV
+                    </div>
+                    <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.07)", padding: "2px 7px", borderRadius: 4 }}>Free</span>
                   </a>
-                )}
 
-                {/* Word — Pro+ */}
-                {(userPlan === "free" || userPlan === "starter") ? (
-                  <button
-                    onClick={() => { setExportOpen(false); setUpgradeModal("pro"); }}
-                    style={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", color: "rgba(255,255,255,0.4)", background: "none", border: "none", cursor: "pointer", fontSize: 13, gap: 8 }}
-                  >
-                    <span>Word (.docx)</span>
-                    <span style={{ fontSize: 10, color: "#ff5200", background: "rgba(255,82,0,0.1)", padding: "2px 6px", borderRadius: 4 }}>Pro+</span>
-                  </button>
-                ) : (
-                  <a
-                    href={`/api/export?campaignId=${campaignId}&format=docx`}
-                    onClick={() => setExportOpen(false)}
-                    style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px", color: "#fff", textDecoration: "none", fontSize: 13, gap: 8 }}
-                  >
-                    <span>Word (.docx)</span>
-                    <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.06)", padding: "2px 6px", borderRadius: 4 }}>Pro+</span>
-                  </a>
-                )}
-              </div>
+                  <div style={{ height: 1, background: "rgba(255,255,255,0.06)" }} />
+
+                  {/* ── PDF — Pro+ ── */}
+                  {(userPlan === "free" || userPlan === "starter") ? (
+                    <button
+                      onClick={() => { setExportOpen(false); setUpgradeModal("pro"); }}
+                      style={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between", padding: "11px 16px", color: "rgba(255,255,255,0.38)", background: "none", border: "none", cursor: "pointer", fontSize: 13, gap: 12 }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" strokeLinecap="round" /><path d="M14 2v6h6" strokeLinecap="round" /></svg>
+                        PDF
+                      </div>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: "#ff5200", background: "rgba(255,82,0,0.12)", padding: "2px 7px", borderRadius: 4 }}>Pro</span>
+                    </button>
+                  ) : (
+                    <a
+                      href={`/api/export?campaignId=${campaignId}&format=pdf`}
+                      onClick={() => setExportOpen(false)}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 16px", color: "#fff", textDecoration: "none", fontSize: 13, gap: 12 }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" strokeLinecap="round" /><path d="M14 2v6h6" strokeLinecap="round" /></svg>
+                        PDF
+                      </div>
+                      <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.07)", padding: "2px 7px", borderRadius: 4 }}>Pro</span>
+                    </a>
+                  )}
+
+                  <div style={{ height: 1, background: "rgba(255,255,255,0.06)" }} />
+
+                  {/* ── Word — Agency only ── */}
+                  {userPlan !== "agency" ? (
+                    <button
+                      onClick={() => { setExportOpen(false); setUpgradeModal("agency"); }}
+                      style={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "space-between", padding: "11px 16px", color: "rgba(255,255,255,0.38)", background: "none", border: "none", cursor: "pointer", fontSize: 13, gap: 12 }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" strokeLinecap="round" /><path d="M14 2v6h6M8 13h8M8 17h5" strokeLinecap="round" /></svg>
+                        Word (.docx)
+                      </div>
+                      <span style={{ fontSize: 10, fontWeight: 700, color: "#ff5200", background: "rgba(255,82,0,0.12)", padding: "2px 7px", borderRadius: 4 }}>Agency</span>
+                    </button>
+                  ) : (
+                    <a
+                      href={`/api/export?campaignId=${campaignId}&format=docx`}
+                      onClick={() => setExportOpen(false)}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 16px", color: "#fff", textDecoration: "none", fontSize: 13, gap: 12 }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" strokeLinecap="round" /><path d="M14 2v6h6M8 13h8M8 17h5" strokeLinecap="round" /></svg>
+                        Word (.docx)
+                      </div>
+                      <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", background: "rgba(255,255,255,0.07)", padding: "2px 7px", borderRadius: 4 }}>Agency</span>
+                    </a>
+                  )}
+                </div>
+              </>
             )}
           </div>
         )}
