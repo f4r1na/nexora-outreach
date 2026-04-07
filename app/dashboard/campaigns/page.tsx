@@ -241,7 +241,7 @@ export default async function CampaignsPage() {
                     </p>
 
                     <ul style={{ listStyle: "none", padding: 0, margin: "0 0 22px", display: "flex", flexDirection: "column", gap: 8 }}>
-                      {["Fully editable .docx file", "One email per section", "Agency team collaboration"].map((f) => (
+                      {["Word and all features included"].map((f) => (
                         <li key={f} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "rgba(255,255,255,0.55)" }}>
                           <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
                             <path d="M3 8l3.5 3.5L13 4.5" stroke="#FF5200" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />

@@ -1519,7 +1519,7 @@ export default function NewCampaignPage() {
                       Word Export
                     </p>
                     <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: "var(--font-outfit)", lineHeight: 1.6 }}>
-                      Fully editable .docx file. Perfect for agencies customizing emails for each client.
+                      Word and all features included.
                     </p>
                   </div>
                   {userPlan === "agency" ? (
