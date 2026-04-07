@@ -1519,7 +1519,7 @@ export default function NewCampaignPage() {
                       Word Export
                     </p>
                     <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: "var(--font-outfit)", lineHeight: 1.6 }}>
-                      Word and all features included.
+                      Export campaigns as editable Word documents. Perfect for agencies managing multiple clients. Word and all features included.
                     </p>
                   </div>
                   {userPlan === "agency" ? (

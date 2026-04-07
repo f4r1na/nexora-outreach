@@ -389,6 +389,35 @@ export default async function DashboardPage({
           </div>
         </div>
       </main>
+
+      {/* Upgrade nudge banner — free/starter only */}
+      {(!sub?.plan || sub.plan === "free" || sub.plan === "starter") && (
+        <div style={{
+          position: "fixed", bottom: 24, right: 24, zIndex: 50,
+          backgroundColor: "#0e0e0e",
+          border: "1px solid rgba(255,82,0,0.25)",
+          borderLeft: "3px solid #FF5200",
+          borderRadius: 12,
+          padding: "14px 18px",
+          maxWidth: 300,
+          boxShadow: "0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,82,0,0.05)",
+        }}>
+          <p style={{
+            fontSize: 12, fontWeight: 600, color: "#fff",
+            fontFamily: "var(--font-outfit)", lineHeight: 1.6, marginBottom: 10,
+          }}>
+            ⚡ Want more power? Upgrade your plan and unlock PDF/Word exports, more credits, and priority AI generation.
+          </p>
+          <Link href="/dashboard/settings" style={{
+            display: "inline-flex", alignItems: "center", gap: 5,
+            padding: "6px 14px", backgroundColor: "#FF5200", color: "#fff",
+            borderRadius: 7, fontSize: 12, fontWeight: 700,
+            fontFamily: "var(--font-outfit)", textDecoration: "none",
+          }}>
+            Upgrade Now →
+          </Link>
+        </div>
+      )}
     </>
   );
 }
