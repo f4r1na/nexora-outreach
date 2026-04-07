@@ -1348,6 +1348,242 @@ export default function NewCampaignPage() {
                 );
               })}
             </div>
+
+            {/* ── Export Cards ── */}
+            <div style={{ marginTop: 48 }}>
+              <h2 style={{
+                fontSize: 15, fontWeight: 700, color: "#fff",
+                fontFamily: "var(--font-syne)", marginBottom: 4,
+              }}>
+                Export your campaign
+              </h2>
+              <p style={{
+                fontSize: 12.5, color: "rgba(255,255,255,0.35)",
+                fontFamily: "var(--font-outfit)", marginBottom: 20,
+              }}>
+                Download your emails in the format that works best for you.
+              </p>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+
+                {/* ── CSV card (always unlocked) ── */}
+                <div style={{
+                  backgroundColor: "#0e0e0e",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  borderRadius: 14, padding: "24px 22px",
+                  display: "flex", flexDirection: "column", gap: 14,
+                }}>
+                  <div style={{
+                    width: 44, height: 44, borderRadius: 11,
+                    backgroundColor: "rgba(255,82,0,0.1)",
+                    border: "1px solid rgba(255,82,0,0.2)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "#FF5200",
+                  }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M3 6h18M3 10h18M3 14h10M3 18h7" strokeLinecap="round" />
+                    </svg>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 5 }}>
+                      CSV Export
+                    </p>
+                    <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: "var(--font-outfit)", lineHeight: 1.6 }}>
+                      Spreadsheet-ready export with all leads, subjects and email bodies in one file.
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleDownload("csv")}
+                    disabled={downloading === "csv" || !campaignId}
+                    style={{
+                      width: "100%", padding: "10px 0", borderRadius: 9,
+                      backgroundColor: "#FF5200", color: "#fff", border: "none",
+                      fontSize: 13, fontWeight: 700, fontFamily: "var(--font-outfit)",
+                      cursor: campaignId ? "pointer" : "not-allowed",
+                      opacity: downloading === "csv" ? 0.7 : 1,
+                    }}
+                  >
+                    {downloading === "csv" ? "Downloading…" : "Download CSV"}
+                  </button>
+                </div>
+
+                {/* ── PDF card ── */}
+                <div style={{
+                  backgroundColor: "#0e0e0e",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  borderRadius: 14, padding: "24px 22px",
+                  display: "flex", flexDirection: "column", gap: 14,
+                  position: "relative", overflow: "hidden",
+                }}>
+                  <div style={{
+                    width: 44, height: 44, borderRadius: 11,
+                    backgroundColor: "rgba(255,82,0,0.1)",
+                    border: "1px solid rgba(255,82,0,0.2)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "#FF5200",
+                  }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M14 2v6h6M9 15h6M9 11h6M9 19h4" strokeLinecap="round" />
+                    </svg>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 5 }}>
+                      PDF Export
+                    </p>
+                    <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: "var(--font-outfit)", lineHeight: 1.6 }}>
+                      Beautifully branded Nexora PDF, perfect for sharing with clients or keeping records.
+                    </p>
+                  </div>
+                  {(userPlan === "pro" || userPlan === "agency") ? (
+                    <button
+                      onClick={() => handleDownload("pdf")}
+                      disabled={downloading === "pdf" || !campaignId}
+                      style={{
+                        width: "100%", padding: "10px 0", borderRadius: 9,
+                        backgroundColor: "#FF5200", color: "#fff", border: "none",
+                        fontSize: 13, fontWeight: 700, fontFamily: "var(--font-outfit)",
+                        cursor: campaignId ? "pointer" : "not-allowed",
+                        opacity: downloading === "pdf" ? 0.7 : 1,
+                      }}
+                    >
+                      {downloading === "pdf" ? "Downloading…" : "Download PDF"}
+                    </button>
+                  ) : (
+                    /* Locked overlay */
+                    <div style={{
+                      position: "absolute", inset: 0, borderRadius: 14,
+                      background: "linear-gradient(160deg, rgba(14,14,14,0.55) 0%, rgba(14,14,14,0.92) 100%)",
+                      backdropFilter: "blur(6px)",
+                      display: "flex", flexDirection: "column",
+                      alignItems: "center", justifyContent: "center", gap: 12,
+                      padding: 24,
+                    }}>
+                      <div style={{
+                        width: 44, height: 44, borderRadius: "50%",
+                        backgroundColor: "rgba(255,82,0,0.12)",
+                        border: "1px solid rgba(255,82,0,0.25)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        color: "#FF5200",
+                      }}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                          <rect x="3" y="11" width="18" height="11" rx="2" strokeLinecap="round" strokeLinejoin="round" />
+                          <path d="M7 11V7a5 5 0 0110 0v4" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                      <div style={{ textAlign: "center" }}>
+                        <p style={{ fontSize: 13.5, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 4 }}>
+                          Pro Plan Required
+                        </p>
+                        <p style={{ fontSize: 11.5, color: "rgba(255,255,255,0.45)", fontFamily: "var(--font-outfit)", lineHeight: 1.5 }}>
+                          Unlock branded PDF exports and impress your clients.
+                        </p>
+                      </div>
+                      <a
+                        href="/dashboard/settings"
+                        style={{
+                          width: "100%", padding: "9px 0", borderRadius: 9, textAlign: "center",
+                          backgroundColor: "#FF5200", color: "#fff", textDecoration: "none",
+                          fontSize: 13, fontWeight: 700, fontFamily: "var(--font-outfit)",
+                          display: "block",
+                        }}
+                      >
+                        Upgrade to Pro →
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+                {/* ── Word card ── */}
+                <div style={{
+                  backgroundColor: "#0e0e0e",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  borderRadius: 14, padding: "24px 22px",
+                  display: "flex", flexDirection: "column", gap: 14,
+                  position: "relative", overflow: "hidden",
+                }}>
+                  <div style={{
+                    width: 44, height: 44, borderRadius: 11,
+                    backgroundColor: "rgba(255,82,0,0.1)",
+                    border: "1px solid rgba(255,82,0,0.2)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    color: "#FF5200",
+                  }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M14 2v6h6M8 13l2 6 2-4 2 4 2-6" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 5 }}>
+                      Word Export
+                    </p>
+                    <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: "var(--font-outfit)", lineHeight: 1.6 }}>
+                      Fully editable .docx file. Perfect for agencies customizing emails for each client.
+                    </p>
+                  </div>
+                  {userPlan === "agency" ? (
+                    <button
+                      onClick={() => handleDownload("docx")}
+                      disabled={downloading === "docx" || !campaignId}
+                      style={{
+                        width: "100%", padding: "10px 0", borderRadius: 9,
+                        backgroundColor: "#FF5200", color: "#fff", border: "none",
+                        fontSize: 13, fontWeight: 700, fontFamily: "var(--font-outfit)",
+                        cursor: campaignId ? "pointer" : "not-allowed",
+                        opacity: downloading === "docx" ? 0.7 : 1,
+                      }}
+                    >
+                      {downloading === "docx" ? "Downloading…" : "Download Word"}
+                    </button>
+                  ) : (
+                    /* Locked overlay */
+                    <div style={{
+                      position: "absolute", inset: 0, borderRadius: 14,
+                      background: "linear-gradient(160deg, rgba(14,14,14,0.55) 0%, rgba(14,14,14,0.92) 100%)",
+                      backdropFilter: "blur(6px)",
+                      display: "flex", flexDirection: "column",
+                      alignItems: "center", justifyContent: "center", gap: 12,
+                      padding: 24,
+                    }}>
+                      <div style={{
+                        width: 44, height: 44, borderRadius: "50%",
+                        backgroundColor: "rgba(255,82,0,0.12)",
+                        border: "1px solid rgba(255,82,0,0.25)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        color: "#FF5200",
+                      }}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                          <rect x="3" y="11" width="18" height="11" rx="2" strokeLinecap="round" strokeLinejoin="round" />
+                          <path d="M7 11V7a5 5 0 0110 0v4" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
+                      <div style={{ textAlign: "center" }}>
+                        <p style={{ fontSize: 13.5, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 4 }}>
+                          Agency Plan Required
+                        </p>
+                        <p style={{ fontSize: 11.5, color: "rgba(255,255,255,0.45)", fontFamily: "var(--font-outfit)", lineHeight: 1.5 }}>
+                          Export editable Word docs and manage campaigns across clients.
+                        </p>
+                      </div>
+                      <a
+                        href="/dashboard/settings"
+                        style={{
+                          width: "100%", padding: "9px 0", borderRadius: 9, textAlign: "center",
+                          backgroundColor: "#FF5200", color: "#fff", textDecoration: "none",
+                          fontSize: 13, fontWeight: 700, fontFamily: "var(--font-outfit)",
+                          display: "block",
+                        }}
+                      >
+                        Upgrade to Agency →
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            </div>
+
           </div>
         )}
 
