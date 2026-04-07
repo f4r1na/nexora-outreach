@@ -1066,24 +1066,76 @@ export default function NewCampaignPage() {
               </Link>
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
+            {/* Export buttons */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+              {/* CSV — always available */}
               <button
-                onClick={() => alert('CSV export')}
-                style={{ background: '#FF5200', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}
+                onClick={() => handleDownload("csv")}
+                disabled={downloading === "csv" || !campaignId}
+                style={{
+                  background: "#FF5200", color: "#fff", border: "none",
+                  padding: "10px 20px", borderRadius: 8, cursor: "pointer",
+                  fontWeight: 600, fontFamily: "var(--font-outfit)", fontSize: 13,
+                  opacity: downloading === "csv" ? 0.7 : 1,
+                }}
               >
-                Export CSV
+                {downloading === "csv" ? "Downloading…" : "Export CSV"}
               </button>
+
+              {/* PDF — Pro or Agency only */}
               <button
-                onClick={() => alert('PDF export')}
-                style={{ background: '#0E0E0E', color: 'white', border: '1px solid #FF5200', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}
+                onClick={() => {
+                  if (userPlan === "free" || userPlan === "starter") {
+                    setUpgradeModal("pro");
+                  } else {
+                    handleDownload("pdf");
+                  }
+                }}
+                disabled={downloading === "pdf"}
+                style={{
+                  background: "#0e0e0e", color: "#fff",
+                  border: "1px solid rgba(255,82,0,0.5)",
+                  padding: "10px 20px", borderRadius: 8, cursor: "pointer",
+                  fontWeight: 600, fontFamily: "var(--font-outfit)", fontSize: 13,
+                  display: "flex", alignItems: "center", gap: 6,
+                  opacity: downloading === "pdf" ? 0.7 : 1,
+                }}
               >
-                Export PDF · Pro
+                {downloading === "pdf" ? "Downloading…" : "Export PDF"}
+                {(userPlan === "free" || userPlan === "starter") && (
+                  <span style={{
+                    fontSize: 9, fontWeight: 800, color: "#FF5200",
+                    background: "rgba(255,82,0,0.15)", padding: "2px 6px", borderRadius: 3,
+                  }}>Pro</span>
+                )}
               </button>
+
+              {/* Word — Agency only */}
               <button
-                onClick={() => alert('Word export')}
-                style={{ background: '#0E0E0E', color: 'white', border: '1px solid #FF5200', padding: '10px 20px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}
+                onClick={() => {
+                  if (userPlan !== "agency") {
+                    setUpgradeModal("agency");
+                  } else {
+                    handleDownload("docx");
+                  }
+                }}
+                disabled={downloading === "docx"}
+                style={{
+                  background: "#0e0e0e", color: "#fff",
+                  border: "1px solid rgba(255,82,0,0.5)",
+                  padding: "10px 20px", borderRadius: 8, cursor: "pointer",
+                  fontWeight: 600, fontFamily: "var(--font-outfit)", fontSize: 13,
+                  display: "flex", alignItems: "center", gap: 6,
+                  opacity: downloading === "docx" ? 0.7 : 1,
+                }}
               >
-                Export Word · Agency
+                {downloading === "docx" ? "Downloading…" : "Export Word"}
+                {userPlan !== "agency" && (
+                  <span style={{
+                    fontSize: 9, fontWeight: 800, color: "#FF5200",
+                    background: "rgba(255,82,0,0.15)", padding: "2px 6px", borderRadius: 3,
+                  }}>Agency</span>
+                )}
               </button>
             </div>
 
