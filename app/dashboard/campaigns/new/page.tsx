@@ -306,25 +306,64 @@ export default function NewCampaignPage() {
     }
   }
 
-  // ── CSV handling
-  const handleFile = useCallback((file: File) => {
-    if (!file.name.endsWith(".csv")) {
-      setError("Please upload a .csv file.");
+  // ── File handling (CSV, PDF, Word)
+  const handleFile = useCallback(async (file: File) => {
+    const ext = file.name.split(".").pop()?.toLowerCase();
+
+    // CSV — always allowed, parse client-side
+    if (ext === "csv") {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        const parsed = parseCSV(text);
+        if (parsed.length === 0) {
+          setError("No leads found. Make sure your CSV has headers and data rows.");
+          return;
+        }
+        setError(null);
+        setLeads(parsed);
+      };
+      reader.readAsText(file);
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const text = e.target?.result as string;
-      const parsed = parseCSV(text);
-      if (parsed.length === 0) {
-        setError("No leads found. Make sure your CSV has headers and data rows.");
+
+    // PDF / DOCX — plan-gated, parsed server-side
+    if (ext === "pdf" || ext === "docx") {
+      const canPDF  = userPlan === "pro" || userPlan === "agency";
+      const canDOCX = userPlan === "agency";
+
+      if (ext === "pdf" && !canPDF) {
+        setError("PDF uploads require a Pro plan or higher. Please upgrade.");
         return;
       }
+      if (ext === "docx" && !canDOCX) {
+        setError("Word uploads require an Agency plan. Please upgrade.");
+        return;
+      }
+
       setError(null);
-      setLeads(parsed);
-    };
-    reader.readAsText(file);
-  }, []);
+      const form = new FormData();
+      form.append("file", file);
+      try {
+        const res = await fetch("/api/parse-file", { method: "POST", body: form });
+        const json = await res.json();
+        if (!res.ok) {
+          setError(json.error ?? "Failed to parse file.");
+          return;
+        }
+        if (!json.leads || json.leads.length === 0) {
+          setError("No leads found in this file. Make sure it contains structured lead data (name, email, company, etc.).");
+          return;
+        }
+        setLeads(json.leads);
+      } catch {
+        setError("Failed to upload file. Please try again.");
+      }
+      return;
+    }
+
+    setError("Unsupported file type. Please upload a .csv" + (userPlan === "pro" || userPlan === "agency" ? ", .pdf" : "") + (userPlan === "agency" ? ", or .docx" : "") + " file.");
+  }, [userPlan]);
 
   const onDrop = useCallback(
     (e: React.DragEvent) => {
@@ -684,8 +723,12 @@ export default function NewCampaignPage() {
                 marginBottom: 32,
               }}
             >
-              Drop a CSV with columns: <em>name, company, role, email, note</em>.
-              Any order, any extra columns are ignored.
+              {userPlan === "agency"
+                ? <>Drop a CSV, PDF, or Word doc with columns: <em>name, company, role, email, note</em>. Any order, any extra columns are ignored.</>
+                : userPlan === "pro"
+                ? <>Drop a CSV or PDF with columns: <em>name, company, role, email, note</em>. Any order, any extra columns are ignored.</>
+                : <>Drop a CSV with columns: <em>name, company, role, email, note</em>. Any order, any extra columns are ignored.</>
+              }
             </p>
 
             {/* Drop zone */}
@@ -737,10 +780,15 @@ export default function NewCampaignPage() {
                   color: "#fff",
                   fontFamily: "var(--font-outfit)",
                   margin: 0,
+                  textAlign: "center",
                 }}
               >
-                Drop your CSV here or{" "}
-                <span style={{ color: "#FF5200" }}>browse files</span>
+                {userPlan === "agency"
+                  ? <>Drop your CSV, PDF, or Word doc here or <span style={{ color: "#FF5200" }}>browse files</span></>
+                  : userPlan === "pro"
+                  ? <>Drop your CSV or PDF here or <span style={{ color: "#FF5200" }}>browse files</span></>
+                  : <>Drop your CSV here or <span style={{ color: "#FF5200" }}>browse files</span></>
+                }
               </p>
               <p
                 style={{
@@ -750,16 +798,28 @@ export default function NewCampaignPage() {
                   margin: 0,
                 }}
               >
-                .csv files only
+                {userPlan === "agency"
+                  ? ".csv, .pdf, .docx files accepted"
+                  : userPlan === "pro"
+                  ? ".csv, .pdf files accepted"
+                  : ".csv files only"
+                }
               </p>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".csv"
+                accept={
+                  userPlan === "agency"
+                    ? ".csv,.pdf,.docx"
+                    : userPlan === "pro"
+                    ? ".csv,.pdf"
+                    : ".csv"
+                }
                 style={{ display: "none" }}
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) handleFile(file);
+                  e.target.value = "";
                 }}
               />
             </div>
