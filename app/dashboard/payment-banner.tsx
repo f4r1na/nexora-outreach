@@ -14,25 +14,28 @@ export default function PaymentBanner({ type }: { type: "success" | "canceled" }
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        gap: 12,
-        padding: "12px 18px",
-        borderRadius: 10,
-        marginBottom: 20,
-        backgroundColor: isSuccess ? "rgba(34,197,94,0.1)" : "rgba(239,68,68,0.1)",
-        border: `1px solid ${isSuccess ? "rgba(34,197,94,0.25)" : "rgba(239,68,68,0.25)"}`,
+        gap: 16,
+        padding: "16px 20px",
+        borderRadius: 12,
+        marginBottom: 24,
+        backgroundColor: isSuccess ? "rgba(255,82,0,0.08)" : "rgba(239,68,68,0.08)",
+        border: `1px solid ${isSuccess ? "rgba(255,82,0,0.25)" : "rgba(239,68,68,0.2)"}`,
+        borderLeft: `3px solid ${isSuccess ? "#FF5200" : "#ef4444"}`,
       }}
     >
       <p
         style={{
           fontSize: 14,
           fontFamily: "var(--font-outfit)",
-          color: isSuccess ? "#4ade80" : "#f87171",
+          fontWeight: 500,
+          color: isSuccess ? "#fff" : "#fca5a5",
           margin: 0,
+          lineHeight: 1.5,
         }}
       >
         {isSuccess
-          ? "Welcome to Starter! Your plan is now active."
-          : "Payment canceled. No charge was made."}
+          ? "🎉 Payment successful! Your plan has been upgraded."
+          : "❌ Payment was canceled. No charges were made."}
       </p>
       <button
         onClick={() => setDismissed(true)}
@@ -40,11 +43,11 @@ export default function PaymentBanner({ type }: { type: "success" | "canceled" }
           background: "none",
           border: "none",
           cursor: "pointer",
-          color: isSuccess ? "#4ade80" : "#f87171",
-          opacity: 0.7,
+          color: "rgba(255,255,255,0.35)",
           flexShrink: 0,
-          padding: 0,
+          padding: 4,
           lineHeight: 1,
+          borderRadius: 4,
         }}
         aria-label="Dismiss"
       >

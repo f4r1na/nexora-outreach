@@ -29,8 +29,8 @@ export async function POST(req: NextRequest) {
       payment_method_types: ["card"],
       customer_email: user.email,
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: "https://nexora-outreach-y8s4.vercel.app/dashboard?success=true",
-      cancel_url: "https://nexora-outreach-y8s4.vercel.app/dashboard?canceled=true",
+      success_url: `${appUrl}/dashboard?success=true`,
+      cancel_url: `${appUrl}/dashboard?canceled=true`,
       metadata: { user_id: user.id, plan },
     })
 
