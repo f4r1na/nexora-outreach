@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { jsPDF } from "jspdf";
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, PageBreak, AlignmentType } from "docx";
 
 // ─── CSV ─────────────────────────────────────────────────────────────────────
@@ -14,102 +13,6 @@ function escapeCSV(v: string): string {
 
 function buildCSV(rows: string[][]): string {
   return rows.map((r) => r.map(escapeCSV).join(",")).join("\r\n");
-}
-
-// ─── PDF ─────────────────────────────────────────────────────────────────────
-
-function buildPDF(leads: { first_name: string | null; company: string | null; email: string | null; generated_subject: string | null; generated_body: string | null }[], campaignName: string): Buffer {
-  const doc = new jsPDF();
-  const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
-  const margin = 15;
-  const contentW = pageW - margin * 2;
-
-  let page = 1;
-
-  function drawHeader() {
-    // Orange header bar
-    doc.setFillColor(255, 82, 0);
-    doc.rect(0, 0, pageW, 25, "F");
-    doc.setTextColor(255, 255, 255);
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(16);
-    doc.text("NEXORA OUTREACH", margin, 16);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(255, 210, 190);
-    doc.text(campaignName, pageW - margin, 16, { align: "right" });
-  }
-
-  function drawFooter() {
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(160, 160, 160);
-    doc.text("nexora-outreach.vercel.app", margin, pageH - 8);
-    doc.text(`Page ${page}`, pageW - margin, pageH - 8, { align: "right" });
-  }
-
-  drawHeader();
-  drawFooter();
-
-  let y = 35;
-
-  leads.forEach((lead, i) => {
-    const subject = lead.generated_subject ?? "";
-    const body = lead.generated_body ?? "";
-    const subjectLines = doc.splitTextToSize(subject, contentW);
-    const bodyLines = doc.splitTextToSize(body, contentW);
-    const blockH = 8 + 6 + subjectLines.length * 6 + 5 + bodyLines.length * 5.5 + 10;
-
-    if (y + blockH > pageH - 16) {
-      doc.addPage();
-      page++;
-      drawHeader();
-      drawFooter();
-      y = 35;
-    }
-
-    // Lead name + company in orange
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(11);
-    doc.setTextColor(255, 82, 0);
-    doc.text(`${lead.first_name ?? ""}  ·  ${lead.company ?? ""}`, margin, y);
-    y += 6;
-
-    // Email
-    if (lead.email) {
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      doc.setTextColor(140, 140, 140);
-      doc.text(lead.email, margin, y);
-      y += 5;
-    }
-
-    y += 2;
-
-    // Subject
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(20, 20, 20);
-    doc.text(subjectLines, margin, y);
-    y += subjectLines.length * 6 + 3;
-
-    // Body
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(60, 60, 60);
-    doc.text(bodyLines, margin, y);
-    y += bodyLines.length * 5.5 + 8;
-
-    // Divider (except after last)
-    if (i < leads.length - 1) {
-      doc.setDrawColor(220, 220, 220);
-      doc.line(margin, y, pageW - margin, y);
-      y += 6;
-    }
-  });
-
-  return Buffer.from(doc.output("arraybuffer"));
 }
 
 // ─── Word ─────────────────────────────────────────────────────────────────────
@@ -190,13 +93,8 @@ export async function GET(req: NextRequest) {
   const { data: sub } = await supabase.from("subscriptions").select("plan").eq("user_id", user.id).single();
   const plan = sub?.plan ?? "free";
 
-  if (format === "pdf" && plan !== "pro" && plan !== "agency") {
-    return new Response(JSON.stringify({ error: "PDF export requires Pro plan or higher" }), {
-      status: 403, headers: { "Content-Type": "application/json" },
-    });
-  }
-  if (format === "docx" && plan !== "agency") {
-    return new Response(JSON.stringify({ error: "Word export requires Agency plan" }), {
+  if (format === "docx" && plan !== "pro" && plan !== "agency") {
+    return new Response(JSON.stringify({ error: "Word export requires Pro plan or higher" }), {
       status: 403, headers: { "Content-Type": "application/json" },
     });
   }
@@ -215,16 +113,6 @@ export async function GET(req: NextRequest) {
   if (error || !leads) return new Response("Failed to fetch leads", { status: 500 });
 
   const slug = campaignId.slice(0, 8);
-
-  if (format === "pdf") {
-    const buf = buildPDF(leads, campaignName);
-    return new Response(new Uint8Array(buf), {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="nexora-${slug}.pdf"`,
-      },
-    });
-  }
 
   if (format === "docx") {
     const buf = await buildWord(leads, campaignName);

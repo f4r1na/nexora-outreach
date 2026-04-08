@@ -45,8 +45,7 @@ export default async function CampaignDetailPage({ params }: Props) {
     month: "long", day: "numeric", year: "numeric",
   });
 
-  const pdfAvailable = plan === "pro" || plan === "agency";
-  const wordAvailable = plan === "agency";
+  const wordAvailable = plan === "pro" || plan === "agency";
 
   return (
     <>
@@ -98,33 +97,6 @@ export default async function CampaignDetailPage({ params }: Props) {
             CSV
           </a>
 
-          {pdfAvailable ? (
-            <a href={`/api/export?campaignId=${id}&format=pdf`} style={{
-              display: "flex", alignItems: "center", gap: 6, padding: "7px 14px",
-              borderRadius: 8, fontSize: 12.5, fontWeight: 600, fontFamily: "var(--font-outfit)",
-              textDecoration: "none", backgroundColor: "#FF5200", color: "#fff",
-            }}>
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              PDF
-            </a>
-          ) : (
-            <Link href="/dashboard/settings" style={{
-              display: "flex", alignItems: "center", gap: 6, padding: "7px 14px",
-              borderRadius: 8, fontSize: 12.5, fontWeight: 600, fontFamily: "var(--font-outfit)",
-              textDecoration: "none", backgroundColor: "rgba(255,255,255,0.05)",
-              color: "rgba(255,255,255,0.35)", border: "1px solid rgba(255,255,255,0.08)",
-            }}>
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                <rect x="3" y="11" width="18" height="11" rx="2" />
-                <path d="M7 11V7a5 5 0 0110 0v4" strokeLinecap="round" />
-              </svg>
-              PDF
-              <span style={{ fontSize: 9, fontWeight: 700, color: "#FF5200", background: "rgba(255,82,0,0.14)", padding: "1px 5px", borderRadius: 3 }}>Pro</span>
-            </Link>
-          )}
-
           {wordAvailable ? (
             <a href={`/api/export?campaignId=${id}&format=docx`} style={{
               display: "flex", alignItems: "center", gap: 6, padding: "7px 14px",
@@ -148,7 +120,7 @@ export default async function CampaignDetailPage({ params }: Props) {
                 <path d="M7 11V7a5 5 0 0110 0v4" strokeLinecap="round" />
               </svg>
               Word
-              <span style={{ fontSize: 9, fontWeight: 700, color: "#FF5200", background: "rgba(255,82,0,0.14)", padding: "1px 5px", borderRadius: 3 }}>Agency</span>
+              <span style={{ fontSize: 9, fontWeight: 700, color: "#FF5200", background: "rgba(255,82,0,0.14)", padding: "1px 5px", borderRadius: 3 }}>Pro</span>
             </Link>
           )}
         </div>

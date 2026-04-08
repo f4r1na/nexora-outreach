@@ -46,8 +46,7 @@ export default async function CampaignsPage() {
   const creditsLimit = sub?.credits_limit ?? 10;
   const plan = sub?.plan ?? "free";
 
-  const showPdfCard = plan !== "pro" && plan !== "agency";
-  const showWordCard = plan !== "agency";
+  const showWordCard = plan !== "pro" && plan !== "agency";
 
   return (
     <>
@@ -129,8 +128,8 @@ export default async function CampaignsPage() {
           <CampaignsTable campaigns={allCampaigns} />
         )}
 
-        {/* ── Upgrade feature cards ── */}
-        {(showPdfCard || showWordCard) && (
+        {/* ── Upgrade feature card ── */}
+        {showWordCard && (
           <div style={{ marginTop: 48 }}>
             <div style={{ marginBottom: 20 }}>
               <h2 style={{ fontSize: 16, fontWeight: 800, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 4 }}>
@@ -141,133 +140,61 @@ export default async function CampaignsPage() {
               </p>
             </div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
-
-              {/* PDF Export card */}
-              {showPdfCard && (
+            <div style={{ maxWidth: 360 }}>
+              <div style={{
+                backgroundColor: "#0e0e0e",
+                border: "1px solid rgba(255,255,255,0.07)",
+                borderLeft: "3px solid #FF5200",
+                borderRadius: 14,
+                padding: "28px 26px",
+                position: "relative",
+                overflow: "hidden",
+              }}>
                 <div style={{
-                  backgroundColor: "#0e0e0e",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  borderLeft: "3px solid #FF5200",
-                  borderRadius: 14,
-                  padding: "28px 26px",
-                  position: "relative",
-                  overflow: "hidden",
-                }}>
-                  {/* Subtle glow */}
-                  <div style={{
-                    position: "absolute", top: 0, left: 0, width: 200, height: 200,
-                    background: "radial-gradient(circle at 0% 0%, rgba(255,82,0,0.07) 0%, transparent 70%)",
-                    pointerEvents: "none",
-                  }} />
-
-                  <div style={{ position: "relative" }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
-                      <span style={{ fontSize: 28, lineHeight: 1 }}>📄</span>
-                      <span style={{
-                        fontSize: 10, fontWeight: 800, color: "#FF5200",
-                        backgroundColor: "rgba(255,82,0,0.12)", border: "1px solid rgba(255,82,0,0.2)",
-                        padding: "3px 10px", borderRadius: 999, letterSpacing: "0.05em",
-                      }}>Pro Plan</span>
-                    </div>
-
-                    <h3 style={{ fontSize: 17, fontWeight: 800, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 8 }}>
-                      PDF Export
-                    </h3>
-                    <p style={{ fontSize: 13.5, color: "rgba(255,255,255,0.42)", lineHeight: 1.7, marginBottom: 18, fontFamily: "var(--font-outfit)" }}>
-                      Download your campaigns as a beautifully branded Nexora PDF. Perfect for sharing with clients.
-                    </p>
-
-                    <ul style={{ listStyle: "none", padding: 0, margin: "0 0 22px", display: "flex", flexDirection: "column", gap: 8 }}>
-                      {["Nexora branded header", "All emails formatted cleanly", "Ready to send to clients"].map((f) => (
-                        <li key={f} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "rgba(255,255,255,0.55)" }}>
-                          <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                            <path d="M3 8l3.5 3.5L13 4.5" stroke="#FF5200" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span style={{ fontSize: 22, fontWeight: 900, color: "#fff", fontFamily: "var(--font-syne)" }}>
-                        $49<span style={{ fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.35)" }}>/month</span>
-                      </span>
-                      <Link href="/dashboard/settings" style={{
-                        display: "inline-flex", alignItems: "center", gap: 6,
-                        padding: "9px 18px", backgroundColor: "#FF5200", color: "#fff",
-                        borderRadius: 9, fontSize: 13, fontWeight: 700,
-                        fontFamily: "var(--font-outfit)", textDecoration: "none",
-                      }}>
-                        Upgrade to Pro →
-                      </Link>
-                    </div>
+                  position: "absolute", top: 0, left: 0, width: 200, height: 200,
+                  background: "radial-gradient(circle at 0% 0%, rgba(255,82,0,0.07) 0%, transparent 70%)",
+                  pointerEvents: "none",
+                }} />
+                <div style={{ position: "relative" }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
+                    <span style={{ fontSize: 28, lineHeight: 1 }}>📝</span>
+                    <span style={{
+                      fontSize: 10, fontWeight: 800, color: "#FF5200",
+                      backgroundColor: "rgba(255,82,0,0.12)", border: "1px solid rgba(255,82,0,0.2)",
+                      padding: "3px 10px", borderRadius: 999, letterSpacing: "0.05em",
+                    }}>Pro Plan</span>
+                  </div>
+                  <h3 style={{ fontSize: 17, fontWeight: 800, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 8 }}>
+                    Word Export
+                  </h3>
+                  <p style={{ fontSize: 13.5, color: "rgba(255,255,255,0.42)", lineHeight: 1.7, marginBottom: 18, fontFamily: "var(--font-outfit)" }}>
+                    Export campaigns as editable Word documents. Perfect for agencies managing multiple clients.
+                  </p>
+                  <ul style={{ listStyle: "none", padding: 0, margin: "0 0 22px", display: "flex", flexDirection: "column", gap: 8 }}>
+                    {["Word and all features included"].map((f) => (
+                      <li key={f} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "rgba(255,255,255,0.55)" }}>
+                        <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                          <path d="M3 8l3.5 3.5L13 4.5" stroke="#FF5200" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 22, fontWeight: 900, color: "#fff", fontFamily: "var(--font-syne)" }}>
+                      $49<span style={{ fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.35)" }}>/month</span>
+                    </span>
+                    <Link href="/dashboard/settings" style={{
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                      padding: "9px 18px", backgroundColor: "#FF5200", color: "#fff",
+                      borderRadius: 9, fontSize: 13, fontWeight: 700,
+                      fontFamily: "var(--font-outfit)", textDecoration: "none",
+                    }}>
+                      Upgrade to Pro →
+                    </Link>
                   </div>
                 </div>
-              )}
-
-              {/* Word Export card */}
-              {showWordCard && (
-                <div style={{
-                  backgroundColor: "#0e0e0e",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  borderLeft: "3px solid #FF5200",
-                  borderRadius: 14,
-                  padding: "28px 26px",
-                  position: "relative",
-                  overflow: "hidden",
-                }}>
-                  <div style={{
-                    position: "absolute", top: 0, left: 0, width: 200, height: 200,
-                    background: "radial-gradient(circle at 0% 0%, rgba(255,82,0,0.07) 0%, transparent 70%)",
-                    pointerEvents: "none",
-                  }} />
-
-                  <div style={{ position: "relative" }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
-                      <span style={{ fontSize: 28, lineHeight: 1 }}>📝</span>
-                      <span style={{
-                        fontSize: 10, fontWeight: 800, color: "#FF5200",
-                        backgroundColor: "rgba(255,82,0,0.12)", border: "1px solid rgba(255,82,0,0.2)",
-                        padding: "3px 10px", borderRadius: 999, letterSpacing: "0.05em",
-                      }}>Agency Plan</span>
-                    </div>
-
-                    <h3 style={{ fontSize: 17, fontWeight: 800, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 8 }}>
-                      Word Export
-                    </h3>
-                    <p style={{ fontSize: 13.5, color: "rgba(255,255,255,0.42)", lineHeight: 1.7, marginBottom: 18, fontFamily: "var(--font-outfit)" }}>
-                      Export campaigns as editable Word documents. Perfect for agencies managing multiple clients.
-                    </p>
-
-                    <ul style={{ listStyle: "none", padding: 0, margin: "0 0 22px", display: "flex", flexDirection: "column", gap: 8 }}>
-                      {["Word and all features included"].map((f) => (
-                        <li key={f} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "rgba(255,255,255,0.55)" }}>
-                          <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                            <path d="M3 8l3.5 3.5L13 4.5" stroke="#FF5200" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span style={{ fontSize: 22, fontWeight: 900, color: "#fff", fontFamily: "var(--font-syne)" }}>
-                        $99<span style={{ fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.35)" }}>/month</span>
-                      </span>
-                      <Link href="/dashboard/settings" style={{
-                        display: "inline-flex", alignItems: "center", gap: 6,
-                        padding: "9px 18px", backgroundColor: "#FF5200", color: "#fff",
-                        borderRadius: 9, fontSize: 13, fontWeight: 700,
-                        fontFamily: "var(--font-outfit)", textDecoration: "none",
-                      }}>
-                        Upgrade to Agency →
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              )}
-
+              </div>
             </div>
           </div>
         )}
