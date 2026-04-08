@@ -353,7 +353,7 @@ export default function NewCampaignPage() {
     }
   }
 
-  // ── File handling (CSV, PDF, Word)
+  // ── File handling (CSV, Excel, Word)
   const handleFile = useCallback(async (file: File) => {
     const ext = file.name.split(".").pop()?.toLowerCase();
 
@@ -374,52 +374,67 @@ export default function NewCampaignPage() {
       return;
     }
 
-    // PDF — Pro/Agency, parsed client-side via pdfjs loaded from CDN (avoids Node canvas issues)
-    if (ext === "pdf") {
+    // XLSX — Pro/Agency, parsed client-side with xlsx package
+    if (ext === "xlsx" || ext === "xls") {
       if (userPlan !== "pro" && userPlan !== "agency") {
-        setError("PDF uploads require a Pro plan or higher. Please upgrade.");
+        setError("Excel uploads require a Pro plan or higher. Please upgrade.");
         return;
       }
       setError(null);
       try {
-        // Load pdf.js from CDN if not already loaded
-        const pdfjsLib = await new Promise<any>((resolve, reject) => {
-          if ((window as any).pdfjsLib) { resolve((window as any).pdfjsLib); return; }
-          const script = document.createElement("script");
-          script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
-          script.onload = () => resolve((window as any).pdfjsLib);
-          script.onerror = () => reject(new Error("Failed to load pdf.js from CDN"));
-          document.head.appendChild(script);
-        });
-
-        pdfjsLib.GlobalWorkerOptions.workerSrc =
-          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
-
+        const XLSX = await import("xlsx");
         const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
-        console.log("[PDF] pages:", pdf.numPages);
+        const workbook = XLSX.read(arrayBuffer, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        // Convert to array-of-objects using first row as headers
+        const rows: Record<string, string>[] = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+        console.log("[XLSX] rows:", rows.length, "sample keys:", Object.keys(rows[0] ?? {}));
 
-        const pageTexts: string[] = [];
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const content = await page.getTextContent();
-          const pageText = (content.items as { str: string }[]).map((item: any) => item.str).join(" ");
-          pageTexts.push(pageText);
+        if (rows.length === 0) {
+          setError("No data found in this Excel file.");
+          return;
         }
 
-        const fullText = pageTexts.join("\n");
-        console.log("[PDF] extracted text length:", fullText.length);
-        const parsed = parseTextToLeads(fullText);
-        console.log("[PDF] leads extracted:", parsed.length);
+        const normKey = (k: string) => k.toLowerCase().replace(/[\s_-]+/g, "_").replace(/[^a-z_]/g, "");
+        const findKey = (obj: Record<string, string>, ...candidates: string[]) => {
+          const keys = Object.keys(obj);
+          for (const c of candidates) {
+            const found = keys.find((k) => normKey(k) === c || normKey(k).startsWith(c));
+            if (found) return found;
+          }
+          return null;
+        };
 
+        const first = rows[0];
+        const nameKey    = findKey(first, "first_name", "name", "firstname", "full_name");
+        const companyKey = findKey(first, "company", "organization", "org", "employer");
+        const roleKey    = findKey(first, "role", "title", "job_title", "position", "job");
+        const emailKey   = findKey(first, "email", "email_address", "mail");
+        const noteKey    = findKey(first, "custom_note", "note", "notes", "message", "context");
+
+        if (!nameKey && !emailKey) {
+          setError("Could not find name or email columns. Make sure your Excel file has headers like: name, company, role, email, note.");
+          return;
+        }
+
+        const parsed: Lead[] = rows.map((row) => ({
+          first_name: nameKey    ? String(row[nameKey] ?? "")    : "",
+          company:    companyKey ? String(row[companyKey] ?? "") : "",
+          role:       roleKey    ? String(row[roleKey] ?? "")    : "",
+          email:      emailKey   ? String(row[emailKey] ?? "")   : "",
+          custom_note: noteKey   ? String(row[noteKey] ?? "")    : "",
+        })).filter((l) => l.first_name || l.email);
+
+        console.log("[XLSX] leads parsed:", parsed.length);
         if (parsed.length === 0) {
-          setError("No leads found in this PDF. Make sure it contains structured lead data (name, email, company, etc.).");
+          setError("No valid leads found. Make sure rows have at least a name or email.");
           return;
         }
         setLeads(parsed);
       } catch (err: any) {
-        console.error("[PDF] parse error:", err);
-        setError("Failed to parse PDF: " + (err?.message ?? "Unknown error"));
+        console.error("[XLSX] parse error:", err);
+        setError("Failed to parse Excel file: " + (err?.message ?? "Unknown error"));
       }
       return;
     }
@@ -451,7 +466,8 @@ export default function NewCampaignPage() {
       return;
     }
 
-    setError("Unsupported file type. Please upload a .csv" + (userPlan === "pro" || userPlan === "agency" ? ", .pdf" : "") + (userPlan === "agency" ? ", or .docx" : "") + " file.");
+    const accepted = userPlan === "agency" ? ".csv, .xlsx, or .docx" : userPlan === "pro" ? ".csv or .xlsx" : ".csv";
+    setError(`Unsupported file type. Please upload a ${accepted} file.`);
   }, [userPlan]);
 
   const onDrop = useCallback(
@@ -813,9 +829,9 @@ export default function NewCampaignPage() {
               }}
             >
               {userPlan === "agency"
-                ? <>Drop a CSV, PDF, or Word doc with columns: <em>name, company, role, email, note</em>. Any order, any extra columns are ignored.</>
+                ? <>Drop a CSV, Excel, or Word doc with columns: <em>name, company, role, email, note</em>. Any order, any extra columns are ignored.</>
                 : userPlan === "pro"
-                ? <>Drop a CSV or PDF with columns: <em>name, company, role, email, note</em>. Any order, any extra columns are ignored.</>
+                ? <>Drop a CSV or Excel file with columns: <em>name, company, role, email, note</em>. Any order, any extra columns are ignored.</>
                 : <>Drop a CSV with columns: <em>name, company, role, email, note</em>. Any order, any extra columns are ignored.</>
               }
             </p>
@@ -873,9 +889,9 @@ export default function NewCampaignPage() {
                 }}
               >
                 {userPlan === "agency"
-                  ? <>Drop your CSV, PDF or Word doc here or <span style={{ color: "#FF5200" }}>browse files</span></>
+                  ? <>Drop your CSV, Excel or Word doc here or <span style={{ color: "#FF5200" }}>browse files</span></>
                   : userPlan === "pro"
-                  ? <>Drop your CSV or PDF here or <span style={{ color: "#FF5200" }}>browse files</span></>
+                  ? <>Drop your CSV or Excel file here or <span style={{ color: "#FF5200" }}>browse files</span></>
                   : <>Drop your CSV here or <span style={{ color: "#FF5200" }}>browse files</span></>
                 }
               </p>
@@ -888,9 +904,9 @@ export default function NewCampaignPage() {
                 }}
               >
                 {userPlan === "agency"
-                  ? ".csv, .pdf, .docx accepted"
+                  ? ".csv, .xlsx, .docx accepted"
                   : userPlan === "pro"
-                  ? ".csv, .pdf accepted"
+                  ? ".csv, .xlsx accepted"
                   : ".csv files only"
                 }
               </p>
@@ -899,9 +915,9 @@ export default function NewCampaignPage() {
                 type="file"
                 accept={
                   userPlan === "agency"
-                    ? ".csv,.pdf,.docx"
+                    ? ".csv,.xlsx,.xls,.docx"
                     : userPlan === "pro"
-                    ? ".csv,.pdf"
+                    ? ".csv,.xlsx,.xls"
                     : ".csv"
                 }
                 style={{ display: "none" }}
