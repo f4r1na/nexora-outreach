@@ -103,6 +103,53 @@ function parseCSV(text: string): Lead[] {
   return parsed;
 }
 
+// ─── Text → Leads Parser (for PDF / plain text extraction) ───────────────────
+
+function parseTextToLeads(text: string): Lead[] {
+  const lines = text.trim().split(/\r?\n/).filter((l) => l.trim());
+  if (lines.length < 2) return [];
+
+  const normH = (h: string) => h.toLowerCase().replace(/[\s_-]+/g, "_").replace(/[^a-z_]/g, "");
+  const colIdx = (headers: string[], ...keys: string[]) => {
+    for (const key of keys) {
+      const i = headers.findIndex((h) => h === key || h.startsWith(key));
+      if (i >= 0) return i;
+    }
+    return -1;
+  };
+
+  for (const sep of [",", "\t", ";"]) {
+    if (!lines[0].includes(sep)) continue;
+    const headers = lines[0].split(sep).map((h) => normH(h.trim().replace(/^["']|["']$/g, "")));
+    const nameIdx    = colIdx(headers, "first_name", "name", "firstname", "full_name");
+    const companyIdx = colIdx(headers, "company", "organization", "org", "employer");
+    const roleIdx    = colIdx(headers, "role", "title", "job_title", "position", "job");
+    const emailIdx   = colIdx(headers, "email", "email_address", "mail");
+    const noteIdx    = colIdx(headers, "custom_note", "note", "notes", "message", "context");
+    if (nameIdx < 0 && emailIdx < 0) continue;
+    const results = lines.slice(1).filter((l) => l.trim()).map((line) => {
+      const cols = line.split(sep).map((c) => c.trim().replace(/^["']|["']$/g, ""));
+      const get = (idx: number) => (idx >= 0 && cols[idx] !== undefined ? cols[idx] : "");
+      return { first_name: get(nameIdx), company: get(companyIdx), role: get(roleIdx), email: get(emailIdx), custom_note: get(noteIdx) };
+    }).filter((l) => l.first_name || l.email);
+    if (results.length > 0) return results;
+  }
+
+  // Fallback: extract by email address
+  const emailRe = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+  const leads: Lead[] = [];
+  for (const line of lines) {
+    const match = line.match(emailRe);
+    if (match) {
+      const email = match[0];
+      const rest = line.replace(email, "").replace(/[,|;:\t]+/g, " ").trim();
+      const name = rest.split(/\s+/).filter(Boolean).slice(0, 2).join(" ");
+      leads.push({ first_name: name, company: "", role: "", email, custom_note: "" });
+    }
+  }
+  return leads;
+}
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function StepIndicator({ current }: { current: 1 | 2 | 3 }) {
@@ -327,20 +374,62 @@ export default function NewCampaignPage() {
       return;
     }
 
-    // PDF / DOCX — plan-gated, parsed server-side
-    if (ext === "pdf" || ext === "docx") {
-      const canPDF  = userPlan === "pro" || userPlan === "agency";
-      const canDOCX = userPlan === "agency";
-
-      if (ext === "pdf" && !canPDF) {
+    // PDF — Pro/Agency, parsed client-side via pdfjs loaded from CDN (avoids Node canvas issues)
+    if (ext === "pdf") {
+      if (userPlan !== "pro" && userPlan !== "agency") {
         setError("PDF uploads require a Pro plan or higher. Please upgrade.");
         return;
       }
-      if (ext === "docx" && !canDOCX) {
+      setError(null);
+      try {
+        // Load pdf.js from CDN if not already loaded
+        const pdfjsLib = await new Promise<any>((resolve, reject) => {
+          if ((window as any).pdfjsLib) { resolve((window as any).pdfjsLib); return; }
+          const script = document.createElement("script");
+          script.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";
+          script.onload = () => resolve((window as any).pdfjsLib);
+          script.onerror = () => reject(new Error("Failed to load pdf.js from CDN"));
+          document.head.appendChild(script);
+        });
+
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+        console.log("[PDF] pages:", pdf.numPages);
+
+        const pageTexts: string[] = [];
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          const pageText = (content.items as { str: string }[]).map((item: any) => item.str).join(" ");
+          pageTexts.push(pageText);
+        }
+
+        const fullText = pageTexts.join("\n");
+        console.log("[PDF] extracted text length:", fullText.length);
+        const parsed = parseTextToLeads(fullText);
+        console.log("[PDF] leads extracted:", parsed.length);
+
+        if (parsed.length === 0) {
+          setError("No leads found in this PDF. Make sure it contains structured lead data (name, email, company, etc.).");
+          return;
+        }
+        setLeads(parsed);
+      } catch (err: any) {
+        console.error("[PDF] parse error:", err);
+        setError("Failed to parse PDF: " + (err?.message ?? "Unknown error"));
+      }
+      return;
+    }
+
+    // DOCX — Agency only, parsed server-side with mammoth
+    if (ext === "docx") {
+      if (userPlan !== "agency") {
         setError("Word uploads require an Agency plan. Please upgrade.");
         return;
       }
-
       setError(null);
       const form = new FormData();
       form.append("file", file);
@@ -352,7 +441,7 @@ export default function NewCampaignPage() {
           return;
         }
         if (!json.leads || json.leads.length === 0) {
-          setError("No leads found in this file. Make sure it contains structured lead data (name, email, company, etc.).");
+          setError("No leads found in this Word document. Make sure it contains structured lead data.");
           return;
         }
         setLeads(json.leads);
@@ -784,7 +873,7 @@ export default function NewCampaignPage() {
                 }}
               >
                 {userPlan === "agency"
-                  ? <>Drop your CSV, PDF, or Word doc here or <span style={{ color: "#FF5200" }}>browse files</span></>
+                  ? <>Drop your CSV, PDF or Word doc here or <span style={{ color: "#FF5200" }}>browse files</span></>
                   : userPlan === "pro"
                   ? <>Drop your CSV or PDF here or <span style={{ color: "#FF5200" }}>browse files</span></>
                   : <>Drop your CSV here or <span style={{ color: "#FF5200" }}>browse files</span></>
@@ -799,9 +888,9 @@ export default function NewCampaignPage() {
                 }}
               >
                 {userPlan === "agency"
-                  ? ".csv, .pdf, .docx files accepted"
+                  ? ".csv, .pdf, .docx accepted"
                   : userPlan === "pro"
-                  ? ".csv, .pdf files accepted"
+                  ? ".csv, .pdf accepted"
                   : ".csv files only"
                 }
               </p>
