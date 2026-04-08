@@ -466,7 +466,7 @@ export default function NewCampaignPage() {
       return;
     }
 
-    const accepted = userPlan === "agency" ? ".csv, .xlsx, or .docx" : userPlan === "pro" ? ".csv or .xlsx" : ".csv";
+    const accepted = userPlan === "agency" ? ".csv, .pdf, or .docx" : userPlan === "pro" ? ".csv or .pdf" : ".csv";
     setError(`Unsupported file type. Please upload a ${accepted} file.`);
   }, [userPlan]);
 
@@ -829,9 +829,9 @@ export default function NewCampaignPage() {
               }}
             >
               {userPlan === "agency"
-                ? <>Drop a CSV, Excel, or Word doc with columns: <em>name, company, role, email, note</em>. Any order, any extra columns are ignored.</>
+                ? <>Drop a CSV, PDF, or Word doc with columns: <em>name, company, role, email, note</em>. Any order, any extra columns are ignored.</>
                 : userPlan === "pro"
-                ? <>Drop a CSV or Excel file with columns: <em>name, company, role, email, note</em>. Any order, any extra columns are ignored.</>
+                ? <>Drop a CSV or PDF with columns: <em>name, company, role, email, note</em>. Any order, any extra columns are ignored.</>
                 : <>Drop a CSV with columns: <em>name, company, role, email, note</em>. Any order, any extra columns are ignored.</>
               }
             </p>
@@ -889,9 +889,9 @@ export default function NewCampaignPage() {
                 }}
               >
                 {userPlan === "agency"
-                  ? <>Drop your CSV, Excel or Word doc here or <span style={{ color: "#FF5200" }}>browse files</span></>
+                  ? <>Drop your CSV, PDF or Word doc here or <span style={{ color: "#FF5200" }}>browse files</span></>
                   : userPlan === "pro"
-                  ? <>Drop your CSV or Excel file here or <span style={{ color: "#FF5200" }}>browse files</span></>
+                  ? <>Drop your CSV or PDF here or <span style={{ color: "#FF5200" }}>browse files</span></>
                   : <>Drop your CSV here or <span style={{ color: "#FF5200" }}>browse files</span></>
                 }
               </p>
@@ -904,9 +904,9 @@ export default function NewCampaignPage() {
                 }}
               >
                 {userPlan === "agency"
-                  ? ".csv, .xlsx, .docx accepted"
+                  ? ".csv, .pdf, .docx accepted"
                   : userPlan === "pro"
-                  ? ".csv, .xlsx accepted"
+                  ? ".csv, .pdf accepted"
                   : ".csv files only"
                 }
               </p>
