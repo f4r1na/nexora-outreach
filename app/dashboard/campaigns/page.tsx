@@ -46,7 +46,6 @@ export default async function CampaignsPage() {
   const creditsLimit = sub?.credits_limit ?? 10;
   const plan = sub?.plan ?? "free";
 
-  const showWordCard = plan !== "pro" && plan !== "agency";
 
   return (
     <>
@@ -128,76 +127,76 @@ export default async function CampaignsPage() {
           <CampaignsTable campaigns={allCampaigns} />
         )}
 
-        {/* ── Upgrade feature card ── */}
-        {showWordCard && (
-          <div style={{ marginTop: 48 }}>
-            <div style={{ marginBottom: 20 }}>
-              <h2 style={{ fontSize: 16, fontWeight: 800, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 4 }}>
-                Unlock More Power
-              </h2>
-              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", fontFamily: "var(--font-outfit)" }}>
-                Export your campaigns in more formats and get more out of Nexora.
-              </p>
-            </div>
+        {/* ── Coming Soon features ── */}
+        <div style={{ marginTop: 48 }}>
+          <div style={{ marginBottom: 20 }}>
+            <h2 style={{ fontSize: 16, fontWeight: 800, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 4 }}>
+              Coming Soon
+            </h2>
+            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", fontFamily: "var(--font-outfit)" }}>
+              Features we&apos;re building next. Stay tuned.
+            </p>
+          </div>
 
-            <div style={{ maxWidth: 360 }}>
-              <div style={{
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14, maxWidth: 860 }}>
+            {[
+              {
+                emoji: "📧",
+                title: "Gmail & Outlook Sending",
+                desc: "Connect your inbox and send campaigns directly from Nexora — no copy-paste required.",
+                plan: "Pro",
+              },
+              {
+                emoji: "🤖",
+                title: "AI Reply Handler",
+                desc: "Automatically detect replies and draft personalized follow-ups using AI.",
+                plan: "Pro",
+              },
+              {
+                emoji: "👥",
+                title: "Ghost Writer Mode",
+                desc: "Write and send campaigns on behalf of multiple team members with separate voice profiles.",
+                plan: "Agency",
+              },
+            ].map((f) => (
+              <div key={f.title} style={{
                 backgroundColor: "#0e0e0e",
                 border: "1px solid rgba(255,255,255,0.07)",
-                borderLeft: "3px solid #FF5200",
                 borderRadius: 14,
-                padding: "28px 26px",
+                padding: "24px 22px",
                 position: "relative",
                 overflow: "hidden",
               }}>
                 <div style={{
-                  position: "absolute", top: 0, left: 0, width: 200, height: 200,
-                  background: "radial-gradient(circle at 0% 0%, rgba(255,82,0,0.07) 0%, transparent 70%)",
+                  position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+                  background: "radial-gradient(circle at 0% 0%, rgba(255,82,0,0.04) 0%, transparent 65%)",
                   pointerEvents: "none",
                 }} />
                 <div style={{ position: "relative" }}>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
-                    <span style={{ fontSize: 28, lineHeight: 1 }}>📝</span>
+                    <span style={{ fontSize: 26, lineHeight: 1 }}>{f.emoji}</span>
                     <span style={{
-                      fontSize: 10, fontWeight: 800, color: "#FF5200",
+                      fontSize: 9, fontWeight: 800, color: "#FF5200",
                       backgroundColor: "rgba(255,82,0,0.12)", border: "1px solid rgba(255,82,0,0.2)",
-                      padding: "3px 10px", borderRadius: 999, letterSpacing: "0.05em",
-                    }}>Pro Plan</span>
+                      padding: "3px 8px", borderRadius: 999, letterSpacing: "0.06em", textTransform: "uppercase",
+                    }}>Coming Soon</span>
                   </div>
-                  <h3 style={{ fontSize: 17, fontWeight: 800, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 8 }}>
-                    Word Export
+                  <h3 style={{ fontSize: 14, fontWeight: 800, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 6 }}>
+                    {f.title}
                   </h3>
-                  <p style={{ fontSize: 13.5, color: "rgba(255,255,255,0.42)", lineHeight: 1.7, marginBottom: 18, fontFamily: "var(--font-outfit)" }}>
-                    Export campaigns as editable Word documents. Perfect for agencies managing multiple clients.
+                  <p style={{ fontSize: 12.5, color: "rgba(255,255,255,0.38)", lineHeight: 1.65, marginBottom: 16, fontFamily: "var(--font-outfit)" }}>
+                    {f.desc}
                   </p>
-                  <ul style={{ listStyle: "none", padding: 0, margin: "0 0 22px", display: "flex", flexDirection: "column", gap: 8 }}>
-                    {["Word and all features included"].map((f) => (
-                      <li key={f} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: "rgba(255,255,255,0.55)" }}>
-                        <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                          <path d="M3 8l3.5 3.5L13 4.5" stroke="#FF5200" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: 22, fontWeight: 900, color: "#fff", fontFamily: "var(--font-syne)" }}>
-                      $49<span style={{ fontSize: 13, fontWeight: 400, color: "rgba(255,255,255,0.35)" }}>/month</span>
-                    </span>
-                    <Link href="/dashboard/settings" style={{
-                      display: "inline-flex", alignItems: "center", gap: 6,
-                      padding: "9px 18px", backgroundColor: "#FF5200", color: "#fff",
-                      borderRadius: 9, fontSize: 13, fontWeight: 700,
-                      fontFamily: "var(--font-outfit)", textDecoration: "none",
-                    }}>
-                      Upgrade to Pro →
-                    </Link>
-                  </div>
+                  <span style={{
+                    fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)",
+                    backgroundColor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
+                    padding: "3px 9px", borderRadius: 5, letterSpacing: "0.05em",
+                  }}>{f.plan} Plan</span>
                 </div>
               </div>
-            </div>
+            ))}
           </div>
-        )}
+        </div>
       </main>
     </>
   );

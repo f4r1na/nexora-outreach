@@ -327,7 +327,7 @@ export default function NewCampaignPage() {
       .catch(() => {});
   }, []);
 
-  async function handleDownload(format: "csv" | "pdf" | "docx") {
+  async function handleDownload(format: "csv") {
     if (!campaignId) return;
     setDownloading(format);
     try {
@@ -466,7 +466,7 @@ export default function NewCampaignPage() {
       return;
     }
 
-    const accepted = userPlan === "agency" ? ".csv, .pdf, or .docx" : userPlan === "pro" ? ".csv or .pdf" : ".csv";
+    const accepted = userPlan === "agency" ? ".csv, .xlsx, or .docx" : userPlan === "pro" ? ".csv or .xlsx" : ".csv";
     setError(`Unsupported file type. Please upload a ${accepted} file.`);
   }, [userPlan]);
 
@@ -593,11 +593,9 @@ export default function NewCampaignPage() {
           </span>
         </div>
 
-        {/* Export buttons — only in review state */}
+        {/* Export button — only in review state */}
         {step === 3 && !isGenerating && emails.length > 0 && campaignId && (
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-
-            {/* CSV — always available, orange */}
             <button
               onClick={() => handleDownload("csv")}
               disabled={downloading === "csv"}
@@ -614,38 +612,6 @@ export default function NewCampaignPage() {
               </svg>
               {downloading === "csv" ? "Downloading…" : "Export CSV"}
             </button>
-
-            {/* Word — Pro+Agency; redirects to settings if free/starter */}
-            <button
-              onClick={() => {
-                if (userPlan === "free" || userPlan === "starter") {
-                  router.push("/dashboard/settings");
-                } else {
-                  handleDownload("docx");
-                }
-              }}
-              disabled={downloading === "docx"}
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
-                fontFamily: "var(--font-outfit)", cursor: "pointer",
-                backgroundColor: "rgba(255,82,0,0.08)", color: "#fff",
-                border: "1px solid rgba(255,82,0,0.35)",
-                opacity: downloading === "docx" ? 0.7 : 1,
-              }}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              {downloading === "docx" ? "Downloading…" : "Export Word"}
-              {(userPlan === "free" || userPlan === "starter") && (
-                <span style={{
-                  fontSize: 9, fontWeight: 800, color: "#FF5200",
-                  background: "rgba(255,82,0,0.15)", padding: "1px 6px", borderRadius: 3,
-                }}>Pro</span>
-              )}
-            </button>
-
           </div>
         )}
 
@@ -798,9 +764,9 @@ export default function NewCampaignPage() {
               }}
             >
               {userPlan === "agency"
-                ? <>Drop a CSV, PDF, or Word doc with columns: <em>name, company, role, email, note</em>. Any order, any extra columns are ignored.</>
+                ? <>Drop a CSV, Excel, or Word doc with columns: <em>name, company, role, email, note</em>. Any order, any extra columns are ignored.</>
                 : userPlan === "pro"
-                ? <>Drop a CSV or PDF with columns: <em>name, company, role, email, note</em>. Any order, any extra columns are ignored.</>
+                ? <>Drop a CSV or Excel file with columns: <em>name, company, role, email, note</em>. Any order, any extra columns are ignored.</>
                 : <>Drop a CSV with columns: <em>name, company, role, email, note</em>. Any order, any extra columns are ignored.</>
               }
             </p>
@@ -858,9 +824,9 @@ export default function NewCampaignPage() {
                 }}
               >
                 {userPlan === "agency"
-                  ? <>Drop your CSV, PDF or Word doc here or <span style={{ color: "#FF5200" }}>browse files</span></>
+                  ? <>Drop your CSV, Excel, or Word doc here or <span style={{ color: "#FF5200" }}>browse files</span></>
                   : userPlan === "pro"
-                  ? <>Drop your CSV or PDF here or <span style={{ color: "#FF5200" }}>browse files</span></>
+                  ? <>Drop your CSV or Excel file here or <span style={{ color: "#FF5200" }}>browse files</span></>
                   : <>Drop your CSV here or <span style={{ color: "#FF5200" }}>browse files</span></>
                 }
               </p>
@@ -873,9 +839,9 @@ export default function NewCampaignPage() {
                 }}
               >
                 {userPlan === "agency"
-                  ? ".csv, .pdf, .docx accepted"
+                  ? ".csv, .xlsx, .docx accepted"
                   : userPlan === "pro"
-                  ? ".csv, .pdf accepted"
+                  ? ".csv, .xlsx accepted"
                   : ".csv files only"
                 }
               </p>
@@ -1200,9 +1166,8 @@ export default function NewCampaignPage() {
               </Link>
             </div>
 
-            {/* Export buttons */}
+            {/* Export button */}
             <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
-              {/* CSV — always available */}
               <button
                 onClick={() => handleDownload("csv")}
                 disabled={downloading === "csv" || !campaignId}
@@ -1214,34 +1179,6 @@ export default function NewCampaignPage() {
                 }}
               >
                 {downloading === "csv" ? "Downloading…" : "Export CSV"}
-              </button>
-
-              {/* Word — Pro and Agency */}
-              <button
-                onClick={() => {
-                  if (userPlan === "free" || userPlan === "starter") {
-                    setUpgradeModal("pro");
-                  } else {
-                    handleDownload("docx");
-                  }
-                }}
-                disabled={downloading === "docx"}
-                style={{
-                  background: "#0e0e0e", color: "#fff",
-                  border: "1px solid rgba(255,82,0,0.5)",
-                  padding: "10px 20px", borderRadius: 8, cursor: "pointer",
-                  fontWeight: 600, fontFamily: "var(--font-outfit)", fontSize: 13,
-                  display: "flex", alignItems: "center", gap: 6,
-                  opacity: downloading === "docx" ? 0.7 : 1,
-                }}
-              >
-                {downloading === "docx" ? "Downloading…" : "Export Word"}
-                {(userPlan === "free" || userPlan === "starter") && (
-                  <span style={{
-                    fontSize: 9, fontWeight: 800, color: "#FF5200",
-                    background: "rgba(255,82,0,0.15)", padding: "2px 6px", borderRadius: 3,
-                  }}>Pro</span>
-                )}
               </button>
             </div>
 
@@ -1455,154 +1392,61 @@ export default function NewCampaignPage() {
               })}
             </div>
 
-            {/* ── Export Cards ── */}
+            {/* ── Coming Soon Cards ── */}
             <div style={{ marginTop: 48 }}>
               <h2 style={{
                 fontSize: 15, fontWeight: 700, color: "#fff",
                 fontFamily: "var(--font-syne)", marginBottom: 4,
               }}>
-                Export your campaign
+                Coming Soon
               </h2>
               <p style={{
                 fontSize: 12.5, color: "rgba(255,255,255,0.35)",
                 fontFamily: "var(--font-outfit)", marginBottom: 20,
               }}>
-                Download your emails in the format that works best for you.
+                Features we&apos;re building next. Stay tuned.
               </p>
 
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14 }}>
-
-                {/* ── CSV card (always unlocked) ── */}
-                <div style={{
-                  backgroundColor: "#0e0e0e",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  borderRadius: 14, padding: "24px 22px",
-                  display: "flex", flexDirection: "column", gap: 14,
-                }}>
-                  <div style={{
-                    width: 44, height: 44, borderRadius: 11,
-                    backgroundColor: "rgba(255,82,0,0.1)",
-                    border: "1px solid rgba(255,82,0,0.2)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    color: "#FF5200",
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+                {[
+                  { emoji: "📧", title: "Gmail & Outlook Sending", desc: "Connect your inbox and send campaigns directly from Nexora.", plan: "Pro" },
+                  { emoji: "🤖", title: "AI Reply Handler", desc: "Automatically detect replies and draft personalized follow-ups.", plan: "Pro" },
+                  { emoji: "👥", title: "Ghost Writer Mode", desc: "Write campaigns on behalf of multiple team members with separate voice profiles.", plan: "Agency" },
+                ].map((f) => (
+                  <div key={f.title} style={{
+                    backgroundColor: "#0e0e0e",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                    borderRadius: 14, padding: "22px 20px",
+                    position: "relative", overflow: "hidden",
                   }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <path d="M3 6h18M3 10h18M3 14h10M3 18h7" strokeLinecap="round" />
-                    </svg>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 5 }}>
-                      CSV Export
-                    </p>
-                    <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: "var(--font-outfit)", lineHeight: 1.6 }}>
-                      Spreadsheet-ready export with all leads, subjects and email bodies in one file.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => handleDownload("csv")}
-                    disabled={downloading === "csv" || !campaignId}
-                    style={{
-                      width: "100%", padding: "10px 0", borderRadius: 9,
-                      backgroundColor: "#FF5200", color: "#fff", border: "none",
-                      fontSize: 13, fontWeight: 700, fontFamily: "var(--font-outfit)",
-                      cursor: campaignId ? "pointer" : "not-allowed",
-                      opacity: downloading === "csv" ? 0.7 : 1,
-                    }}
-                  >
-                    {downloading === "csv" ? "Downloading…" : "Download CSV"}
-                  </button>
-                </div>
-
-                {/* ── Word card ── */}
-                <div style={{
-                  backgroundColor: "#0e0e0e",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  borderRadius: 14, padding: "24px 22px",
-                  display: "flex", flexDirection: "column", gap: 14,
-                  position: "relative", overflow: "hidden",
-                }}>
-                  <div style={{
-                    width: 44, height: 44, borderRadius: 11,
-                    backgroundColor: "rgba(255,82,0,0.1)",
-                    border: "1px solid rgba(255,82,0,0.2)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    color: "#FF5200",
-                  }}>
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M14 2v6h6M8 13l2 6 2-4 2 4 2-6" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontSize: 14, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 5 }}>
-                      Word Export
-                    </p>
-                    <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: "var(--font-outfit)", lineHeight: 1.6 }}>
-                      Export campaigns as editable Word documents. Perfect for agencies managing multiple clients. Word and all features included.
-                    </p>
-                  </div>
-                  {(userPlan === "pro" || userPlan === "agency") ? (
-                    <button
-                      onClick={() => handleDownload("docx")}
-                      disabled={downloading === "docx" || !campaignId}
-                      style={{
-                        width: "100%", padding: "10px 0", borderRadius: 9,
-                        backgroundColor: "#FF5200", color: "#fff", border: "none",
-                        fontSize: 13, fontWeight: 700, fontFamily: "var(--font-outfit)",
-                        cursor: campaignId ? "pointer" : "not-allowed",
-                        opacity: downloading === "docx" ? 0.7 : 1,
-                      }}
-                    >
-                      {downloading === "docx" ? "Downloading…" : "Download Word"}
-                    </button>
-                  ) : (
-                    /* Locked overlay */
                     <div style={{
-                      position: "absolute", inset: 0, borderRadius: 14,
-                      background: "linear-gradient(160deg, rgba(14,14,14,0.55) 0%, rgba(14,14,14,0.92) 100%)",
-                      backdropFilter: "blur(6px)",
-                      display: "flex", flexDirection: "column",
-                      alignItems: "center", justifyContent: "center", gap: 12,
-                      padding: 24,
-                    }}>
-                      <div style={{
-                        width: 44, height: 44, borderRadius: "50%",
-                        backgroundColor: "rgba(255,82,0,0.12)",
-                        border: "1px solid rgba(255,82,0,0.25)",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        color: "#FF5200",
-                      }}>
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-                          <rect x="3" y="11" width="18" height="11" rx="2" strokeLinecap="round" strokeLinejoin="round" />
-                          <path d="M7 11V7a5 5 0 0110 0v4" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
+                      position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+                      background: "radial-gradient(circle at 0% 0%, rgba(255,82,0,0.04) 0%, transparent 65%)",
+                      pointerEvents: "none",
+                    }} />
+                    <div style={{ position: "relative" }}>
+                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
+                        <span style={{ fontSize: 24, lineHeight: 1 }}>{f.emoji}</span>
+                        <span style={{
+                          fontSize: 9, fontWeight: 800, color: "#FF5200",
+                          backgroundColor: "rgba(255,82,0,0.12)", border: "1px solid rgba(255,82,0,0.2)",
+                          padding: "3px 8px", borderRadius: 999, letterSpacing: "0.06em", textTransform: "uppercase",
+                        }}>Coming Soon</span>
                       </div>
-                      <div style={{ textAlign: "center" }}>
-                        <p style={{ fontSize: 13.5, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 4 }}>
-                          Pro Plan Required
-                        </p>
-                        <p style={{ fontSize: 11.5, color: "rgba(255,255,255,0.45)", fontFamily: "var(--font-outfit)", lineHeight: 1.5 }}>
-                          Word and all features included.
-                        </p>
-                        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-outfit)", marginTop: 2 }}>
-                          $49/month
-                        </p>
-                      </div>
-                      <a
-                        href="/dashboard/settings"
-                        style={{
-                          width: "100%", padding: "9px 0", borderRadius: 9, textAlign: "center",
-                          backgroundColor: "#FF5200", color: "#fff", textDecoration: "none",
-                          fontSize: 13, fontWeight: 700, fontFamily: "var(--font-outfit)",
-                          display: "block",
-                        }}
-                      >
-                        Upgrade to Pro →
-                      </a>
+                      <p style={{ fontSize: 13, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 5 }}>
+                        {f.title}
+                      </p>
+                      <p style={{ fontSize: 11.5, color: "rgba(255,255,255,0.38)", fontFamily: "var(--font-outfit)", lineHeight: 1.6, marginBottom: 14 }}>
+                        {f.desc}
+                      </p>
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)",
+                        backgroundColor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
+                        padding: "3px 9px", borderRadius: 5, letterSpacing: "0.05em",
+                      }}>{f.plan} Plan</span>
                     </div>
-                  )}
-                </div>
-
+                  </div>
+                ))}
               </div>
             </div>
 

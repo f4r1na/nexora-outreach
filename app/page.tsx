@@ -177,7 +177,7 @@ export default async function Home() {
             {
               n: "03",
               title: "Generate & Export",
-              desc: "Watch AI write every email in seconds. Review inline, edit anything, then export to CSV, PDF, or Word with one click.",
+              desc: "Watch AI write every email in seconds. Review inline, edit anything, then export to CSV with one click.",
               icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M16 12l-4 4-4-4M12 16V4" strokeLinecap="round" strokeLinejoin="round" /></svg>,
             },
           ].map((item) => (
@@ -224,7 +224,7 @@ export default async function Home() {
               ["CSV lead import", "❌  Manual copy-paste", "✅  Native support"],
               ["Bulk generation", "❌  One at a time", "✅  100+ in 60 seconds"],
               ["Per-lead personalization", "⚠️  With effort", "✅  Fully automatic"],
-              ["Export to CSV / PDF / Word", "❌  Not available", "✅  All formats"],
+              ["Export to CSV", "❌  Not available", "✅  One-click CSV export"],
               ["Campaign history", "❌  None", "✅  Full dashboard"],
               ["Credit tracking", "❌  None", "✅  Built-in"],
             ].map(([feat, chatgpt, nexora], i) => (
@@ -257,7 +257,7 @@ export default async function Home() {
             { emoji: "🎯", title: "Hyper-Personalization", desc: "Every email references the lead's specific situation in the opening sentence. Not just their name — their context." },
             { emoji: "🎙️", title: "4 Writing Tones", desc: "Professional, Friendly, Bold, or Minimal. Each generates a distinctly different email that matches your brand voice." },
             { emoji: "✏️", title: "Inline Review & Edit", desc: "See every generated email before exporting. Click to edit any subject line or body copy directly in the interface." },
-            { emoji: "📤", title: "Multi-Format Export", desc: "Download your campaign as CSV (all plans), PDF (Starter+), or formatted Word document (Pro+)." },
+            { emoji: "📤", title: "Instant CSV Export", desc: "Download your campaign as a spreadsheet-ready CSV with all leads, subjects, and email bodies in one file." },
             { emoji: "📊", title: "Campaign History", desc: "Every campaign is saved automatically. Return anytime to review, re-export, or use past emails as inspiration." },
           ].map((f) => (
             <div key={f.title} style={{
@@ -289,21 +289,21 @@ export default async function Home() {
                 name: "Free", price: "$0", period: "/month", tag: null,
                 desc: "Try the core product",
                 credits: "10 emails",
-                features: ["10 email credits/month", "CSV import", "3 writing tones", "CSV export"],
+                features: ["10 email credits/month", "CSV import", "3 writing tones", "CSV export", "Campaign history"],
                 cta: "Get Started", highlight: false,
               },
               {
                 name: "Starter", price: "$19", period: "/month", tag: null,
                 desc: "For individual sellers",
                 credits: "300 emails",
-                features: ["300 email credits/month", "All 4 writing tones", "CSV + PDF export", "Full campaign history"],
+                features: ["300 email credits/month", "All 4 writing tones", "CSV export", "Full campaign history"],
                 cta: "Get Started", highlight: false,
               },
               {
                 name: "Pro", price: "$49", period: "/month", tag: "Most Popular",
                 desc: "For serious SDR teams",
                 credits: "1,000 emails",
-                features: ["1,000 email credits/month", "All 4 writing tones", "CSV + PDF + Word export", "Priority generation"],
+                features: ["1,000 email credits/month", "All 4 writing tones", "CSV export", "Priority generation", "Early feature access"],
                 cta: "Get Started", highlight: true,
               },
               {

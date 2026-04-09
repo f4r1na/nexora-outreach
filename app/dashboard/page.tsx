@@ -406,7 +406,7 @@ export default async function DashboardPage({
             fontSize: 12, fontWeight: 600, color: "#fff",
             fontFamily: "var(--font-outfit)", lineHeight: 1.6, marginBottom: 10,
           }}>
-            ⚡ Want more power? Upgrade your plan and unlock PDF/Word exports, more credits, and priority AI generation.
+            ⚡ Want more power? Upgrade your plan and unlock more credits, priority AI generation, and upcoming features like Gmail sending and AI replies.
           </p>
           <Link href="/dashboard/settings" style={{
             display: "inline-flex", alignItems: "center", gap: 5,
