@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { PLANS, PlanKey } from "@/lib/plans";
 
 type Subscription = {
@@ -9,6 +10,10 @@ type Subscription = {
   credits_limit: number;
   current_period_end: string | null;
 };
+
+type GmailConnection = {
+  gmail_email: string;
+} | null;
 
 const PLAN_COLORS: Record<string, string> = {
   free: "text-gray-400",
@@ -28,6 +33,9 @@ export default function SettingsPage() {
   const [sub, setSub] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [upgrading, setUpgrading] = useState<string | null>(null);
+  const [gmail, setGmail] = useState<GmailConnection>(undefined as unknown as GmailConnection);
+  const [gmailLoading, setGmailLoading] = useState(true);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     fetch("/api/subscription")
@@ -35,6 +43,13 @@ export default function SettingsPage() {
       .then((d) => { setSub(d.subscription); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    fetch("/api/auth/gmail/status")
+      .then((r) => r.json())
+      .then((d) => { setGmail(d.connection ?? null); setGmailLoading(false); })
+      .catch(() => setGmailLoading(false));
+  }, [searchParams]);
 
   async function handleUpgrade(plan: string) {
     setUpgrading(plan);
@@ -107,8 +122,53 @@ export default function SettingsPage() {
         </div>
       </div>
 
+      {/* Gmail Integration */}
+      <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Integrations</h2>
+      <div className="rounded-xl border border-white/10 bg-white/[0.02] p-6 mb-6">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-white font-semibold mb-1" style={{ fontFamily: "var(--font-syne)" }}>Gmail</p>
+            <p className="text-gray-400 text-sm">Connect your Gmail to send campaigns automatically</p>
+          </div>
+          {gmailLoading ? (
+            <div className="w-28 h-9 bg-white/10 rounded-lg animate-pulse" />
+          ) : (currentPlan === "pro" || currentPlan === "agency") ? (
+            gmail ? (
+              <div className="flex items-center gap-2 text-green-400 text-sm">
+                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>{gmail.gmail_email}</span>
+              </div>
+            ) : (
+              <a
+                href="/api/auth/gmail"
+                className="nx-btn px-4 py-2 text-sm"
+              >
+                Connect Gmail →
+              </a>
+            )
+          ) : (
+            <div className="flex flex-col items-end gap-2">
+              <span className="text-xs text-gray-500">Pro / Agency only</span>
+              <a
+                href="/dashboard/settings"
+                className="px-4 py-2 text-sm rounded-lg border border-white/20 text-gray-400 hover:border-white/40 transition-colors"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const el = document.getElementById("plans-section");
+                  el?.scrollIntoView({ behavior: "smooth" });
+                }}
+              >
+                Upgrade to Pro
+              </a>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Plans */}
-      <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Available Plans</h2>
+      <h2 id="plans-section" className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Available Plans</h2>
       <div className="grid grid-cols-1 gap-4">
         {(Object.entries(PLANS) as [PlanKey, typeof PLANS[keyof typeof PLANS]][]).map(([key, plan]) => {
           const isCurrent = currentPlan === key;
