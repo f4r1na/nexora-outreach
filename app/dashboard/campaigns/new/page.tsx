@@ -25,6 +25,13 @@ type GeneratedEmail = {
   body: string;
 };
 
+type SendPhase =
+  | { phase: "idle" }
+  | { phase: "confirming" }
+  | { phase: "sending"; sent: number; total: number }
+  | { phase: "done"; sent: number; total: number; failures: string[] }
+  | { phase: "error"; message: string };
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const TONES = ["Professional", "Friendly", "Bold", "Minimal"] as const;
@@ -319,11 +326,23 @@ export default function NewCampaignPage() {
   const [userPlan, setUserPlan] = useState<string>("free");
   const [downloading, setDownloading] = useState<string | null>(null);
 
+  // ── Send campaign state
+  const [gmailEmail, setGmailEmail] = useState<string | null>(null);
+  const [sendState, setSendState] = useState<SendPhase>({ phase: "idle" });
+
   // Fetch user plan for export gate
   useEffect(() => {
     fetch("/api/subscription")
       .then((r) => r.json())
       .then((d) => setUserPlan(d.subscription?.plan ?? "free"))
+      .catch(() => {});
+  }, []);
+
+  // Fetch Gmail connection status
+  useEffect(() => {
+    fetch("/api/auth/gmail/status")
+      .then((r) => r.json())
+      .then((d) => setGmailEmail(d.connection?.gmail_email ?? null))
       .catch(() => {});
   }, []);
 
@@ -350,6 +369,50 @@ export default function NewCampaignPage() {
       alert("Download failed. Please try again.");
     } finally {
       setDownloading(null);
+    }
+  }
+
+  async function handleSend() {
+    if (!campaignId) return;
+    setSendState({ phase: "sending", sent: 0, total: emails.length });
+    try {
+      const res = await fetch("/api/campaigns/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ campaign_id: campaignId }),
+      });
+      if (!res.ok || !res.body) {
+        const text = await res.text().catch(() => "Send failed");
+        setSendState({ phase: "error", message: text });
+        return;
+      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const evt = JSON.parse(line);
+            if (evt.type === "start") {
+              setSendState({ phase: "sending", sent: 0, total: evt.total });
+            } else if (evt.type === "progress") {
+              setSendState({ phase: "sending", sent: evt.sent, total: evt.total });
+            } else if (evt.type === "done") {
+              setSendState({ phase: "done", sent: evt.sent, total: evt.total, failures: evt.failures ?? [] });
+            } else if (evt.type === "error") {
+              setSendState({ phase: "error", message: evt.message });
+            }
+          } catch { /* skip malformed */ }
+        }
+      }
+    } catch (err: unknown) {
+      setSendState({ phase: "error", message: err instanceof Error ? err.message : "Network error" });
     }
   }
 
@@ -593,9 +656,52 @@ export default function NewCampaignPage() {
           </span>
         </div>
 
-        {/* Export button — only in review state */}
+        {/* Header action buttons — only in review state */}
         {step === 3 && !isGenerating && emails.length > 0 && campaignId && (
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {/* Send Campaign button */}
+            {sendState.phase === "sending" ? (
+              <span style={{
+                fontSize: 12, color: "rgba(255,255,255,0.5)", fontFamily: "var(--font-outfit)",
+                padding: "7px 14px",
+              }}>
+                Sending {sendState.sent} of {sendState.total}…
+              </span>
+            ) : sendState.phase === "done" ? (
+              <span style={{
+                display: "flex", alignItems: "center", gap: 5,
+                padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+                fontFamily: "var(--font-outfit)",
+                backgroundColor: "rgba(74,222,128,0.1)", color: "#4ade80",
+                border: "1px solid rgba(74,222,128,0.2)",
+              }}>✓ {sendState.sent} sent</span>
+            ) : (userPlan === "pro" || userPlan === "agency") && gmailEmail ? (
+              <button
+                onClick={() => setSendState({ phase: "confirming" })}
+                style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 700,
+                  fontFamily: "var(--font-outfit)", cursor: "pointer",
+                  backgroundColor: "#FF5200", color: "#fff", border: "none",
+                }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
+                </svg>
+                Send via Gmail
+              </button>
+            ) : (userPlan === "pro" || userPlan === "agency") && !gmailEmail ? (
+              <Link href="/dashboard/settings" style={{
+                display: "flex", alignItems: "center", gap: 6,
+                padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+                fontFamily: "var(--font-outfit)", textDecoration: "none",
+                backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.4)",
+                border: "1px solid rgba(255,255,255,0.1)",
+              }}>
+                Connect Gmail
+              </Link>
+            ) : null}
+
             <button
               onClick={() => handleDownload("csv")}
               disabled={downloading === "csv"}
@@ -603,7 +709,12 @@ export default function NewCampaignPage() {
                 display: "flex", alignItems: "center", gap: 6,
                 padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
                 fontFamily: "var(--font-outfit)", cursor: "pointer",
-                backgroundColor: "#FF5200", color: "#fff", border: "none",
+                backgroundColor: (userPlan === "pro" || userPlan === "agency") && gmailEmail && sendState.phase === "idle"
+                  ? "rgba(255,255,255,0.06)" : "#FF5200",
+                color: (userPlan === "pro" || userPlan === "agency") && gmailEmail && sendState.phase === "idle"
+                  ? "rgba(255,255,255,0.6)" : "#fff",
+                border: (userPlan === "pro" || userPlan === "agency") && gmailEmail && sendState.phase === "idle"
+                  ? "1px solid rgba(255,255,255,0.1)" : "none",
                 opacity: downloading === "csv" ? 0.7 : 1,
               }}
             >
@@ -618,6 +729,59 @@ export default function NewCampaignPage() {
         {/* Upgrade modal */}
         {upgradeModal && (
           <UpgradeModal requiredPlan={upgradeModal} onClose={() => setUpgradeModal(null)} />
+        )}
+
+        {/* Send confirmation modal */}
+        {sendState.phase === "confirming" && (
+          <div style={{
+            position: "fixed", inset: 0, zIndex: 100,
+            backgroundColor: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)",
+            display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+          }}>
+            <div style={{
+              backgroundColor: "#0e0e0e", border: "1px solid rgba(255,255,255,0.1)",
+              borderRadius: 16, padding: "32px 28px", maxWidth: 400, width: "100%",
+              boxShadow: "0 24px 64px rgba(0,0,0,0.6)",
+            }}>
+              <div style={{
+                width: 48, height: 48, borderRadius: 12, marginBottom: 20,
+                backgroundColor: "rgba(255,82,0,0.1)", border: "1px solid rgba(255,82,0,0.2)",
+                display: "flex", alignItems: "center", justifyContent: "center", color: "#FF5200",
+              }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
+                </svg>
+              </div>
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 8 }}>
+                Send {emails.length} email{emails.length !== 1 ? "s" : ""}?
+              </h2>
+              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", fontFamily: "var(--font-outfit)", lineHeight: 1.6, marginBottom: 6 }}>
+                From: <span style={{ color: "#FF5200", fontWeight: 600 }}>{gmailEmail}</span>
+              </p>
+              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-outfit)", marginBottom: 28, lineHeight: 1.6 }}>
+                Emails will be sent one by one with a short delay to avoid spam filters.
+              </p>
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  onClick={handleSend}
+                  style={{
+                    flex: 1, padding: "11px 0", borderRadius: 9,
+                    backgroundColor: "#FF5200", color: "#fff", border: "none",
+                    fontSize: 14, fontWeight: 700, fontFamily: "var(--font-outfit)", cursor: "pointer",
+                  }}
+                >Send Now</button>
+                <button
+                  onClick={() => setSendState({ phase: "idle" })}
+                  style={{
+                    flex: 1, padding: "11px 0", borderRadius: 9,
+                    backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.6)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    fontSize: 14, fontWeight: 600, fontFamily: "var(--font-outfit)", cursor: "pointer",
+                  }}
+                >Cancel</button>
+              </div>
+            </div>
+          </div>
         )}
       </header>
 
@@ -1166,13 +1330,102 @@ export default function NewCampaignPage() {
               </Link>
             </div>
 
-            {/* Export button */}
-            <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+            {/* Action buttons row */}
+            <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap", alignItems: "center" }}>
+              {/* Send Campaign */}
+              {sendState.phase === "sending" ? (
+                <div style={{ minWidth: 200 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                    <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", fontFamily: "var(--font-outfit)" }}>
+                      Sending {sendState.sent} of {sendState.total}…
+                    </span>
+                    <span style={{ fontSize: 12, color: "#FF5200", fontWeight: 700, fontFamily: "var(--font-outfit)" }}>
+                      {sendState.total > 0 ? Math.round((sendState.sent / sendState.total) * 100) : 0}%
+                    </span>
+                  </div>
+                  <div style={{ height: 4, backgroundColor: "rgba(255,255,255,0.07)", borderRadius: 99, overflow: "hidden" }}>
+                    <div style={{
+                      height: "100%", borderRadius: 99, backgroundColor: "#FF5200",
+                      width: `${sendState.total > 0 ? Math.round((sendState.sent / sendState.total) * 100) : 0}%`,
+                      transition: "width 0.4s ease",
+                    }} />
+                  </div>
+                </div>
+              ) : sendState.phase === "done" ? (
+                <span style={{
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  padding: "10px 18px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+                  fontFamily: "var(--font-outfit)",
+                  backgroundColor: "rgba(74,222,128,0.1)", color: "#4ade80",
+                  border: "1px solid rgba(74,222,128,0.2)",
+                }}>
+                  ✓ {sendState.failures.length === 0
+                    ? `All ${sendState.sent} emails sent!`
+                    : `${sendState.sent} sent, ${sendState.failures.length} failed`}
+                </span>
+              ) : sendState.phase === "error" ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{
+                    padding: "10px 16px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                    fontFamily: "var(--font-outfit)", maxWidth: 260,
+                    backgroundColor: "rgba(239,68,68,0.08)", color: "#ef4444",
+                    border: "1px solid rgba(239,68,68,0.2)",
+                  }}>{sendState.message}</span>
+                  <button
+                    onClick={() => setSendState({ phase: "idle" })}
+                    style={{
+                      padding: "8px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                      fontFamily: "var(--font-outfit)", cursor: "pointer",
+                      backgroundColor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                    }}
+                  >Retry</button>
+                </div>
+              ) : (userPlan === "pro" || userPlan === "agency") && gmailEmail ? (
+                <button
+                  onClick={() => setSendState({ phase: "confirming" })}
+                  disabled={!campaignId}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 7,
+                    background: "#FF5200", color: "#fff", border: "none",
+                    padding: "10px 20px", borderRadius: 8, cursor: "pointer",
+                    fontWeight: 700, fontFamily: "var(--font-outfit)", fontSize: 13,
+                    opacity: !campaignId ? 0.5 : 1,
+                  }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
+                  </svg>
+                  Send via Gmail
+                </button>
+              ) : (userPlan === "pro" || userPlan === "agency") ? (
+                <Link href="/dashboard/settings" style={{
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  padding: "10px 18px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+                  fontFamily: "var(--font-outfit)", textDecoration: "none",
+                  backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.4)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                }}>Connect Gmail to Send</Link>
+              ) : (
+                <Link href="/dashboard/settings" style={{
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  padding: "10px 18px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+                  fontFamily: "var(--font-outfit)", textDecoration: "none",
+                  backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.4)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                }}>Upgrade to Send</Link>
+              )}
+
               <button
                 onClick={() => handleDownload("csv")}
                 disabled={downloading === "csv" || !campaignId}
                 style={{
-                  background: "#FF5200", color: "#fff", border: "none",
+                  background: (userPlan === "pro" || userPlan === "agency") && gmailEmail
+                    ? "rgba(255,255,255,0.06)" : "#FF5200",
+                  color: (userPlan === "pro" || userPlan === "agency") && gmailEmail
+                    ? "rgba(255,255,255,0.6)" : "#fff",
+                  border: (userPlan === "pro" || userPlan === "agency") && gmailEmail
+                    ? "1px solid rgba(255,255,255,0.1)" : "none",
                   padding: "10px 20px", borderRadius: 8, cursor: "pointer",
                   fontWeight: 600, fontFamily: "var(--font-outfit)", fontSize: 13,
                   opacity: downloading === "csv" ? 0.7 : 1,
