@@ -89,6 +89,8 @@ export async function POST(req: NextRequest) {
 
     const db = getServiceClient();
 
+    console.log(JSON.stringify({ step: "reply_send_start", reply_id: replyId, action, user_id: user.id, has_edited_draft: !!editedDraft }));
+
     // Fetch reply
     const { data: reply, error: replyError } = await db
       .from("replies")
@@ -98,8 +100,11 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (replyError || !reply) {
+      console.error(JSON.stringify({ step: "reply_fetch_error", reply_id: replyId, error: replyError?.message ?? "not found" }));
       return NextResponse.json({ error: "Reply not found" }, { status: 404 });
     }
+
+    console.log(JSON.stringify({ step: "reply_fetched", reply_id: replyId, status: reply.status, has_ai_draft: !!reply.ai_draft }));
 
     if (reply.status === "sent" || reply.status === "skipped") {
       return NextResponse.json({ error: "Reply already processed" }, { status: 409 });
@@ -107,25 +112,35 @@ export async function POST(req: NextRequest) {
 
     // Skip case
     if (action === "skip") {
-      await db
+      const { error: skipError } = await db
         .from("replies")
         .update({ status: "skipped" })
         .eq("id", replyId)
         .eq("user_id", user.id);
+
+      if (skipError) {
+        console.error(JSON.stringify({ step: "reply_skip_db_error", error: skipError.message }));
+        return NextResponse.json({ error: "Failed to update reply status" }, { status: 500 });
+      }
 
       console.log(JSON.stringify({ step: "reply_skipped", reply_id: replyId }));
       return NextResponse.json({ ok: true, action: "skipped" });
     }
 
     // Send case
-    const { data: gmailConn } = await db
+    const { data: gmailConn, error: gmailConnError } = await db
       .from("gmail_connections")
       .select("access_token, refresh_token, gmail_email")
       .eq("user_id", user.id)
       .single();
 
+    if (gmailConnError) {
+      console.error(JSON.stringify({ step: "reply_gmail_conn_error", error: gmailConnError.message }));
+    }
+
     if (!gmailConn?.access_token) {
-      return NextResponse.json({ error: "No Gmail account connected" }, { status: 400 });
+      console.error(JSON.stringify({ step: "reply_no_gmail_conn", user_id: user.id }));
+      return NextResponse.json({ error: "No Gmail account connected. Connect Gmail in Settings." }, { status: 400 });
     }
 
     let accessToken: string = gmailConn.access_token;
@@ -133,8 +148,10 @@ export async function POST(req: NextRequest) {
     const fromEmail: string = gmailConn.gmail_email ?? "me";
 
     const draftToSend = editedDraft ?? reply.ai_draft ?? "";
+    console.log(JSON.stringify({ step: "reply_draft_resolved", reply_id: replyId, draft_source: editedDraft ? "edited" : "ai_draft", draft_length: draftToSend.length, to: reply.lead_email, from: fromEmail }));
+
     if (!draftToSend.trim()) {
-      return NextResponse.json({ error: "No draft to send" }, { status: 400 });
+      return NextResponse.json({ error: "No draft to send — generate a draft first" }, { status: 400 });
     }
 
     const raw = buildReplyMessage({

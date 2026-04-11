@@ -44,6 +44,7 @@ export default function RepliesPage() {
   const [draftLoading, setDraftLoading] = useState<Record<string, boolean>>({});
   const [editedDrafts, setEditedDrafts] = useState<Record<string, string>>({});
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
+  const [actionError, setActionError] = useState<Record<string, string | null>>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const fetchReplies = useCallback(async () => {
@@ -103,8 +104,9 @@ export default function RepliesPage() {
     }
   }
 
-  async function handleAction(replyId: string, action: "send" | "skip") {
+  async function handleAction(replyId: string, action: "send" | "skip", currentDraft: string) {
     setActionLoading((prev) => ({ ...prev, [replyId]: true }));
+    setActionError((prev) => ({ ...prev, [replyId]: null }));
     try {
       const res = await fetch("/api/replies/send", {
         method: "POST",
@@ -112,7 +114,7 @@ export default function RepliesPage() {
         body: JSON.stringify({
           reply_id: replyId,
           action,
-          edited_draft: editedDrafts[replyId],
+          edited_draft: currentDraft || undefined,
         }),
       });
       const data = await res.json() as { ok?: boolean; error?: string };
@@ -122,7 +124,15 @@ export default function RepliesPage() {
             r.id === replyId ? { ...r, status: action === "send" ? "sent" : "skipped" } : r
           )
         );
+      } else {
+        const msg = data.error ?? `Server error (${res.status})`;
+        console.error("[Reply send error]", replyId, msg);
+        setActionError((prev) => ({ ...prev, [replyId]: msg }));
       }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Network error";
+      console.error("[Reply send network error]", replyId, msg);
+      setActionError((prev) => ({ ...prev, [replyId]: msg }));
     } finally {
       setActionLoading((prev) => ({ ...prev, [replyId]: false }));
     }
@@ -306,6 +316,7 @@ export default function RepliesPage() {
               const draft = editedDrafts[reply.id] ?? reply.ai_draft ?? "";
               const isDraftLoading = draftLoading[reply.id] ?? false;
               const isActionLoading = actionLoading[reply.id] ?? false;
+              const replyActionError = actionError[reply.id] ?? null;
               const isDone = reply.status === "sent" || reply.status === "skipped";
 
               return (
@@ -395,9 +406,27 @@ export default function RepliesPage() {
                           </button>
                         ) : (
                           <div style={{ marginBottom: 20 }}>
-                            <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.25)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
-                              AI Draft <span style={{ color: "rgba(255,82,0,0.6)", textTransform: "none", letterSpacing: 0, fontSize: 10 }}>(editable)</span>
-                            </p>
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                              <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.25)", textTransform: "uppercase", letterSpacing: "0.08em", margin: 0 }}>
+                                AI Draft <span style={{ color: "rgba(255,82,0,0.6)", textTransform: "none", letterSpacing: 0, fontSize: 10 }}>(editable)</span>
+                              </p>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleGenerateDraft(reply.id); }}
+                                disabled={isDraftLoading}
+                                style={{
+                                  display: "flex", alignItems: "center", gap: 5,
+                                  padding: "3px 10px", borderRadius: 6,
+                                  backgroundColor: "transparent",
+                                  color: isDraftLoading ? "rgba(255,82,0,0.4)" : "#FF5200",
+                                  border: "1px solid rgba(255,82,0,0.35)",
+                                  fontSize: 11, fontWeight: 600, fontFamily: "var(--font-outfit)",
+                                  cursor: isDraftLoading ? "not-allowed" : "pointer",
+                                }}
+                              >
+                                {isDraftLoading ? <SpinnerIcon /> : <RegenerateIcon />}
+                                {isDraftLoading ? "Regenerating…" : "Regenerate"}
+                              </button>
+                            </div>
                             <textarea
                               value={draft}
                               onChange={(e) => setEditedDrafts((prev) => ({ ...prev, [reply.id]: e.target.value }))}
@@ -435,35 +464,48 @@ export default function RepliesPage() {
 
                       {/* Action buttons */}
                       {!isDone && (reply.status === "draft_ready" || (reply.status === "pending" && reply.ai_draft)) && (
-                        <div style={{ display: "flex", gap: 10 }}>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleAction(reply.id, "send"); }}
-                            disabled={isActionLoading || !draft.trim()}
-                            style={{
-                              flex: 1, padding: "10px 0", borderRadius: 9,
-                              backgroundColor: isActionLoading ? "rgba(255,82,0,0.4)" : "#FF5200",
-                              color: "#fff", border: "none",
-                              fontSize: 13, fontWeight: 700, fontFamily: "var(--font-outfit)",
-                              cursor: isActionLoading || !draft.trim() ? "not-allowed" : "pointer",
-                              opacity: !draft.trim() ? 0.5 : 1,
-                            }}
-                          >
-                            {isActionLoading ? "Sending…" : "Send Reply"}
-                          </button>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleAction(reply.id, "skip"); }}
-                            disabled={isActionLoading}
-                            style={{
-                              flex: 1, padding: "10px 0", borderRadius: 9,
-                              backgroundColor: "rgba(255,255,255,0.05)",
-                              color: "rgba(255,255,255,0.5)",
-                              border: "1px solid rgba(255,255,255,0.1)",
-                              fontSize: 13, fontWeight: 600, fontFamily: "var(--font-outfit)",
-                              cursor: isActionLoading ? "not-allowed" : "pointer",
-                            }}
-                          >
-                            Skip
-                          </button>
+                        <div>
+                          <div style={{ display: "flex", gap: 10 }}>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleAction(reply.id, "send", draft); }}
+                              disabled={isActionLoading || !draft.trim()}
+                              style={{
+                                flex: 1, padding: "10px 0", borderRadius: 9,
+                                backgroundColor: isActionLoading ? "rgba(255,82,0,0.4)" : "#FF5200",
+                                color: "#fff", border: "none",
+                                fontSize: 13, fontWeight: 700, fontFamily: "var(--font-outfit)",
+                                cursor: isActionLoading || !draft.trim() ? "not-allowed" : "pointer",
+                                opacity: !draft.trim() ? 0.5 : 1,
+                              }}
+                            >
+                              {isActionLoading ? "Sending…" : "Send Reply"}
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleAction(reply.id, "skip", draft); }}
+                              disabled={isActionLoading}
+                              style={{
+                                flex: 1, padding: "10px 0", borderRadius: 9,
+                                backgroundColor: "rgba(255,255,255,0.05)",
+                                color: "rgba(255,255,255,0.5)",
+                                border: "1px solid rgba(255,255,255,0.1)",
+                                fontSize: 13, fontWeight: 600, fontFamily: "var(--font-outfit)",
+                                cursor: isActionLoading ? "not-allowed" : "pointer",
+                              }}
+                            >
+                              Skip
+                            </button>
+                          </div>
+                          {replyActionError && (
+                            <p style={{
+                              marginTop: 10, fontSize: 12, color: "#ef4444",
+                              fontFamily: "var(--font-outfit)", lineHeight: 1.5,
+                              padding: "8px 12px", borderRadius: 8,
+                              backgroundColor: "rgba(239,68,68,0.08)",
+                              border: "1px solid rgba(239,68,68,0.2)",
+                            }}>
+                              {replyActionError}
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
@@ -630,6 +672,15 @@ function SpinnerIcon() {
   return (
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
       <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+    </svg>
+  );
+}
+
+function RegenerateIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 4v6h6" />
+      <path d="M3.51 15a9 9 0 102.13-9.36L1 10" />
     </svg>
   );
 }
