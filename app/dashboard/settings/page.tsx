@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PLANS, PlanKey } from "@/lib/plans";
 
 type Subscription = {
@@ -15,28 +15,68 @@ type GmailConnection = {
   gmail_email: string;
 } | null;
 
-const PLAN_COLORS: Record<string, string> = {
-  free: "text-gray-400",
-  starter: "text-blue-400",
-  pro: "text-[#ff5200]",
-  agency: "text-purple-400",
+// ─── Icons ────────────────────────────────────────────────────────────────────
+
+function IconLock() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="11" width="18" height="11" rx="2" />
+      <path d="M7 11V7a5 5 0 0110 0v4" />
+    </svg>
+  );
+}
+
+function IconCheck() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M5 13l4 4L19 7" />
+    </svg>
+  );
+}
+
+function IconGmail() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+      <path d="M2 6.5L12 13.5L22 6.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
+}
+
+function IconX() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 6L6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
+// ─── Plan badge colours ───────────────────────────────────────────────────────
+
+const PLAN_ACCENT: Record<string, { color: string; bg: string; border: string }> = {
+  free:    { color: "rgba(255,255,255,0.4)",  bg: "rgba(255,255,255,0.04)",  border: "rgba(255,255,255,0.1)" },
+  starter: { color: "#60a5fa",               bg: "rgba(96,165,250,0.08)",   border: "rgba(96,165,250,0.2)" },
+  pro:     { color: "#FF5200",               bg: "rgba(255,82,0,0.08)",     border: "rgba(255,82,0,0.35)" },
+  agency:  { color: "#a78bfa",               bg: "rgba(167,139,250,0.08)",  border: "rgba(167,139,250,0.25)" },
 };
 
-const PLAN_BG: Record<string, string> = {
-  free: "bg-gray-800",
-  starter: "bg-blue-900/30",
-  pro: "bg-orange-900/30",
-  agency: "bg-purple-900/30",
-};
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SettingsPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   const [sub, setSub] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [upgrading, setUpgrading] = useState<string | null>(null);
+
   const [gmail, setGmail] = useState<GmailConnection>(undefined as unknown as GmailConnection);
   const [gmailLoading, setGmailLoading] = useState(true);
-  const searchParams = useSearchParams();
+  const [disconnecting, setDisconnecting] = useState(false);
 
+  const gmailStatus = searchParams.get("gmail");
+
+  // Load subscription
   useEffect(() => {
     fetch("/api/subscription")
       .then((r) => r.json())
@@ -44,6 +84,7 @@ export default function SettingsPage() {
       .catch(() => setLoading(false));
   }, []);
 
+  // Load Gmail connection status (re-fetch when URL params change)
   useEffect(() => {
     fetch("/api/auth/gmail/status")
       .then((r) => r.json())
@@ -59,9 +100,7 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan }),
       });
-      const text = await res.text();
-      console.log("Response:", text);
-      const data = JSON.parse(text);
+      const data = await res.json();
       if (data.url) window.location.href = data.url;
       else alert("Error: " + (data.error || "Unknown error"));
     } catch (err) {
@@ -72,139 +111,339 @@ export default function SettingsPage() {
     }
   }
 
+  async function handleDisconnect() {
+    setDisconnecting(true);
+    try {
+      const res = await fetch("/api/auth/gmail/disconnect", { method: "POST" });
+      if (res.ok) {
+        setGmail(null);
+        router.replace("/dashboard/settings");
+      }
+    } catch {
+      alert("Failed to disconnect. Please try again.");
+    } finally {
+      setDisconnecting(false);
+    }
+  }
+
   const currentPlan = sub?.plan ?? "free";
+  const accent = PLAN_ACCENT[currentPlan] ?? PLAN_ACCENT.free;
   const creditsUsed = sub?.credits_used ?? 0;
   const creditsLimit = sub?.credits_limit ?? 10;
   const pct = Math.min(100, Math.round((creditsUsed / creditsLimit) * 100));
+  const isProOrAgency = currentPlan === "pro" || currentPlan === "agency";
 
   return (
-    <div className="p-8 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold text-white mb-1" style={{ fontFamily: "var(--font-syne)" }}>
+    <div style={{ padding: "32px 32px 64px", maxWidth: 680, margin: "0 auto" }}>
+
+      {/* Page title */}
+      <h1 style={{
+        fontSize: 22, fontWeight: 800, color: "#fff",
+        fontFamily: "var(--font-syne)", marginBottom: 4,
+      }}>
         Settings
       </h1>
-      <p className="text-gray-500 text-sm mb-8">Manage your plan and usage</p>
+      <p style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", fontFamily: "var(--font-outfit)", marginBottom: 32 }}>
+        Manage your plan and integrations
+      </p>
 
-      {/* Current Plan */}
-      <div className={`rounded-xl border border-white/10 p-6 mb-6 ${PLAN_BG[currentPlan] ?? "bg-gray-800"}`}>
-        <div className="flex items-center justify-between mb-4">
+      {/* Gmail status banner */}
+      {gmailStatus === "connected" && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 10,
+          backgroundColor: "rgba(34,197,94,0.08)",
+          border: "1px solid rgba(34,197,94,0.25)",
+          borderLeft: "3px solid #22c55e",
+          borderRadius: 10, padding: "12px 16px", marginBottom: 24,
+        }}>
+          <span style={{ color: "#22c55e", flexShrink: 0 }}><IconCheck /></span>
+          <p style={{ fontSize: 13, color: "#fff", fontFamily: "var(--font-outfit)", margin: 0 }}>
+            Gmail connected successfully.
+          </p>
+          <button
+            onClick={() => router.replace("/dashboard/settings")}
+            style={{ marginLeft: "auto", color: "rgba(255,255,255,0.3)", background: "none", border: "none", cursor: "pointer", padding: 2 }}
+          >
+            <IconX />
+          </button>
+        </div>
+      )}
+      {gmailStatus === "error" && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 10,
+          backgroundColor: "rgba(239,68,68,0.08)",
+          border: "1px solid rgba(239,68,68,0.25)",
+          borderLeft: "3px solid #ef4444",
+          borderRadius: 10, padding: "12px 16px", marginBottom: 24,
+        }}>
+          <span style={{ color: "#ef4444", flexShrink: 0 }}><IconX /></span>
+          <p style={{ fontSize: 13, color: "#fff", fontFamily: "var(--font-outfit)", margin: 0 }}>
+            Gmail connection failed. Please try again.
+          </p>
+          <button
+            onClick={() => router.replace("/dashboard/settings")}
+            style={{ marginLeft: "auto", color: "rgba(255,255,255,0.3)", background: "none", border: "none", cursor: "pointer", padding: 2 }}
+          >
+            <IconX />
+          </button>
+        </div>
+      )}
+
+      {/* ── Current Plan card ── */}
+      <p style={{
+        fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase",
+        color: "rgba(255,255,255,0.25)", fontFamily: "var(--font-outfit)", marginBottom: 12,
+      }}>
+        Current Plan
+      </p>
+      <div style={{
+        backgroundColor: "#0e0e0e",
+        border: `1px solid ${accent.border}`,
+        borderRadius: 14, padding: "24px 22px", marginBottom: 32,
+      }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
           <div>
-            <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Current Plan</p>
-            <p className={`text-2xl font-bold capitalize ${PLAN_COLORS[currentPlan] ?? "text-white"}`}
-               style={{ fontFamily: "var(--font-syne)" }}>
+            <p style={{
+              fontSize: 26, fontWeight: 800, color: accent.color,
+              fontFamily: "var(--font-syne)", textTransform: "capitalize", marginBottom: 2,
+            }}>
               {loading ? "…" : currentPlan}
             </p>
+            {sub?.current_period_end && (
+              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-outfit)" }}>
+                Renews {new Date(sub.current_period_end).toLocaleDateString()}
+              </p>
+            )}
           </div>
-          {sub?.current_period_end && (
-            <p className="text-xs text-gray-500">
-              Renews {new Date(sub.current_period_end).toLocaleDateString()}
-            </p>
-          )}
+          <span style={{
+            fontSize: 10, fontWeight: 800, color: accent.color,
+            backgroundColor: accent.bg, border: `1px solid ${accent.border}`,
+            padding: "4px 10px", borderRadius: 999, letterSpacing: "0.06em",
+            textTransform: "uppercase", fontFamily: "var(--font-outfit)",
+          }}>
+            {loading ? "…" : currentPlan}
+          </span>
         </div>
 
         {/* Credits bar */}
         <div>
-          <div className="flex justify-between text-xs text-gray-400 mb-1">
-            <span>Credits used</span>
-            <span>{loading ? "…" : `${creditsUsed} / ${creditsLimit === 999999 ? "∞" : creditsLimit}`}</span>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: "var(--font-outfit)" }}>Credits used</span>
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", fontFamily: "var(--font-outfit)", fontWeight: 600 }}>
+              {loading ? "…" : `${creditsUsed} / ${creditsLimit === 999999 ? "∞" : creditsLimit}`}
+            </span>
           </div>
-          <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-            <div
-              className="h-full rounded-full transition-all duration-500"
-              style={{
-                width: `${creditsLimit === 999999 ? 5 : pct}%`,
-                background: pct >= 90 ? "#ef4444" : "#ff5200",
-              }}
-            />
+          <div style={{ height: 6, backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 99, overflow: "hidden" }}>
+            <div style={{
+              height: "100%", borderRadius: 99,
+              width: `${creditsLimit === 999999 ? 5 : pct}%`,
+              background: pct >= 90 ? "#ef4444" : "#FF5200",
+              transition: "width 0.5s",
+            }} />
           </div>
           {pct >= 90 && creditsLimit !== 999999 && (
-            <p className="text-xs text-red-400 mt-1">Running low — upgrade to continue</p>
+            <p style={{ fontSize: 11, color: "#ef4444", marginTop: 6, fontFamily: "var(--font-outfit)" }}>
+              Running low — upgrade to continue
+            </p>
           )}
         </div>
       </div>
 
-      {/* Gmail Integration */}
-      <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Integrations</h2>
-      <div className="rounded-xl border border-white/10 bg-white/[0.02] p-6 mb-6">
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-white font-semibold mb-1" style={{ fontFamily: "var(--font-syne)" }}>Gmail</p>
-            <p className="text-gray-400 text-sm">Connect your Gmail to send campaigns automatically</p>
+      {/* ── Gmail Integration ── */}
+      <p style={{
+        fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase",
+        color: "rgba(255,255,255,0.25)", fontFamily: "var(--font-outfit)", marginBottom: 12,
+      }}>
+        Integrations
+      </p>
+      <div style={{
+        backgroundColor: "#0e0e0e",
+        border: "1px solid rgba(255,255,255,0.07)",
+        borderRadius: 14, padding: "24px 22px", marginBottom: 32,
+        position: "relative", overflow: "hidden",
+      }}>
+
+        {/* Locked overlay for free / starter */}
+        {!isProOrAgency && (
+          <div style={{
+            position: "absolute", inset: 0, borderRadius: 14,
+            background: "linear-gradient(160deg, rgba(14,14,14,0.5) 0%, rgba(14,14,14,0.88) 100%)",
+            backdropFilter: "blur(4px)",
+            display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center", gap: 10,
+            padding: 24, zIndex: 2,
+          }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: "50%",
+              backgroundColor: "rgba(255,82,0,0.1)",
+              border: "1px solid rgba(255,82,0,0.2)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "#FF5200",
+            }}>
+              <IconLock />
+            </div>
+            <p style={{
+              fontSize: 13, fontWeight: 700, color: "#fff",
+              fontFamily: "var(--font-syne)", textAlign: "center",
+            }}>
+              Upgrade to Pro to unlock Gmail sending
+            </p>
+            <button
+              onClick={() => {
+                const el = document.getElementById("plans-section");
+                el?.scrollIntoView({ behavior: "smooth" });
+              }}
+              style={{
+                padding: "8px 20px", backgroundColor: "#FF5200", color: "#fff",
+                borderRadius: 8, border: "none", fontSize: 13, fontWeight: 700,
+                fontFamily: "var(--font-outfit)", cursor: "pointer",
+              }}
+            >
+              See Plans →
+            </button>
           </div>
+        )}
+
+        {/* Card content (always rendered, dimmed when locked) */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, opacity: isProOrAgency ? 1 : 0.25 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
+            <div style={{
+              width: 44, height: 44, borderRadius: 11, flexShrink: 0,
+              backgroundColor: "rgba(255,82,0,0.1)",
+              border: "1px solid rgba(255,82,0,0.2)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "#FF5200",
+            }}>
+              <IconGmail />
+            </div>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontSize: 14, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 2 }}>
+                Gmail
+              </p>
+              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.38)", fontFamily: "var(--font-outfit)" }}>
+                Send campaigns directly from your inbox
+              </p>
+            </div>
+          </div>
+
+          {/* Right side: loading / connected / connect */}
           {gmailLoading ? (
-            <div className="w-28 h-9 bg-white/10 rounded-lg animate-pulse" />
-          ) : (currentPlan === "pro" || currentPlan === "agency") ? (
-            gmail ? (
-              <div className="flex items-center gap-2 text-green-400 text-sm">
-                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                <span>{gmail.gmail_email}</span>
-              </div>
-            ) : (
-              <a
-                href="/api/auth/gmail"
-                className="nx-btn px-4 py-2 text-sm"
-              >
-                Connect Gmail →
-              </a>
-            )
-          ) : (
-            <div className="flex flex-col items-end gap-2">
-              <span className="text-xs text-gray-500">Pro / Agency only</span>
-              <a
-                href="/dashboard/settings"
-                className="px-4 py-2 text-sm rounded-lg border border-white/20 text-gray-400 hover:border-white/40 transition-colors"
-                onClick={(e) => {
-                  e.preventDefault();
-                  const el = document.getElementById("plans-section");
-                  el?.scrollIntoView({ behavior: "smooth" });
+            <div style={{ width: 100, height: 34, backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 8 }} />
+          ) : gmail ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+              <span style={{
+                display: "flex", alignItems: "center", gap: 5,
+                fontSize: 11, fontWeight: 700, color: "#22c55e",
+                backgroundColor: "rgba(34,197,94,0.1)",
+                border: "1px solid rgba(34,197,94,0.2)",
+                padding: "4px 10px", borderRadius: 999,
+                fontFamily: "var(--font-outfit)",
+              }}>
+                <IconCheck />
+                Connected
+              </span>
+              <span style={{
+                fontSize: 12, color: "rgba(255,255,255,0.5)",
+                fontFamily: "var(--font-outfit)", maxWidth: 180,
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              }}>
+                {gmail.gmail_email}
+              </span>
+              <button
+                onClick={handleDisconnect}
+                disabled={disconnecting}
+                style={{
+                  padding: "6px 12px", borderRadius: 7, fontSize: 12, fontWeight: 600,
+                  fontFamily: "var(--font-outfit)", cursor: "pointer",
+                  backgroundColor: "rgba(239,68,68,0.08)",
+                  color: "rgba(239,68,68,0.8)",
+                  border: "1px solid rgba(239,68,68,0.2)",
+                  opacity: disconnecting ? 0.6 : 1,
                 }}
               >
-                Upgrade to Pro
-              </a>
+                {disconnecting ? "Disconnecting…" : "Disconnect"}
+              </button>
             </div>
+          ) : (
+            <a
+              href="/api/auth/gmail"
+              style={{
+                display: "flex", alignItems: "center", gap: 7,
+                padding: "9px 18px", backgroundColor: "#FF5200", color: "#fff",
+                borderRadius: 8, fontSize: 13, fontWeight: 700,
+                fontFamily: "var(--font-outfit)", textDecoration: "none",
+                flexShrink: 0,
+              }}
+            >
+              <IconGmail />
+              Connect Gmail
+            </a>
           )}
         </div>
       </div>
 
-      {/* Plans */}
-      <h2 id="plans-section" className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-4">Available Plans</h2>
-      <div className="grid grid-cols-1 gap-4">
+      {/* ── Available Plans ── */}
+      <p id="plans-section" style={{
+        fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase",
+        color: "rgba(255,255,255,0.25)", fontFamily: "var(--font-outfit)", marginBottom: 12,
+      }}>
+        Available Plans
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {(Object.entries(PLANS) as [PlanKey, typeof PLANS[keyof typeof PLANS]][]).map(([key, plan]) => {
           const isCurrent = currentPlan === key;
-          const isDowngrade = ["starter", "pro", "agency"].indexOf(key) <
-            ["starter", "pro", "agency"].indexOf(currentPlan as string);
+          const tier = ["starter", "pro", "agency"];
+          const isDowngrade = tier.indexOf(key) < tier.indexOf(currentPlan as string);
+          const a = PLAN_ACCENT[key] ?? PLAN_ACCENT.free;
+
           return (
             <div
               key={key}
-              className={`rounded-xl border p-5 flex items-center justify-between transition-all ${
-                isCurrent
-                  ? "border-[#ff5200] bg-orange-900/10"
-                  : "border-white/10 bg-white/[0.02] hover:border-white/20"
-              }`}
+              style={{
+                backgroundColor: "#0e0e0e",
+                border: `1px solid ${isCurrent ? a.border : "rgba(255,255,255,0.07)"}`,
+                borderRadius: 12, padding: "18px 20px",
+                display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16,
+              }}
             >
               <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-white font-semibold" style={{ fontFamily: "var(--font-syne)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)" }}>
                     {plan.name}
                   </span>
                   {isCurrent && (
-                    <span className="text-xs bg-[#ff5200]/20 text-[#ff5200] px-2 py-0.5 rounded-full">Current</span>
+                    <span style={{
+                      fontSize: 9, fontWeight: 800, color: a.color,
+                      backgroundColor: a.bg, border: `1px solid ${a.border}`,
+                      padding: "2px 8px", borderRadius: 999, letterSpacing: "0.06em",
+                      fontFamily: "var(--font-outfit)",
+                    }}>
+                      CURRENT
+                    </span>
                   )}
                 </div>
-                <p className="text-gray-400 text-sm">
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", fontFamily: "var(--font-outfit)" }}>
                   {plan.credits === 999999 ? "Unlimited" : String(plan.credits)} credits/month
                 </p>
               </div>
-              <div className="flex items-center gap-4">
-                <span className="text-white font-bold text-lg">${plan.price}<span className="text-gray-500 text-sm font-normal">/mo</span></span>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 16, flexShrink: 0 }}>
+                <span style={{ fontSize: 18, fontWeight: 800, color: "#fff", fontFamily: "var(--font-syne)" }}>
+                  ${plan.price}
+                  <span style={{ fontSize: 12, fontWeight: 400, color: "rgba(255,255,255,0.3)" }}>/mo</span>
+                </span>
                 {!isCurrent && !isDowngrade && (
                   <button
                     onClick={() => handleUpgrade(key)}
                     disabled={upgrading === key}
-                    className="nx-btn px-4 py-2 text-sm disabled:opacity-50"
+                    style={{
+                      padding: "8px 18px", backgroundColor: "#FF5200", color: "#fff",
+                      borderRadius: 8, border: "none", fontSize: 13, fontWeight: 700,
+                      fontFamily: "var(--font-outfit)", cursor: "pointer",
+                      opacity: upgrading === key ? 0.6 : 1,
+                    }}
                   >
-                    {upgrading === key ? "Processing..." : "Upgrade"}
+                    {upgrading === key ? "Processing…" : "Upgrade"}
                   </button>
                 )}
               </div>
