@@ -153,7 +153,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(errorRedirect);
   }
 
-  let saveError: { message: string; code?: string; details?: string; hint?: string } | null = null;
+  type DbError = { message: string; code?: string; details?: string; hint?: string };
+  let saveError: DbError | null = null;
 
   if (existing) {
     // Row exists — update in place
@@ -161,14 +162,14 @@ export async function GET(req: NextRequest) {
       .from("gmail_connections")
       .update(payload)
       .eq("user_id", user.id);
-    saveError = error as typeof saveError;
+    if (error) saveError = error as DbError;
     console.log(JSON.stringify({ step: "gmail_save_update", user_id: user.id }));
   } else {
     // No row yet — insert
     const { error } = await db
       .from("gmail_connections")
       .insert({ user_id: user.id, ...payload });
-    saveError = error as typeof saveError;
+    if (error) saveError = error as DbError;
     console.log(JSON.stringify({ step: "gmail_save_insert", user_id: user.id }));
   }
 
