@@ -35,7 +35,7 @@ export default async function CampaignsPage() {
       .order("created_at", { ascending: false }),
     supabase
       .from("subscriptions")
-      .select("credits_used, credits_limit, plan")
+      .select("credits_used, credits_limit")
       .eq("user_id", user.id)
       .single(),
   ]);
@@ -44,9 +44,6 @@ export default async function CampaignsPage() {
   const totalEmails = allCampaigns.reduce((sum, c) => sum + (c.lead_count ?? 0), 0);
   const creditsUsed = sub?.credits_used ?? 0;
   const creditsLimit = sub?.credits_limit ?? 10;
-  const plan = sub?.plan ?? "free";
-
-
   return (
     <>
       {/* Header */}
@@ -127,76 +124,6 @@ export default async function CampaignsPage() {
           <CampaignsTable campaigns={allCampaigns} />
         )}
 
-        {/* ── Coming Soon features ── */}
-        <div style={{ marginTop: 48 }}>
-          <div style={{ marginBottom: 20 }}>
-            <h2 style={{ fontSize: 16, fontWeight: 800, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 4 }}>
-              Coming Soon
-            </h2>
-            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", fontFamily: "var(--font-outfit)" }}>
-              Features we&apos;re building next. Stay tuned.
-            </p>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14, maxWidth: 860 }}>
-            {[
-              {
-                emoji: "📧",
-                title: "Gmail & Outlook Sending",
-                desc: "Connect your inbox and send campaigns directly from Nexora — no copy-paste required.",
-                plan: "Pro",
-              },
-              {
-                emoji: "🤖",
-                title: "AI Reply Handler",
-                desc: "Automatically detect replies and draft personalized follow-ups using AI.",
-                plan: "Pro",
-              },
-              {
-                emoji: "👥",
-                title: "Ghost Writer Mode",
-                desc: "Write and send campaigns on behalf of multiple team members with separate voice profiles.",
-                plan: "Agency",
-              },
-            ].map((f) => (
-              <div key={f.title} style={{
-                backgroundColor: "#0e0e0e",
-                border: "1px solid rgba(255,255,255,0.07)",
-                borderRadius: 14,
-                padding: "24px 22px",
-                position: "relative",
-                overflow: "hidden",
-              }}>
-                <div style={{
-                  position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                  background: "radial-gradient(circle at 0% 0%, rgba(255,82,0,0.04) 0%, transparent 65%)",
-                  pointerEvents: "none",
-                }} />
-                <div style={{ position: "relative" }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
-                    <span style={{ fontSize: 26, lineHeight: 1 }}>{f.emoji}</span>
-                    <span style={{
-                      fontSize: 9, fontWeight: 800, color: "#FF5200",
-                      backgroundColor: "rgba(255,82,0,0.12)", border: "1px solid rgba(255,82,0,0.2)",
-                      padding: "3px 8px", borderRadius: 999, letterSpacing: "0.06em", textTransform: "uppercase",
-                    }}>Coming Soon</span>
-                  </div>
-                  <h3 style={{ fontSize: 14, fontWeight: 800, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 6 }}>
-                    {f.title}
-                  </h3>
-                  <p style={{ fontSize: 12.5, color: "rgba(255,255,255,0.38)", lineHeight: 1.65, marginBottom: 16, fontFamily: "var(--font-outfit)" }}>
-                    {f.desc}
-                  </p>
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)",
-                    backgroundColor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
-                    padding: "3px 9px", borderRadius: 5, letterSpacing: "0.05em",
-                  }}>{f.plan} Plan</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </main>
     </>
   );

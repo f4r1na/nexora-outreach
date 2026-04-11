@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import SendCampaignButton from "./send-button";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -17,7 +18,7 @@ export default async function CampaignDetailPage({ params }: Props) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: campaign }, { data: leads }, { data: sub }] = await Promise.all([
+  const [{ data: campaign }, { data: leads }, { data: sub }, { data: gmailConn }] = await Promise.all([
     supabase
       .from("campaigns")
       .select("id, name, tone, status, lead_count, created_at")
@@ -34,11 +35,18 @@ export default async function CampaignDetailPage({ params }: Props) {
       .select("plan")
       .eq("user_id", user.id)
       .single(),
+    supabase
+      .from("gmail_connections")
+      .select("gmail_email")
+      .eq("user_id", user.id)
+      .maybeSingle(),
   ]);
 
   if (!campaign) notFound();
 
   const allLeads = leads ?? [];
+  const plan = sub?.plan ?? "free";
+  const gmailEmail = gmailConn?.gmail_email ?? null;
   const tone = TONE_STYLE[campaign.tone?.toLowerCase()] ?? TONE_STYLE.minimal;
   const createdDate = new Date(campaign.created_at).toLocaleDateString("en-US", {
     month: "long", day: "numeric", year: "numeric",
@@ -81,12 +89,22 @@ export default async function CampaignDetailPage({ params }: Props) {
           </span>
         </div>
 
-        {/* Right: export button */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+        {/* Right: send + export */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <SendCampaignButton
+            campaignId={id}
+            campaignName={campaign.name}
+            totalLeads={allLeads.length}
+            plan={plan}
+            gmailEmail={gmailEmail}
+            initialStatus={campaign.status ?? ""}
+          />
           <a href={`/api/export?campaignId=${id}&format=csv`} style={{
             display: "flex", alignItems: "center", gap: 6, padding: "7px 14px",
             borderRadius: 8, fontSize: 12.5, fontWeight: 600, fontFamily: "var(--font-outfit)",
-            textDecoration: "none", backgroundColor: "#FF5200", color: "#fff",
+            textDecoration: "none", backgroundColor: "rgba(255,255,255,0.06)",
+            color: "rgba(255,255,255,0.6)",
+            border: "1px solid rgba(255,255,255,0.1)",
           }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
               <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" strokeLinecap="round" strokeLinejoin="round" />

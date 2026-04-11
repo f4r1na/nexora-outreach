@@ -1392,63 +1392,6 @@ export default function NewCampaignPage() {
               })}
             </div>
 
-            {/* ── Coming Soon Cards ── */}
-            <div style={{ marginTop: 48 }}>
-              <h2 style={{
-                fontSize: 15, fontWeight: 700, color: "#fff",
-                fontFamily: "var(--font-syne)", marginBottom: 4,
-              }}>
-                Coming Soon
-              </h2>
-              <p style={{
-                fontSize: 12.5, color: "rgba(255,255,255,0.35)",
-                fontFamily: "var(--font-outfit)", marginBottom: 20,
-              }}>
-                Features we&apos;re building next. Stay tuned.
-              </p>
-
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
-                {[
-                  { emoji: "📧", title: "Gmail & Outlook Sending", desc: "Connect your inbox and send campaigns directly from Nexora.", plan: "Pro" },
-                  { emoji: "🤖", title: "AI Reply Handler", desc: "Automatically detect replies and draft personalized follow-ups.", plan: "Pro" },
-                  { emoji: "👥", title: "Ghost Writer Mode", desc: "Write campaigns on behalf of multiple team members with separate voice profiles.", plan: "Agency" },
-                ].map((f) => (
-                  <div key={f.title} style={{
-                    backgroundColor: "#0e0e0e",
-                    border: "1px solid rgba(255,255,255,0.07)",
-                    borderRadius: 14, padding: "22px 20px",
-                    position: "relative", overflow: "hidden",
-                  }}>
-                    <div style={{
-                      position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                      background: "radial-gradient(circle at 0% 0%, rgba(255,82,0,0.04) 0%, transparent 65%)",
-                      pointerEvents: "none",
-                    }} />
-                    <div style={{ position: "relative" }}>
-                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
-                        <span style={{ fontSize: 24, lineHeight: 1 }}>{f.emoji}</span>
-                        <span style={{
-                          fontSize: 9, fontWeight: 800, color: "#FF5200",
-                          backgroundColor: "rgba(255,82,0,0.12)", border: "1px solid rgba(255,82,0,0.2)",
-                          padding: "3px 8px", borderRadius: 999, letterSpacing: "0.06em", textTransform: "uppercase",
-                        }}>Coming Soon</span>
-                      </div>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 5 }}>
-                        {f.title}
-                      </p>
-                      <p style={{ fontSize: 11.5, color: "rgba(255,255,255,0.38)", fontFamily: "var(--font-outfit)", lineHeight: 1.6, marginBottom: 14 }}>
-                        {f.desc}
-                      </p>
-                      <span style={{
-                        fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)",
-                        backgroundColor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
-                        padding: "3px 9px", borderRadius: 5, letterSpacing: "0.05em",
-                      }}>{f.plan} Plan</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
 
           </div>
         )}
