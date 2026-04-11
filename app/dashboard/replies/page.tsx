@@ -46,6 +46,8 @@ export default function RepliesPage() {
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
   const [actionError, setActionError] = useState<Record<string, string | null>>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null); // reply id awaiting confirmation
+  const [deleteLoading, setDeleteLoading] = useState<Record<string, boolean>>({});
 
   const fetchReplies = useCallback(async () => {
     setLoading(true);
@@ -135,6 +137,32 @@ export default function RepliesPage() {
       setActionError((prev) => ({ ...prev, [replyId]: msg }));
     } finally {
       setActionLoading((prev) => ({ ...prev, [replyId]: false }));
+    }
+  }
+
+  async function handleDelete(replyId: string) {
+    setDeleteLoading((prev) => ({ ...prev, [replyId]: true }));
+    setConfirmDelete(null);
+    try {
+      const res = await fetch("/api/replies/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reply_id: replyId }),
+      });
+      const data = await res.json() as { ok?: boolean; error?: string };
+      if (res.ok && data.ok) {
+        setReplies((prev) => prev.filter((r) => r.id !== replyId));
+      } else {
+        const msg = data.error ?? `Delete failed (${res.status})`;
+        console.error("[Reply delete error]", replyId, msg);
+        setActionError((prev) => ({ ...prev, [replyId]: msg }));
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Network error";
+      console.error("[Reply delete network error]", replyId, msg);
+      setActionError((prev) => ({ ...prev, [replyId]: msg }));
+    } finally {
+      setDeleteLoading((prev) => ({ ...prev, [replyId]: false }));
     }
   }
 
@@ -318,6 +346,8 @@ export default function RepliesPage() {
               const isActionLoading = actionLoading[reply.id] ?? false;
               const replyActionError = actionError[reply.id] ?? null;
               const isDone = reply.status === "sent" || reply.status === "skipped";
+              const isConfirmingDelete = confirmDelete === reply.id;
+              const isDeleteLoading = deleteLoading[reply.id] ?? false;
 
               return (
                 <div key={reply.id} style={{
@@ -356,7 +386,7 @@ export default function RepliesPage() {
                         </p>
                       </div>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                       <span style={{
                         fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 6,
                         color: style.color, backgroundColor: style.bg, border: `1px solid ${style.border}`,
@@ -364,6 +394,22 @@ export default function RepliesPage() {
                       }}>
                         {style.label}
                       </span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setConfirmDelete(reply.id); setExpanded((prev) => ({ ...prev, [reply.id]: true })); }}
+                        disabled={isDeleteLoading}
+                        title="Delete reply"
+                        style={{
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          width: 26, height: 26, borderRadius: 6, flexShrink: 0,
+                          backgroundColor: "transparent",
+                          border: "1px solid rgba(239,68,68,0.25)",
+                          color: "rgba(239,68,68,0.5)",
+                          cursor: isDeleteLoading ? "not-allowed" : "pointer",
+                          padding: 0,
+                        }}
+                      >
+                        {isDeleteLoading ? <SpinnerIcon /> : <TrashIcon />}
+                      </button>
                       <ChevronIcon direction={isExpanded ? "up" : "down"} />
                     </div>
                   </div>
@@ -462,6 +508,46 @@ export default function RepliesPage() {
                         </div>
                       )}
 
+                      {/* Delete confirmation */}
+                      {isConfirmingDelete && (
+                        <div style={{
+                          padding: "14px 16px", borderRadius: 10, marginBottom: 12,
+                          backgroundColor: "rgba(239,68,68,0.06)",
+                          border: "1px solid rgba(239,68,68,0.2)",
+                          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+                        }}>
+                          <p style={{ fontSize: 13, color: "rgba(239,68,68,0.9)", fontFamily: "var(--font-outfit)", margin: 0 }}>
+                            Delete this reply permanently?
+                          </p>
+                          <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleDelete(reply.id); }}
+                              style={{
+                                padding: "6px 14px", borderRadius: 7,
+                                backgroundColor: "rgba(239,68,68,0.15)",
+                                color: "#ef4444",
+                                border: "1px solid rgba(239,68,68,0.3)",
+                                fontSize: 12, fontWeight: 700, fontFamily: "var(--font-outfit)", cursor: "pointer",
+                              }}
+                            >
+                              Delete
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setConfirmDelete(null); }}
+                              style={{
+                                padding: "6px 14px", borderRadius: 7,
+                                backgroundColor: "rgba(255,255,255,0.05)",
+                                color: "rgba(255,255,255,0.5)",
+                                border: "1px solid rgba(255,255,255,0.1)",
+                                fontSize: 12, fontWeight: 600, fontFamily: "var(--font-outfit)", cursor: "pointer",
+                              }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       {/* Action buttons */}
                       {!isDone && (reply.status === "draft_ready" || (reply.status === "pending" && reply.ai_draft)) && (
                         <div>
@@ -507,6 +593,19 @@ export default function RepliesPage() {
                             </p>
                           )}
                         </div>
+                      )}
+
+                      {/* Error for done cards (delete errors) */}
+                      {isDone && replyActionError && (
+                        <p style={{
+                          marginTop: 10, fontSize: 12, color: "#ef4444",
+                          fontFamily: "var(--font-outfit)", lineHeight: 1.5,
+                          padding: "8px 12px", borderRadius: 8,
+                          backgroundColor: "rgba(239,68,68,0.08)",
+                          border: "1px solid rgba(239,68,68,0.2)",
+                        }}>
+                          {replyActionError}
+                        </p>
                       )}
                     </div>
                   )}
@@ -681,6 +780,17 @@ function RegenerateIcon() {
     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M1 4v6h6" />
       <path d="M3.51 15a9 9 0 102.13-9.36L1 10" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
     </svg>
   );
 }
