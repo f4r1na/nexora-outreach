@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
+
+function getServiceClient() {
+  return createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,6 +46,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Check for Ghost Writer style (Agency plan)
+    const db = getServiceClient();
+    const { data: writingStyle } = await db
+      .from("writing_styles")
+      .select("style_summary")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const ghostWriterStyle: string | null = writingStyle?.style_summary ?? null;
+    if (ghostWriterStyle) {
+      console.log("Ghost Writer style active for user:", user.id);
+    }
+
     const { data: campaign, error: campaignError } = await supabase
       .from("campaigns")
       .insert({
@@ -61,6 +83,10 @@ export async function POST(req: NextRequest) {
       console.log("Generating for:", lead.name, "| note:", note);
 
       try {
+        const styleInstruction = ghostWriterStyle
+          ? `\n\nIMPORTANT: Write in the user's personal style. Here is their style guide:\n${ghostWriterStyle}\nMatch their tone, sentence structure, vocabulary, and patterns exactly.`
+          : "";
+
         const message = await anthropic.messages.create({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 500,
@@ -76,7 +102,7 @@ Situation: ${note}
 The email body MUST start by directly mentioning: "${note}"
 Tone: ${tone}
 Max 3 sentences in body.
-No generic openers. Reference the situation in the first word.`
+No generic openers. Reference the situation in the first word.${styleInstruction}`
           }]
         });
 

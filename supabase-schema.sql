@@ -59,3 +59,16 @@ create policy "Users can insert own replies" on replies
 
 create policy "Users can update own replies" on replies
   for update using (auth.uid() = user_id);
+
+-- Ghost Writer Mode
+CREATE TABLE IF NOT EXISTS writing_styles (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid REFERENCES auth.users NOT NULL UNIQUE,
+  sample_emails text[] NOT NULL DEFAULT '{}',
+  style_summary text,
+  tone_keywords text,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+ALTER TABLE writing_styles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage own style" ON writing_styles FOR ALL USING (auth.uid() = user_id);

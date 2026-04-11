@@ -330,6 +330,9 @@ export default function NewCampaignPage() {
   const [gmailEmail, setGmailEmail] = useState<string | null>(null);
   const [sendState, setSendState] = useState<SendPhase>({ phase: "idle" });
 
+  // ── Ghost Writer state
+  const [ghostWriterActive, setGhostWriterActive] = useState(false);
+
   // Fetch user plan for export gate
   useEffect(() => {
     fetch("/api/subscription")
@@ -343,6 +346,14 @@ export default function NewCampaignPage() {
     fetch("/api/auth/gmail/status")
       .then((r) => r.json())
       .then((d) => setGmailEmail(d.connection?.gmail_email ?? null))
+      .catch(() => {});
+  }, []);
+
+  // Fetch Ghost Writer status
+  useEffect(() => {
+    fetch("/api/ghostwriter")
+      .then((r) => r.json())
+      .then((d) => setGhostWriterActive(!!(d.style?.style_summary)))
       .catch(() => {});
   }, []);
 
@@ -892,6 +903,26 @@ export default function NewCampaignPage() {
                 })}
               </div>
             </div>
+
+            {/* Ghost Writer badge */}
+            {ghostWriterActive && (
+              <div style={{
+                display: "flex", alignItems: "center", gap: 10,
+                padding: "12px 16px", borderRadius: 10, marginBottom: 28,
+                backgroundColor: "rgba(167,139,250,0.06)",
+                border: "1px solid rgba(167,139,250,0.2)",
+              }}>
+                <span style={{ fontSize: 18, lineHeight: 1 }}>🤖</span>
+                <div>
+                  <p style={{ fontSize: 13, fontWeight: 700, color: "#a78bfa", fontFamily: "var(--font-syne)", margin: 0 }}>
+                    Ghost Writer Active
+                  </p>
+                  <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: "var(--font-outfit)", margin: 0, marginTop: 2 }}>
+                    AI will write in your personal style. Tone selection is still applied as a secondary guide.
+                  </p>
+                </div>
+              </div>
+            )}
 
             <button
               type="button"
