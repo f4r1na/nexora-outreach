@@ -4,6 +4,11 @@ import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
+// This MUST match exactly what is registered in Google Cloud Console →
+// APIs & Services → Credentials → OAuth 2.0 Client ID → Authorized redirect URIs.
+// If you change this value, update Google Cloud Console too.
+const REDIRECT_URI = "https://nexoraoutreach.com/api/auth/gmail/callback";
+
 function getServiceClient() {
   return createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -13,71 +18,140 @@ function getServiceClient() {
 }
 
 export async function GET(req: NextRequest) {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://nexoraoutreach.com";
   const errorRedirect = `${appUrl}/dashboard/settings?gmail=error`;
+
+  console.log(JSON.stringify({ step: "gmail_callback_hit", redirect_uri: REDIRECT_URI }));
 
   const { searchParams } = new URL(req.url);
   const code = searchParams.get("code");
+  const error = searchParams.get("error");
+
+  if (error) {
+    console.error(JSON.stringify({ step: "gmail_callback_oauth_error", error }));
+    return NextResponse.redirect(errorRedirect);
+  }
 
   if (!code) {
+    console.error(JSON.stringify({ step: "gmail_callback_no_code" }));
     return NextResponse.redirect(errorRedirect);
   }
 
-  // Verify the user is still authenticated
+  // Verify the user is still authenticated via session cookie
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
 
-  if (!user) {
+  if (authError || !user) {
+    console.error(JSON.stringify({ step: "gmail_callback_auth", error: authError?.message ?? "no user" }));
     return NextResponse.redirect(errorRedirect);
   }
 
-  const redirectUri = `${appUrl}/api/auth/gmail/callback`;
+  console.log(JSON.stringify({ step: "gmail_callback_auth", user_id: user.id }));
 
-  // Exchange code for tokens
+  // Exchange authorization code for tokens.
+  // redirect_uri must be byte-for-byte identical to the one sent in the auth request.
+  console.log(JSON.stringify({ step: "gmail_token_exchange_start", redirect_uri: REDIRECT_URI }));
+
+  const tokenBody = new URLSearchParams({
+    code,
+    client_id: process.env.GOOGLE_CLIENT_ID!,
+    client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+    redirect_uri: REDIRECT_URI,
+    grant_type: "authorization_code",
+  });
+
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      code,
-      client_id: process.env.GOOGLE_CLIENT_ID!,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET!,
-      redirect_uri: redirectUri,
-      grant_type: "authorization_code",
-    }),
+    body: tokenBody,
   });
 
+  const tokenText = await tokenRes.text();
+
   if (!tokenRes.ok) {
-    console.error("[gmail/callback] token exchange failed:", await tokenRes.text());
+    console.error(JSON.stringify({
+      step: "gmail_token_exchange_failed",
+      status: tokenRes.status,
+      statusText: tokenRes.statusText,
+      body: tokenText,
+      google_client_id_present: !!process.env.GOOGLE_CLIENT_ID,
+      google_client_secret_present: !!process.env.GOOGLE_CLIENT_SECRET,
+      redirect_uri_used: REDIRECT_URI,
+    }));
     return NextResponse.redirect(errorRedirect);
   }
 
-  const { access_token, refresh_token } = await tokenRes.json();
+  let tokenData: { access_token?: string; refresh_token?: string };
+  try {
+    tokenData = JSON.parse(tokenText);
+  } catch {
+    console.error(JSON.stringify({ step: "gmail_token_parse_failed", body: tokenText }));
+    return NextResponse.redirect(errorRedirect);
+  }
 
-  // Fetch Gmail address via userinfo endpoint
+  const { access_token, refresh_token } = tokenData;
+
+  if (!access_token) {
+    console.error(JSON.stringify({ step: "gmail_token_missing_access_token", body: tokenText }));
+    return NextResponse.redirect(errorRedirect);
+  }
+
+  console.log(JSON.stringify({
+    step: "gmail_token_exchange_success",
+    has_access_token: !!access_token,
+    has_refresh_token: !!refresh_token,
+  }));
+
+  // Fetch the Gmail address from Google's userinfo endpoint
   const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
     headers: { Authorization: `Bearer ${access_token}` },
   });
 
-  const gmailEmail = userInfoRes.ok
-    ? ((await userInfoRes.json()).email ?? null)
-    : null;
+  let gmailEmail: string | null = null;
+  if (userInfoRes.ok) {
+    const info = await userInfoRes.json();
+    gmailEmail = info.email ?? null;
+    console.log(JSON.stringify({ step: "gmail_userinfo", email: gmailEmail }));
+  } else {
+    console.error(JSON.stringify({
+      step: "gmail_userinfo_failed",
+      status: userInfoRes.status,
+      body: await userInfoRes.text(),
+    }));
+  }
 
-  // Store tokens using service role (bypasses RLS)
+  // Store tokens — service role bypasses RLS
   const db = getServiceClient();
-  const { error } = await db.from("gmail_connections").upsert(
+
+  console.log(JSON.stringify({
+    step: "gmail_upsert_start",
+    user_id: user.id,
+    gmail_email: gmailEmail,
+    supabase_url_present: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+    service_role_present: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+  }));
+
+  const { error: upsertError } = await db.from("gmail_connections").upsert(
     {
       user_id: user.id,
       access_token,
-      refresh_token,
+      refresh_token: refresh_token ?? null,
       gmail_email: gmailEmail,
     },
     { onConflict: "user_id" }
   );
 
-  if (error) {
-    console.error("[gmail/callback] upsert failed:", error.message);
+  if (upsertError) {
+    console.error(JSON.stringify({
+      step: "gmail_upsert_failed",
+      message: upsertError.message,
+      code: (upsertError as { code?: string }).code,
+      details: (upsertError as { details?: string }).details,
+      hint: (upsertError as { hint?: string }).hint,
+    }));
     return NextResponse.redirect(errorRedirect);
   }
 
+  console.log(JSON.stringify({ step: "gmail_upsert_success", user_id: user.id }));
   return NextResponse.redirect(`${appUrl}/dashboard/settings?gmail=connected`);
 }
