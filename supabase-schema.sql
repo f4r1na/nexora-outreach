@@ -31,3 +31,31 @@ create policy "Users own their leads" on leads
   for all using (
     campaign_id in (select id from campaigns where user_id = auth.uid())
   );
+
+-- AI Reply Handler
+create table if not exists replies (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users not null,
+  campaign_id uuid references campaigns(id) on delete set null,
+  lead_id uuid references leads(id) on delete set null,
+  lead_email text not null,
+  lead_name text,
+  original_subject text,
+  reply_body text not null,
+  ai_draft text,
+  status text default 'pending' check (status in ('pending', 'draft_ready', 'sent', 'skipped')),
+  gmail_message_id text unique,
+  gmail_thread_id text,
+  created_at timestamptz default now()
+);
+
+alter table replies enable row level security;
+
+create policy "Users can view own replies" on replies
+  for select using (auth.uid() = user_id);
+
+create policy "Users can insert own replies" on replies
+  for insert with check (auth.uid() = user_id);
+
+create policy "Users can update own replies" on replies
+  for update using (auth.uid() = user_id);

@@ -9,6 +9,7 @@ interface SidebarProps {
   plan: string;
   creditsUsed: number;
   creditsLimit: number;
+  pendingReplies?: number;
 }
 
 function NexoraLogo() {
@@ -49,6 +50,14 @@ function IconCampaigns() {
   );
 }
 
+function IconReplies() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M14 2H2a1 1 0 00-1 1v7a1 1 0 001 1h3v2.5L8.5 11H14a1 1 0 001-1V3a1 1 0 00-1-1z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function IconSettings() {
   return (
     <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -80,6 +89,7 @@ function IconLogout() {
 const navLinks = [
   { label: "Dashboard", href: "/dashboard", icon: <IconDashboard /> },
   { label: "Campaigns", href: "/dashboard/campaigns", icon: <IconCampaigns /> },
+  { label: "Replies", href: "/dashboard/replies", icon: <IconReplies /> },
   { label: "Settings", href: "/dashboard/settings", icon: <IconSettings /> },
 ];
 
@@ -90,7 +100,7 @@ const PLAN_BADGE: Record<string, { label: string; color: string; bg: string }> =
   agency:  { label: "Agency",  color: "#a78bfa", bg: "rgba(167,139,250,0.12)" },
 };
 
-export default function Sidebar({ email, plan, creditsUsed, creditsLimit }: SidebarProps) {
+export default function Sidebar({ email, plan, creditsUsed, creditsLimit, pendingReplies = 0 }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -171,6 +181,8 @@ export default function Sidebar({ email, plan, creditsUsed, creditsLimit }: Side
               link.href === "/dashboard"
                 ? pathname === "/dashboard"
                 : pathname.startsWith(link.href);
+            const isReplies = link.label === "Replies";
+            const showBadge = isReplies && pendingReplies > 0;
             return (
               <li key={link.label}>
                 <Link
@@ -196,18 +208,28 @@ export default function Sidebar({ email, plan, creditsUsed, creditsLimit }: Side
                     {link.icon}
                   </span>
                   {link.label}
-                  {active && (
-                    <span
-                      style={{
-                        marginLeft: "auto",
-                        width: 5,
-                        height: 5,
-                        borderRadius: "50%",
-                        backgroundColor: "#FF5200",
-                        flexShrink: 0,
-                      }}
-                    />
-                  )}
+                  <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
+                    {showBadge && (
+                      <span style={{
+                        fontSize: 10, fontWeight: 700, lineHeight: 1,
+                        padding: "2px 6px", borderRadius: 99,
+                        backgroundColor: "#FF5200", color: "#fff",
+                        fontFamily: "var(--font-outfit)",
+                      }}>
+                        {pendingReplies > 99 ? "99+" : pendingReplies}
+                      </span>
+                    )}
+                    {active && !showBadge && (
+                      <span
+                        style={{
+                          width: 5,
+                          height: 5,
+                          borderRadius: "50%",
+                          backgroundColor: "#FF5200",
+                        }}
+                      />
+                    )}
+                  </span>
                 </Link>
               </li>
             );

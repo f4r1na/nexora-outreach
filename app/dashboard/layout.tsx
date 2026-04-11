@@ -14,11 +14,18 @@ export default async function DashboardLayout({
 
   if (!user) redirect("/login");
 
-  const { data: sub } = await supabase
-    .from("subscriptions")
-    .select("plan, credits_used, credits_limit")
-    .eq("user_id", user.id)
-    .single();
+  const [{ data: sub }, { count: pendingCount }] = await Promise.all([
+    supabase
+      .from("subscriptions")
+      .select("plan, credits_used, credits_limit")
+      .eq("user_id", user.id)
+      .single(),
+    supabase
+      .from("replies")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .in("status", ["pending", "draft_ready"]),
+  ]);
 
   return (
     <div
@@ -33,6 +40,7 @@ export default async function DashboardLayout({
         plan={sub?.plan ?? "free"}
         creditsUsed={sub?.credits_used ?? 0}
         creditsLimit={sub?.credits_limit ?? 10}
+        pendingReplies={pendingCount ?? 0}
       />
       <div
         className="dot-grid"
