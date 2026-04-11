@@ -124,34 +124,65 @@ export async function GET(req: NextRequest) {
   const db = getServiceClient();
 
   console.log(JSON.stringify({
-    step: "gmail_upsert_start",
+    step: "gmail_save_start",
     user_id: user.id,
     gmail_email: gmailEmail,
     supabase_url_present: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
     service_role_present: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
   }));
 
-  const { error: upsertError } = await db.from("gmail_connections").upsert(
-    {
-      user_id: user.id,
-      access_token,
-      refresh_token: refresh_token ?? null,
-      gmail_email: gmailEmail,
-    },
-    { onConflict: "user_id" }
-  );
+  const payload = {
+    access_token,
+    refresh_token: refresh_token ?? null,
+    gmail_email: gmailEmail,
+  };
 
-  if (upsertError) {
+  // Check whether a row already exists for this user
+  const { data: existing, error: selectError } = await db
+    .from("gmail_connections")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (selectError) {
     console.error(JSON.stringify({
-      step: "gmail_upsert_failed",
-      message: upsertError.message,
-      code: (upsertError as { code?: string }).code,
-      details: (upsertError as { details?: string }).details,
-      hint: (upsertError as { hint?: string }).hint,
+      step: "gmail_save_select_failed",
+      message: selectError.message,
+      code: (selectError as { code?: string }).code,
     }));
     return NextResponse.redirect(errorRedirect);
   }
 
-  console.log(JSON.stringify({ step: "gmail_upsert_success", user_id: user.id }));
+  let saveError: { message: string; code?: string; details?: string; hint?: string } | null = null;
+
+  if (existing) {
+    // Row exists — update in place
+    const { error } = await db
+      .from("gmail_connections")
+      .update(payload)
+      .eq("user_id", user.id);
+    saveError = error as typeof saveError;
+    console.log(JSON.stringify({ step: "gmail_save_update", user_id: user.id }));
+  } else {
+    // No row yet — insert
+    const { error } = await db
+      .from("gmail_connections")
+      .insert({ user_id: user.id, ...payload });
+    saveError = error as typeof saveError;
+    console.log(JSON.stringify({ step: "gmail_save_insert", user_id: user.id }));
+  }
+
+  if (saveError) {
+    console.error(JSON.stringify({
+      step: "gmail_save_failed",
+      message: saveError.message,
+      code: saveError.code,
+      details: saveError.details,
+      hint: saveError.hint,
+    }));
+    return NextResponse.redirect(errorRedirect);
+  }
+
+  console.log(JSON.stringify({ step: "gmail_save_success", user_id: user.id }));
   return NextResponse.redirect(`${appUrl}/dashboard/settings?gmail=connected`);
 }
