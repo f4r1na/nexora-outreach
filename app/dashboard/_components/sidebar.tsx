@@ -58,6 +58,16 @@ function IconReplies() {
   );
 }
 
+function IconGhostWriter() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="8" cy="6" r="3.5" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M5 10.5c0 1.5 1.343 2.5 3 2.5s3-1 3-2.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <path d="M6.5 5.5L7.5 7l2-2.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function IconSettings() {
   return (
     <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -90,6 +100,7 @@ const navLinks = [
   { label: "Dashboard", href: "/dashboard", icon: <IconDashboard /> },
   { label: "Campaigns", href: "/dashboard/campaigns", icon: <IconCampaigns /> },
   { label: "Replies", href: "/dashboard/replies", icon: <IconReplies /> },
+  { label: "Ghost Writer", href: "/dashboard/ghostwriter", icon: <IconGhostWriter />, agencyOnly: true },
   { label: "Settings", href: "/dashboard/settings", icon: <IconSettings /> },
 ];
 
@@ -182,7 +193,9 @@ export default function Sidebar({ email, plan, creditsUsed, creditsLimit, pendin
                 ? pathname === "/dashboard"
                 : pathname.startsWith(link.href);
             const isReplies = link.label === "Replies";
-            const showBadge = isReplies && pendingReplies > 0;
+            const showReplyBadge = isReplies && pendingReplies > 0;
+            const isGhostWriter = link.label === "Ghost Writer";
+            const isAgency = plan === "agency";
             return (
               <li key={link.label}>
                 <Link
@@ -197,9 +210,15 @@ export default function Sidebar({ email, plan, creditsUsed, creditsLimit, pendin
                     fontFamily: "var(--font-outfit)",
                     fontWeight: active ? 600 : 400,
                     backgroundColor: active
-                      ? "rgba(255,82,0,0.12)"
+                      ? isGhostWriter
+                        ? "rgba(167,139,250,0.12)"
+                        : "rgba(255,82,0,0.12)"
                       : "transparent",
-                    color: active ? "#FF5200" : "rgba(255,255,255,0.45)",
+                    color: active
+                      ? isGhostWriter
+                        ? "#a78bfa"
+                        : "#FF5200"
+                      : "rgba(255,255,255,0.45)",
                     textDecoration: "none",
                     transition: "background-color 0.15s, color 0.15s",
                   }}
@@ -209,7 +228,7 @@ export default function Sidebar({ email, plan, creditsUsed, creditsLimit, pendin
                   </span>
                   {link.label}
                   <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
-                    {showBadge && (
+                    {showReplyBadge && (
                       <span style={{
                         fontSize: 10, fontWeight: 700, lineHeight: 1,
                         padding: "2px 6px", borderRadius: 99,
@@ -219,13 +238,26 @@ export default function Sidebar({ email, plan, creditsUsed, creditsLimit, pendin
                         {pendingReplies > 99 ? "99+" : pendingReplies}
                       </span>
                     )}
-                    {active && !showBadge && (
+                    {isGhostWriter && !isAgency && (
+                      <span style={{
+                        fontSize: 9, fontWeight: 700, lineHeight: 1,
+                        padding: "2px 6px", borderRadius: 99,
+                        backgroundColor: "rgba(167,139,250,0.12)",
+                        color: "#a78bfa",
+                        border: "1px solid rgba(167,139,250,0.2)",
+                        fontFamily: "var(--font-outfit)",
+                        letterSpacing: "0.04em",
+                      }}>
+                        Agency
+                      </span>
+                    )}
+                    {active && !showReplyBadge && !(isGhostWriter && !isAgency) && (
                       <span
                         style={{
                           width: 5,
                           height: 5,
                           borderRadius: "50%",
-                          backgroundColor: "#FF5200",
+                          backgroundColor: isGhostWriter ? "#a78bfa" : "#FF5200",
                         }}
                       />
                     )}
