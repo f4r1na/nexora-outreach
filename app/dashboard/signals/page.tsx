@@ -191,6 +191,8 @@ export default function SignalsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filterCampaign, setFilterCampaign] = useState<string>("all");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/subscription")
@@ -213,6 +215,36 @@ export default function SignalsPage() {
   }, []);
 
   const isProOrAgency = plan === "pro" || plan === "agency";
+
+  async function handleDeleteAll() {
+    const scope = filterCampaign === "all" ? "all signal data" : "signal data for this campaign";
+    if (!confirm(`Delete ${scope}? This cannot be undone.`)) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const body = filterCampaign === "all" ? {} : { campaign_id: filterCampaign };
+      const res = await fetch("/api/signals/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setDeleteError(data.error ?? "Failed to delete signals. Please try again.");
+        return;
+      }
+      // Remove cleared leads from local state
+      if (filterCampaign === "all") {
+        setSignals([]);
+      } else {
+        setSignals((prev) => prev.filter((s) => s.campaign_id !== filterCampaign));
+      }
+    } catch {
+      setDeleteError("Network error. Please try again.");
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   const filtered = filterCampaign === "all"
     ? signals
@@ -242,28 +274,67 @@ export default function SignalsPage() {
             AI intelligence gathered on your leads
           </p>
         </div>
-        {!planLoading && isProOrAgency && campaigns.length > 0 && (
-          <select
-            value={filterCampaign}
-            onChange={(e) => setFilterCampaign(e.target.value)}
-            style={{
-              padding: "7px 12px", borderRadius: 8, fontSize: 12,
-              backgroundColor: "#0e0e0e", color: "rgba(255,255,255,0.6)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              fontFamily: "var(--font-outfit)", cursor: "pointer",
-              outline: "none",
-            }}
-          >
-            <option value="all">All Campaigns</option>
-            {campaigns.map((c) => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
+        {!planLoading && isProOrAgency && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {campaigns.length > 0 && (
+              <select
+                value={filterCampaign}
+                onChange={(e) => setFilterCampaign(e.target.value)}
+                style={{
+                  padding: "7px 12px", borderRadius: 8, fontSize: 12,
+                  backgroundColor: "#0e0e0e", color: "rgba(255,255,255,0.6)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  fontFamily: "var(--font-outfit)", cursor: "pointer",
+                  outline: "none",
+                }}
+              >
+                <option value="all">All Campaigns</option>
+                {campaigns.map((c) => (
+                  <option key={c.id} value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            )}
+            {signals.length > 0 && (
+              <button
+                onClick={handleDeleteAll}
+                disabled={deleting}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  padding: "7px 12px", borderRadius: 8, fontSize: 12,
+                  backgroundColor: "transparent",
+                  color: deleting ? "rgba(239,68,68,0.4)" : "rgba(239,68,68,0.7)",
+                  border: `1px solid ${deleting ? "rgba(239,68,68,0.15)" : "rgba(239,68,68,0.25)"}`,
+                  fontFamily: "var(--font-outfit)", cursor: deleting ? "not-allowed" : "pointer",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={e => { if (!deleting) { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "rgba(239,68,68,0.08)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(239,68,68,0.4)"; } }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLButtonElement).style.borderColor = deleting ? "rgba(239,68,68,0.15)" : "rgba(239,68,68,0.25)"; }}
+              >
+                {deleting ? (
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation: "spin 1s linear infinite" }}><path d="M21 12a9 9 0 11-6.219-8.56" strokeLinecap="round" /></svg>
+                ) : (
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                )}
+                {filterCampaign === "all" ? "Delete All" : "Delete Campaign Signals"}
+              </button>
+            )}
+          </div>
         )}
       </header>
 
       {/* Main */}
       <main style={{ flex: 1, padding: "36px 32px 64px" }}>
+        {deleteError && (
+          <div style={{
+            marginBottom: 20, padding: "10px 14px", borderRadius: 9,
+            backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)",
+            color: "#f87171", fontSize: 13, fontFamily: "var(--font-outfit)",
+            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+          }}>
+            {deleteError}
+            <button onClick={() => setDeleteError(null)} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
+          </div>
+        )}
 
         {planLoading ? (
           <div style={{ color: "rgba(255,255,255,0.25)", fontFamily: "var(--font-outfit)", fontSize: 13 }}>Loading…</div>
@@ -375,6 +446,7 @@ export default function SignalsPage() {
           </div>
         )}
       </main>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }
