@@ -58,6 +58,15 @@ function IconReplies() {
   );
 }
 
+function IconFollowups() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M2 8a6 6 0 1 0 6-6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <path d="M2 4v4h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function IconSignalRadar() {
   return (
     <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -117,13 +126,14 @@ function IconLogout() {
 }
 
 const navLinks = [
-  { label: "Dashboard", href: "/dashboard", icon: <IconDashboard /> },
-  { label: "Campaigns", href: "/dashboard/campaigns", icon: <IconCampaigns /> },
-  { label: "Replies", href: "/dashboard/replies", icon: <IconReplies /> },
-  { label: "Analytics", href: "/dashboard/analytics", icon: <IconAnalytics /> },
-  { label: "Signal Radar", href: "/dashboard/signals", icon: <IconSignalRadar /> },
-  { label: "Ghost Writer", href: "/dashboard/ghostwriter", icon: <IconGhostWriter />, agencyOnly: true },
-  { label: "Settings", href: "/dashboard/settings", icon: <IconSettings /> },
+  { label: "Dashboard",   href: "/dashboard",            icon: <IconDashboard /> },
+  { label: "Campaigns",   href: "/dashboard/campaigns",  icon: <IconCampaigns /> },
+  { label: "Follow-ups",  href: "/dashboard/followups",  icon: <IconFollowups /> },
+  { label: "Replies",     href: "/dashboard/replies",    icon: <IconReplies /> },
+  { label: "Analytics",   href: "/dashboard/analytics",  icon: <IconAnalytics /> },
+  { label: "Signal Radar",href: "/dashboard/signals",    icon: <IconSignalRadar /> },
+  { label: "Ghost Writer",href: "/dashboard/ghostwriter",icon: <IconGhostWriter />, agencyOnly: true },
+  { label: "Settings",    href: "/dashboard/settings",   icon: <IconSettings /> },
 ];
 
 const PLAN_BADGE: Record<string, { label: string; color: string; bg: string }> = {
@@ -219,6 +229,7 @@ export default function Sidebar({ email, plan, creditsUsed, creditsLimit, pendin
             const isGhostWriter = link.label === "Ghost Writer";
             const isAnalytics = link.label === "Analytics";
             const isSignalRadar = link.label === "Signal Radar";
+            const isFollowups = link.label === "Follow-ups";
             const isAgency = plan === "agency";
             const isProOrAgency = plan === "pro" || plan === "agency";
             return (
@@ -302,7 +313,20 @@ export default function Sidebar({ email, plan, creditsUsed, creditsLimit, pendin
                         Pro
                       </span>
                     )}
-                    {active && !showReplyBadge && !(isGhostWriter && !isAgency) && !(isAnalytics && !isProOrAgency) && !(isSignalRadar && !isProOrAgency) && (
+                    {isFollowups && !isProOrAgency && (
+                      <span style={{
+                        fontSize: 9, fontWeight: 700, lineHeight: 1,
+                        padding: "2px 6px", borderRadius: 99,
+                        backgroundColor: "rgba(255,82,0,0.1)",
+                        color: "#FF5200",
+                        border: "1px solid rgba(255,82,0,0.2)",
+                        fontFamily: "var(--font-outfit)",
+                        letterSpacing: "0.04em",
+                      }}>
+                        Pro
+                      </span>
+                    )}
+                    {active && !showReplyBadge && !(isGhostWriter && !isAgency) && !(isAnalytics && !isProOrAgency) && !(isSignalRadar && !isProOrAgency) && !(isFollowups && !isProOrAgency) && (
                       <span
                         style={{
                           width: 5,
