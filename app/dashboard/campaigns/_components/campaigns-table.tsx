@@ -34,19 +34,30 @@ export default function CampaignsTable({ campaigns }: { campaigns: Campaign[] })
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<"all" | "complete" | "draft">("all");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [items, setItems] = useState<Campaign[]>(campaigns);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const filtered = campaigns.filter((c) => {
+  const filtered = items.filter((c) => {
     const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase());
     const matchesFilter = filter === "all" || c.status === filter;
     return matchesSearch && matchesFilter;
   });
 
   async function handleDelete(id: string) {
-    if (!confirm("Delete this campaign and all its emails? This cannot be undone.")) return;
+    if (!confirm("Delete this campaign and all its leads? This cannot be undone.")) return;
     setDeletingId(id);
+    setDeleteError(null);
     try {
-      await fetch(`/api/campaigns/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/campaigns/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setDeleteError(data.error ?? "Failed to delete campaign. Please try again.");
+        return;
+      }
+      setItems((prev) => prev.filter((c) => c.id !== id));
       router.refresh();
+    } catch {
+      setDeleteError("Network error. Please try again.");
     } finally {
       setDeletingId(null);
     }
@@ -91,6 +102,19 @@ export default function CampaignsTable({ campaigns }: { campaigns: Campaign[] })
           ))}
         </div>
       </div>
+
+      {/* Delete error */}
+      {deleteError && (
+        <div style={{
+          marginBottom: 14, padding: "10px 14px", borderRadius: 9,
+          backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)",
+          color: "#f87171", fontSize: 13, fontFamily: "var(--font-outfit)",
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+        }}>
+          {deleteError}
+          <button onClick={() => setDeleteError(null)} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
+        </div>
+      )}
 
       {/* Table */}
       <div style={{ backgroundColor: "#0e0e0e", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, overflow: "hidden" }}>
