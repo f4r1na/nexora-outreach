@@ -81,7 +81,7 @@ function SignalCard({ lead }: { lead: SignalLead }) {
             {lead.campaign_name && <span style={{ color: "rgba(255,82,0,0.5)" }}>{lead.campaign_name}</span>}
           </p>
         </div>
-        <span style={{ fontSize: 18, flexShrink: 0 }}>🛰️</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,82,0,0.5)" strokeWidth="1.6" strokeLinecap="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="3" /><path d="M6.3 6.3a8 8 0 000 11.4M17.7 6.3a8 8 0 010 11.4" /><path d="M3.5 3.5a13 13 0 000 17M20.5 3.5a13 13 0 010 17" /></svg>
       </div>
 
       {/* Company insights */}
@@ -399,7 +399,9 @@ export default function SignalsPage() {
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
             minHeight: 420, textAlign: "center", gap: 16,
           }}>
-            <span style={{ fontSize: 48 }}>🛰️</span>
+            <div style={{ width: 56, height: 56, borderRadius: 14, backgroundColor: "rgba(255,82,0,0.08)", border: "1px solid rgba(255,82,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,82,0,0.5)" }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="12" cy="12" r="3" /><path d="M6.3 6.3a8 8 0 000 11.4M17.7 6.3a8 8 0 010 11.4" /><path d="M3.5 3.5a13 13 0 000 17M20.5 3.5a13 13 0 010 17" /></svg>
+            </div>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", margin: 0 }}>
               {filterCampaign === "all" ? "No signals yet" : "No signals for this campaign"}
             </h3>

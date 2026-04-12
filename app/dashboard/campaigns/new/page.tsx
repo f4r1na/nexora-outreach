@@ -962,10 +962,10 @@ export default function NewCampaignPage() {
                 backgroundColor: "rgba(167,139,250,0.06)",
                 border: "1px solid rgba(167,139,250,0.2)",
               }}>
-                <span style={{ fontSize: 18, lineHeight: 1 }}>🤖</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a2 2 0 012 2v2a2 2 0 01-2 2 2 2 0 01-2-2V4a2 2 0 012-2z"/><path d="M2 12h3M19 12h3M12 19v3"/><circle cx="12" cy="12" r="4"/></svg>
                 <div>
                   <p style={{ fontSize: 13, fontWeight: 700, color: "#a78bfa", fontFamily: "var(--font-syne)", margin: 0 }}>
-                    Ghost Writer Active
+                    Writing Style: Active
                   </p>
                   <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: "var(--font-outfit)", margin: 0, marginTop: 2 }}>
                     AI will write in your personal style. Tone selection is still applied as a secondary guide.
@@ -1250,7 +1250,7 @@ export default function NewCampaignPage() {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                   <div>
                     <p style={{ fontSize: 13, fontWeight: 700, color: "#fff", fontFamily: "var(--font-outfit)", margin: 0, marginBottom: 2 }}>
-                      🛰️ Signal Radar
+                      Signal Radar
                     </p>
                     <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-outfit)", margin: 0 }}>
                       AI researches each lead so emails reference real context.
@@ -1297,7 +1297,7 @@ export default function NewCampaignPage() {
                               Analyzing {leads.length} lead{leads.length !== 1 ? "s" : ""} with Signal Radar…
                             </>
                           ) : (
-                            <>🛰️ Research Leads with Signal Radar</>
+                            <>Research Leads with Signal Radar</>
                           )}
                         </button>
                       </div>
@@ -1316,7 +1316,7 @@ export default function NewCampaignPage() {
                             }}>
                               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
                                 <p style={{ fontSize: 12, fontWeight: 700, color: "#FF5200", fontFamily: "var(--font-syne)", margin: 0 }}>
-                                  🛰️ {lead.first_name}{lead.company ? ` · ${lead.company}` : ""}
+                                  {lead.first_name}{lead.company ? ` · ${lead.company}` : ""}
                                 </p>
                                 <button
                                   type="button"
@@ -1377,7 +1377,7 @@ export default function NewCampaignPage() {
                     display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
                   }}>
                     <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-outfit)", margin: 0 }}>
-                      🛰️ Signal Radar requires a Pro plan
+                      Signal Radar requires a Pro plan
                     </p>
                     <Link href="/dashboard/settings" style={{ fontSize: 12, fontWeight: 700, color: "#FF5200", fontFamily: "var(--font-outfit)", textDecoration: "none", flexShrink: 0 }}>
                       Upgrade →
@@ -1725,7 +1725,7 @@ export default function NewCampaignPage() {
                             padding: "2px 7px", borderRadius: 999,
                             fontFamily: "var(--font-outfit)",
                           }}>
-                            🛰️ Signal data used
+                            Signal data used
                           </span>
                         )}
                       </div>

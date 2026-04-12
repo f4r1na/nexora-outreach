@@ -234,9 +234,42 @@ export default async function DashboardPage({
         {/* Verify banner */}
         {!user.email_confirmed_at && <VerifyBanner />}
 
+        {/* Quick Actions */}
+        <div style={{ display: "flex", gap: 10, marginTop: 24, flexWrap: "wrap" }}>
+          <Link href="/dashboard/campaigns/new" style={{
+            display: "inline-flex", alignItems: "center", gap: 7,
+            padding: "9px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+            fontFamily: "var(--font-outfit)", textDecoration: "none",
+            backgroundColor: "#FF5200", color: "#fff",
+          }}>
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+            New Campaign
+          </Link>
+          <Link href="/dashboard/inbox" style={{
+            display: "inline-flex", alignItems: "center", gap: 7,
+            padding: "9px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+            fontFamily: "var(--font-outfit)", textDecoration: "none",
+            backgroundColor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.65)",
+            border: "1px solid rgba(255,255,255,0.1)",
+          }}>
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M14 2H2a1 1 0 00-1 1v7a1 1 0 001 1h3v2.5L8.5 11H14a1 1 0 001-1V3a1 1 0 00-1-1z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            Inbox
+          </Link>
+          <Link href="/dashboard/analytics" style={{
+            display: "inline-flex", alignItems: "center", gap: 7,
+            padding: "9px 16px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+            fontFamily: "var(--font-outfit)", textDecoration: "none",
+            backgroundColor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.65)",
+            border: "1px solid rgba(255,255,255,0.1)",
+          }}>
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="1" y="9" width="3" height="6" rx="1" stroke="currentColor" strokeWidth="1.4" /><rect x="6" y="5" width="3" height="10" rx="1" stroke="currentColor" strokeWidth="1.4" /><rect x="11" y="1" width="3" height="14" rx="1" stroke="currentColor" strokeWidth="1.4" /></svg>
+            Analytics
+          </Link>
+        </div>
+
         {/* Stats row */}
         <div
-          style={{ display: "flex", gap: 16, marginTop: 24 }}
+          style={{ display: "flex", gap: 16, marginTop: 20 }}
         >
           <StatCard icon={<IconMail />} label="Emails Generated" value={emailCount ?? 0} />
           <StatCard icon={<IconChart />} label="Campaigns" value={campaignCount ?? 0} />
@@ -395,18 +428,17 @@ export default async function DashboardPage({
         <div style={{
           position: "fixed", bottom: 24, right: 24, zIndex: 50,
           backgroundColor: "#0e0e0e",
-          border: "1px solid rgba(255,82,0,0.25)",
+          border: "1px solid rgba(255,82,0,0.2)",
           borderLeft: "3px solid #FF5200",
-          borderRadius: 12,
+          borderRadius: 10,
           padding: "14px 18px",
-          maxWidth: 300,
-          boxShadow: "0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,82,0,0.05)",
+          maxWidth: 280,
         }}>
           <p style={{
-            fontSize: 12, fontWeight: 600, color: "#fff",
+            fontSize: 12, color: "rgba(255,255,255,0.6)",
             fontFamily: "var(--font-outfit)", lineHeight: 1.6, marginBottom: 10,
           }}>
-            ⚡ Want more power? Upgrade your plan and unlock more credits, priority AI generation, and upcoming features like Gmail sending and AI replies.
+            Upgrade your plan to unlock Gmail sending, higher credit limits, and advanced features.
           </p>
           <Link href="/dashboard/settings" style={{
             display: "inline-flex", alignItems: "center", gap: 5,
@@ -414,7 +446,7 @@ export default async function DashboardPage({
             borderRadius: 7, fontSize: 12, fontWeight: 700,
             fontFamily: "var(--font-outfit)", textDecoration: "none",
           }}>
-            Upgrade Now →
+            View Plans
           </Link>
         </div>
       )}

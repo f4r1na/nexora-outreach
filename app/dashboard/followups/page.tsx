@@ -438,7 +438,9 @@ export default function FollowupsPage() {
             display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
             minHeight: 420, textAlign: "center", gap: 16,
           }}>
-            <span style={{ fontSize: 48 }}>🔄</span>
+            <div style={{ width: 56, height: 56, borderRadius: 14, backgroundColor: "rgba(255,82,0,0.08)", border: "1px solid rgba(255,82,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,82,0,0.5)" }}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M21 12a9 9 0 11-6 -8.5" /><polyline points="21 3 21 9 15 9" /></svg>
+            </div>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", margin: 0 }}>
               No follow-up sequences yet
             </h3>

@@ -2,8 +2,13 @@ import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import SendCampaignButton from "./send-button";
+import FollowUpsTab from "./follow-ups-tab";
+import AnalyticsTab from "./analytics-tab";
 
-type Props = { params: Promise<{ id: string }> };
+type Props = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
+};
 
 const TONE_STYLE: Record<string, { color: string; bg: string }> = {
   professional: { color: "#60a5fa", bg: "rgba(96,165,250,0.1)" },
@@ -12,8 +17,20 @@ const TONE_STYLE: Record<string, { color: string; bg: string }> = {
   minimal:      { color: "#94a3b8", bg: "rgba(148,163,184,0.1)" },
 };
 
-export default async function CampaignDetailPage({ params }: Props) {
+const TABS = [
+  { key: "overview",  label: "Overview" },
+  { key: "leads",     label: "Leads" },
+  { key: "followups", label: "Follow-ups" },
+  { key: "analytics", label: "Analytics" },
+] as const;
+
+type TabKey = typeof TABS[number]["key"];
+
+export default async function CampaignDetailPage({ params, searchParams }: Props) {
   const { id } = await params;
+  const { tab: tabParam } = await searchParams;
+  const activeTab: TabKey = (TABS.some((t) => t.key === tabParam) ? tabParam : "overview") as TabKey;
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
@@ -62,7 +79,6 @@ export default async function CampaignDetailPage({ params }: Props) {
         backgroundColor: "rgba(6,6,6,0.85)", backdropFilter: "blur(12px)",
         position: "sticky", top: 0, zIndex: 30, gap: 16,
       }}>
-        {/* Left: back + title */}
         <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
           <Link href="/dashboard/campaigns" style={{
             display: "flex", alignItems: "center", gap: 6,
@@ -89,7 +105,6 @@ export default async function CampaignDetailPage({ params }: Props) {
           </span>
         </div>
 
-        {/* Right: send + export */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
           <SendCampaignButton
             campaignId={id}
@@ -115,117 +130,200 @@ export default async function CampaignDetailPage({ params }: Props) {
       </header>
 
       <main style={{ flex: 1, padding: "28px 32px 64px" }}>
-        {/* Campaign meta bar */}
+        {/* Tab bar */}
         <div style={{
-          display: "flex", alignItems: "center", gap: 24, marginBottom: 28,
-          padding: "14px 20px", backgroundColor: "#0e0e0e",
-          border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12,
-          flexWrap: "wrap",
+          display: "flex", gap: 2, marginBottom: 28,
+          borderBottom: "1px solid rgba(255,255,255,0.07)",
+          paddingBottom: 0,
         }}>
-          <div>
-            <p style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 3 }}>Emails</p>
-            <p style={{ fontSize: 20, fontWeight: 900, color: "#FF5200", fontFamily: "var(--font-syne)" }}>{allLeads.length}</p>
-          </div>
-          <div style={{ width: 1, height: 36, backgroundColor: "rgba(255,255,255,0.07)" }} />
-          <div>
-            <p style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 3 }}>Status</p>
-            <span style={{
-              fontSize: 12, fontWeight: 700, padding: "2px 10px", borderRadius: 999,
-              color: campaign.status === "complete" ? "#4ade80" : "#94a3b8",
-              backgroundColor: campaign.status === "complete" ? "rgba(74,222,128,0.1)" : "rgba(148,163,184,0.1)",
-              textTransform: "capitalize",
-            }}>{campaign.status}</span>
-          </div>
-          <div style={{ width: 1, height: 36, backgroundColor: "rgba(255,255,255,0.07)" }} />
-          <div>
-            <p style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 3 }}>Created</p>
-            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.6)", fontFamily: "var(--font-outfit)" }}>{createdDate}</p>
-          </div>
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
+              <Link
+                key={tab.key}
+                href={`/dashboard/campaigns/${id}?tab=${tab.key}`}
+                style={{
+                  padding: "10px 18px",
+                  fontSize: 13.5, fontWeight: isActive ? 700 : 500,
+                  fontFamily: "var(--font-outfit)",
+                  color: isActive ? "#fff" : "rgba(255,255,255,0.35)",
+                  textDecoration: "none",
+                  borderBottom: isActive ? "2px solid #FF5200" : "2px solid transparent",
+                  marginBottom: -1,
+                  transition: "color 0.15s",
+                }}
+              >
+                {tab.label}
+              </Link>
+            );
+          })}
         </div>
 
-        {/* Email cards */}
-        {allLeads.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "60px 0", color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-outfit)" }}>
-            No emails found for this campaign.
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {allLeads.map((lead, i) => (
-              <div key={lead.id} style={{
-                backgroundColor: "#0e0e0e", border: "1px solid rgba(255,255,255,0.07)",
-                borderRadius: 14, padding: "22px 24px",
+        {/* Overview tab */}
+        {activeTab === "overview" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16, maxWidth: 600 }}>
+            <div style={{
+              backgroundColor: "#0e0e0e",
+              border: "1px solid rgba(255,255,255,0.07)",
+              borderRadius: 14, padding: "24px 24px",
+            }}>
+              <h2 style={{
+                fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase",
+                color: "rgba(255,255,255,0.25)", fontFamily: "var(--font-outfit)", marginBottom: 18,
               }}>
-                {/* Lead header */}
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14, gap: 12 }}>
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: "#FF5200", fontFamily: "var(--font-syne)" }}>
-                        {lead.first_name}
-                      </span>
-                      {lead.company && (
-                        <>
-                          <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 13 }}>·</span>
-                          <span style={{ fontSize: 13, color: "rgba(255,255,255,0.55)" }}>{lead.company}</span>
-                        </>
-                      )}
-                      {lead.role && (
-                        <>
-                          <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 13 }}>·</span>
-                          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>{lead.role}</span>
-                        </>
-                      )}
-                    </div>
-                    {lead.email && (
-                      <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginTop: 3, fontFamily: "var(--font-outfit)" }}>
-                        {lead.email}
-                      </p>
-                    )}
-                  </div>
+                Campaign Details
+              </h2>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <OverviewRow label="Name" value={campaign.name} />
+                <OverviewRow label="Tone">
                   <span style={{
-                    fontSize: 11, color: "rgba(255,255,255,0.2)",
-                    backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)",
-                    padding: "2px 8px", borderRadius: 5, flexShrink: 0,
-                    fontFamily: "var(--font-outfit)",
+                    fontSize: 12, fontWeight: 600, padding: "2px 9px", borderRadius: 6,
+                    color: tone.color, backgroundColor: tone.bg, textTransform: "capitalize",
                   }}>
-                    #{i + 1}
+                    {campaign.tone}
                   </span>
-                </div>
-
-                {/* Custom note */}
-                {lead.custom_note && (
-                  <div style={{
-                    marginBottom: 14, padding: "8px 12px",
-                    backgroundColor: "rgba(255,82,0,0.06)", borderLeft: "2px solid rgba(255,82,0,0.4)",
-                    borderRadius: "0 6px 6px 0",
+                </OverviewRow>
+                <OverviewRow label="Leads" value={`${allLeads.length} lead${allLeads.length !== 1 ? "s" : ""}`} />
+                <OverviewRow label="Status">
+                  <span style={{
+                    fontSize: 12, fontWeight: 700, padding: "2px 10px", borderRadius: 999,
+                    color: campaign.status === "complete" ? "#4ade80" : "#94a3b8",
+                    backgroundColor: campaign.status === "complete" ? "rgba(74,222,128,0.1)" : "rgba(148,163,184,0.1)",
+                    textTransform: "capitalize",
                   }}>
-                    <p style={{ fontSize: 12, color: "rgba(255,82,0,0.8)", fontFamily: "var(--font-outfit)", lineHeight: 1.5 }}>
-                      {lead.custom_note}
-                    </p>
-                  </div>
-                )}
-
-                <div style={{ height: 1, backgroundColor: "rgba(255,255,255,0.05)", marginBottom: 14 }} />
-
-                {/* Subject */}
-                <div style={{ marginBottom: 10 }}>
-                  <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.25)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>Subject</p>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", lineHeight: 1.4 }}>
-                    {lead.generated_subject}
-                  </p>
-                </div>
-
-                {/* Body */}
-                <div>
-                  <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.25)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>Body</p>
-                  <p style={{ fontSize: 13.5, color: "rgba(255,255,255,0.55)", lineHeight: 1.8, fontFamily: "var(--font-outfit)" }}>
-                    {lead.generated_body}
-                  </p>
-                </div>
+                    {campaign.status}
+                  </span>
+                </OverviewRow>
+                <OverviewRow label="Created" value={createdDate} />
               </div>
-            ))}
+            </div>
           </div>
+        )}
+
+        {/* Leads tab */}
+        {activeTab === "leads" && (
+          <>
+            {allLeads.length === 0 ? (
+              <div style={{
+                textAlign: "center", padding: "60px 0",
+                color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-outfit)",
+              }}>
+                No emails found for this campaign.
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {allLeads.map((lead, i) => (
+                  <div key={lead.id} style={{
+                    backgroundColor: "#0e0e0e", border: "1px solid rgba(255,255,255,0.07)",
+                    borderRadius: 14, padding: "22px 24px",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14, gap: 12 }}>
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 15, fontWeight: 700, color: "#FF5200", fontFamily: "var(--font-syne)" }}>
+                            {lead.first_name}
+                          </span>
+                          {lead.company && (
+                            <>
+                              <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 13 }}>·</span>
+                              <span style={{ fontSize: 13, color: "rgba(255,255,255,0.55)" }}>{lead.company}</span>
+                            </>
+                          )}
+                          {lead.role && (
+                            <>
+                              <span style={{ color: "rgba(255,255,255,0.2)", fontSize: 13 }}>·</span>
+                              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>{lead.role}</span>
+                            </>
+                          )}
+                        </div>
+                        {lead.email && (
+                          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginTop: 3, fontFamily: "var(--font-outfit)" }}>
+                            {lead.email}
+                          </p>
+                        )}
+                      </div>
+                      <span style={{
+                        fontSize: 11, color: "rgba(255,255,255,0.2)",
+                        backgroundColor: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)",
+                        padding: "2px 8px", borderRadius: 5, flexShrink: 0,
+                        fontFamily: "var(--font-outfit)",
+                      }}>
+                        #{i + 1}
+                      </span>
+                    </div>
+
+                    {lead.custom_note && (
+                      <div style={{
+                        marginBottom: 14, padding: "8px 12px",
+                        backgroundColor: "rgba(255,82,0,0.06)", borderLeft: "2px solid rgba(255,82,0,0.4)",
+                        borderRadius: "0 6px 6px 0",
+                      }}>
+                        <p style={{ fontSize: 12, color: "rgba(255,82,0,0.8)", fontFamily: "var(--font-outfit)", lineHeight: 1.5 }}>
+                          {lead.custom_note}
+                        </p>
+                      </div>
+                    )}
+
+                    <div style={{ height: 1, backgroundColor: "rgba(255,255,255,0.05)", marginBottom: 14 }} />
+
+                    <div style={{ marginBottom: 10 }}>
+                      <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.25)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>Subject</p>
+                      <p style={{ fontSize: 14, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", lineHeight: 1.4 }}>
+                        {lead.generated_subject}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.25)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>Body</p>
+                      <p style={{ fontSize: 13.5, color: "rgba(255,255,255,0.55)", lineHeight: 1.8, fontFamily: "var(--font-outfit)" }}>
+                        {lead.generated_body}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Follow-ups tab */}
+        {activeTab === "followups" && (
+          <FollowUpsTab campaignId={id} plan={plan} />
+        )}
+
+        {/* Analytics tab */}
+        {activeTab === "analytics" && (
+          <AnalyticsTab campaignId={id} plan={plan} />
         )}
       </main>
     </>
+  );
+}
+
+// ─── Helper component ─────────────────────────────────────────────────────────
+
+function OverviewRow({
+  label,
+  value,
+  children,
+}: {
+  label: string;
+  value?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+      <span style={{
+        fontSize: 12, color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-outfit)",
+        width: 80, flexShrink: 0,
+      }}>
+        {label}
+      </span>
+      {children ?? (
+        <span style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", fontFamily: "var(--font-outfit)" }}>
+          {value}
+        </span>
+      )}
+    </div>
   );
 }

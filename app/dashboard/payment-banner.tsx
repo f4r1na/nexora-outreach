@@ -34,8 +34,8 @@ export default function PaymentBanner({ type }: { type: "success" | "canceled" }
         }}
       >
         {isSuccess
-          ? "🎉 Payment successful! Your plan has been upgraded."
-          : "❌ Payment was canceled. No charges were made."}
+          ? "Payment successful. Your plan has been upgraded."
+          : "Payment was canceled. No charges were made."}
       </p>
       <button
         onClick={() => setDismissed(true)}

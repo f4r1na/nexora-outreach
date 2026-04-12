@@ -4,6 +4,14 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PLANS, PlanKey } from "@/lib/plans";
 
+// ─── Ghost Writer types ───────────────────────────────────────────────────────
+
+type GhostStyle = {
+  style_summary: string;
+  tone_keywords: string;
+  sample_emails: string[];
+} | null;
+
 type Subscription = {
   plan: string;
   credits_used: number;
@@ -74,6 +82,13 @@ export default function SettingsPage() {
   const [gmailLoading, setGmailLoading] = useState(true);
   const [disconnecting, setDisconnecting] = useState(false);
 
+  // Writing Style (Ghost Writer)
+  const [ghostStyle, setGhostStyle] = useState<GhostStyle | undefined>(undefined);
+  const [ghostLoading, setGhostLoading] = useState(true);
+  const [sampleEmails, setSampleEmails] = useState(["", "", "", "", ""]);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [ghostError, setGhostError] = useState<string | null>(null);
+  const [isRetraining, setIsRetraining] = useState(false);
 
   const gmailStatus = searchParams.get("gmail");
 
@@ -92,6 +107,14 @@ export default function SettingsPage() {
       .then((d) => { setGmail(d.connection ?? null); setGmailLoading(false); })
       .catch(() => setGmailLoading(false));
   }, [searchParams]);
+
+  // Load writing style
+  useEffect(() => {
+    fetch("/api/ghostwriter")
+      .then((r) => r.json())
+      .then((d) => { setGhostStyle(d.style ?? null); setGhostLoading(false); })
+      .catch(() => { setGhostStyle(null); setGhostLoading(false); });
+  }, []);
 
 
   async function handleUpgrade(plan: string) {
@@ -134,6 +157,36 @@ export default function SettingsPage() {
   const creditsLimit = sub?.credits_limit ?? 10;
   const pct = Math.min(100, Math.round((creditsUsed / creditsLimit) * 100));
   const isProOrAgency = currentPlan === "pro" || currentPlan === "agency";
+  const isAgency = currentPlan === "agency";
+
+  async function handleAnalyzeStyle() {
+    const filled = sampleEmails.filter((s) => s.trim());
+    if (filled.length < 3) { setGhostError("Please provide at least 3 sample emails."); return; }
+    setAnalyzing(true);
+    setGhostError(null);
+    try {
+      const res = await fetch("/api/ghostwriter/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sample_emails: filled }),
+      });
+      const data = await res.json() as { ok?: boolean; style?: GhostStyle; error?: string };
+      if (!res.ok) { setGhostError(data.error ?? "Analysis failed"); }
+      else if (data.style) {
+        setGhostStyle(data.style);
+        setIsRetraining(false);
+        setSampleEmails(["", "", "", "", ""]);
+      }
+    } catch { setGhostError("Network error — please try again."); }
+    finally { setAnalyzing(false); }
+  }
+
+  async function handleRemoveStyle() {
+    try {
+      const res = await fetch("/api/ghostwriter", { method: "DELETE" });
+      if (res.ok) { setGhostStyle(null); setIsRetraining(false); setSampleEmails(["", "", "", "", ""]); }
+    } catch { /* silent */ }
+  }
 
   return (
     <div style={{ padding: "32px 32px 64px", maxWidth: 680, margin: "0 auto" }}>
@@ -380,6 +433,227 @@ export default function SettingsPage() {
               <IconGmail />
               Connect Gmail
             </a>
+          )}
+        </div>
+      </div>
+
+      {/* ── Writing Style ── */}
+      <p style={{
+        fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase",
+        color: "rgba(255,255,255,0.25)", fontFamily: "var(--font-outfit)", marginBottom: 12,
+      }}>
+        Writing Style
+      </p>
+      <div style={{
+        backgroundColor: "#0e0e0e",
+        border: `1px solid ${isAgency ? "rgba(167,139,250,0.2)" : "rgba(255,255,255,0.07)"}`,
+        borderRadius: 14, padding: "24px 22px", marginBottom: 32,
+        position: "relative", overflow: "hidden",
+      }}>
+        {/* Locked overlay for non-agency */}
+        {!isAgency && (
+          <div style={{
+            position: "absolute", inset: 0, borderRadius: 14,
+            background: "linear-gradient(160deg, rgba(14,14,14,0.5) 0%, rgba(14,14,14,0.88) 100%)",
+            backdropFilter: "blur(4px)",
+            display: "flex", flexDirection: "column",
+            alignItems: "center", justifyContent: "center", gap: 10,
+            padding: 24, zIndex: 2,
+          }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: "50%",
+              backgroundColor: "rgba(167,139,250,0.1)",
+              border: "1px solid rgba(167,139,250,0.25)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: "#a78bfa",
+            }}>
+              <IconLock />
+            </div>
+            <p style={{
+              fontSize: 13, fontWeight: 700, color: "#fff",
+              fontFamily: "var(--font-syne)", textAlign: "center",
+            }}>
+              Upgrade to Agency to unlock Writing Style
+            </p>
+            <p style={{
+              fontSize: 12, color: "rgba(255,255,255,0.4)",
+              fontFamily: "var(--font-outfit)", textAlign: "center", maxWidth: 340, lineHeight: 1.5,
+            }}>
+              Train AI to write in your exact voice — tone, vocabulary, and sentence structure.
+            </p>
+            <button
+              onClick={() => {
+                const el = document.getElementById("plans-section");
+                el?.scrollIntoView({ behavior: "smooth" });
+              }}
+              style={{
+                padding: "8px 20px", backgroundColor: "#a78bfa", color: "#fff",
+                borderRadius: 8, border: "none", fontSize: 13, fontWeight: 700,
+                fontFamily: "var(--font-outfit)", cursor: "pointer",
+              }}
+            >
+              See Plans
+            </button>
+          </div>
+        )}
+
+        {/* Content (always rendered, dimmed when locked) */}
+        <div style={{ opacity: isAgency ? 1 : 0.2 }}>
+          {/* Header row */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+            <div>
+              <p style={{ fontSize: 14, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 2 }}>
+                AI Writing Style
+              </p>
+              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.38)", fontFamily: "var(--font-outfit)" }}>
+                Train AI on your emails — all campaigns will sound like you
+              </p>
+            </div>
+            {isAgency && (
+              <span style={{
+                fontSize: 10, fontWeight: 800, color: "#a78bfa",
+                backgroundColor: "rgba(167,139,250,0.1)",
+                border: "1px solid rgba(167,139,250,0.25)",
+                padding: "4px 10px", borderRadius: 999,
+                letterSpacing: "0.06em", textTransform: "uppercase",
+                fontFamily: "var(--font-outfit)",
+              }}>
+                Agency
+              </span>
+            )}
+          </div>
+
+          {ghostLoading ? (
+            <div style={{ color: "rgba(255,255,255,0.25)", fontFamily: "var(--font-outfit)", fontSize: 13 }}>Loading…</div>
+          ) : ghostStyle && !isRetraining ? (
+            /* Active state */
+            <div>
+              <div style={{
+                padding: "16px", borderRadius: 10,
+                backgroundColor: "rgba(167,139,250,0.05)",
+                border: "1px solid rgba(167,139,250,0.15)",
+                marginBottom: 14,
+              }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(167,139,250,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8, fontFamily: "var(--font-outfit)" }}>
+                  Style Guide
+                </p>
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", fontFamily: "var(--font-outfit)", lineHeight: 1.7 }}>
+                  {ghostStyle.style_summary}
+                </p>
+              </div>
+              {ghostStyle.tone_keywords && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 18 }}>
+                  {ghostStyle.tone_keywords.split(",").map((kw) => kw.trim()).filter(Boolean).map((kw) => (
+                    <span key={kw} style={{
+                      fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 999,
+                      backgroundColor: "rgba(167,139,250,0.1)",
+                      border: "1px solid rgba(167,139,250,0.2)",
+                      color: "#a78bfa", fontFamily: "var(--font-outfit)",
+                    }}>
+                      {kw}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  onClick={() => setIsRetraining(true)}
+                  style={{
+                    padding: "8px 16px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+                    fontFamily: "var(--font-outfit)", cursor: "pointer",
+                    backgroundColor: "rgba(167,139,250,0.1)",
+                    color: "#a78bfa",
+                    border: "1px solid rgba(167,139,250,0.25)",
+                  }}
+                >
+                  Retrain
+                </button>
+                <button
+                  onClick={handleRemoveStyle}
+                  style={{
+                    padding: "8px 16px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+                    fontFamily: "var(--font-outfit)", cursor: "pointer",
+                    backgroundColor: "rgba(239,68,68,0.07)",
+                    color: "rgba(239,68,68,0.7)",
+                    border: "1px solid rgba(239,68,68,0.2)",
+                  }}
+                >
+                  Remove Style
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Training form */
+            <div>
+              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", fontFamily: "var(--font-outfit)", lineHeight: 1.6, marginBottom: 18 }}>
+                Paste 3–5 emails <strong style={{ color: "rgba(255,255,255,0.7)" }}>you have written</strong> so AI can learn your style.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
+                {sampleEmails.map((val, i) => (
+                  <div key={i}>
+                    <label style={{
+                      fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.35)",
+                      textTransform: "uppercase", letterSpacing: "0.07em",
+                      display: "block", marginBottom: 5, fontFamily: "var(--font-outfit)",
+                    }}>
+                      Sample {i + 1}{i < 3 ? " *" : " (optional)"}
+                    </label>
+                    <textarea
+                      value={val}
+                      onChange={(e) => setSampleEmails((prev) => prev.map((v, j) => j === i ? e.target.value : v))}
+                      placeholder={`Paste an email you wrote${i === 0 ? " — subject + body works best" : ""}…`}
+                      rows={3}
+                      style={{
+                        width: "100%", padding: "10px 13px", borderRadius: 9,
+                        backgroundColor: "rgba(255,255,255,0.03)",
+                        border: "1px solid rgba(255,255,255,0.09)",
+                        color: "rgba(255,255,255,0.75)", fontFamily: "var(--font-outfit)",
+                        fontSize: 13, lineHeight: 1.6, resize: "vertical",
+                        outline: "none", boxSizing: "border-box",
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+              {ghostError && (
+                <div style={{
+                  marginBottom: 14, padding: "9px 13px", borderRadius: 8,
+                  backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)",
+                }}>
+                  <p style={{ fontSize: 12.5, color: "#ef4444", fontFamily: "var(--font-outfit)" }}>{ghostError}</p>
+                </div>
+              )}
+              <div style={{ display: "flex", gap: 10 }}>
+                <button
+                  onClick={handleAnalyzeStyle}
+                  disabled={analyzing}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 7,
+                    padding: "10px 20px", borderRadius: 9,
+                    backgroundColor: analyzing ? "rgba(167,139,250,0.4)" : "#a78bfa",
+                    color: "#fff", border: "none",
+                    fontSize: 13, fontWeight: 700, fontFamily: "var(--font-outfit)",
+                    cursor: analyzing ? "not-allowed" : "pointer",
+                    opacity: analyzing ? 0.8 : 1,
+                  }}
+                >
+                  {analyzing ? "Analyzing…" : "Analyze Writing Style"}
+                </button>
+                {isRetraining && (
+                  <button
+                    onClick={() => { setIsRetraining(false); setGhostError(null); }}
+                    style={{
+                      padding: "10px 16px", borderRadius: 9,
+                      backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.5)",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      fontSize: 13, fontWeight: 600, fontFamily: "var(--font-outfit)", cursor: "pointer",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </div>
           )}
         </div>
       </div>
