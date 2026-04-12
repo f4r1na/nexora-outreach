@@ -58,6 +58,16 @@ function IconReplies() {
   );
 }
 
+function IconSignalRadar() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="8" cy="8" r="2" stroke="currentColor" strokeWidth="1.4" />
+      <path d="M5.17 5.17a4 4 0 000 5.66M10.83 10.83a4 4 0 000-5.66" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+      <path d="M3.05 3.05a7 7 0 000 9.9M12.95 12.95a7 7 0 000-9.9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 function IconAnalytics() {
   return (
     <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -111,6 +121,7 @@ const navLinks = [
   { label: "Campaigns", href: "/dashboard/campaigns", icon: <IconCampaigns /> },
   { label: "Replies", href: "/dashboard/replies", icon: <IconReplies /> },
   { label: "Analytics", href: "/dashboard/analytics", icon: <IconAnalytics /> },
+  { label: "Signal Radar", href: "/dashboard/signals", icon: <IconSignalRadar /> },
   { label: "Ghost Writer", href: "/dashboard/ghostwriter", icon: <IconGhostWriter />, agencyOnly: true },
   { label: "Settings", href: "/dashboard/settings", icon: <IconSettings /> },
 ];
@@ -207,6 +218,7 @@ export default function Sidebar({ email, plan, creditsUsed, creditsLimit, pendin
             const showReplyBadge = isReplies && pendingReplies > 0;
             const isGhostWriter = link.label === "Ghost Writer";
             const isAnalytics = link.label === "Analytics";
+            const isSignalRadar = link.label === "Signal Radar";
             const isAgency = plan === "agency";
             const isProOrAgency = plan === "pro" || plan === "agency";
             return (
@@ -277,7 +289,20 @@ export default function Sidebar({ email, plan, creditsUsed, creditsLimit, pendin
                         Pro
                       </span>
                     )}
-                    {active && !showReplyBadge && !(isGhostWriter && !isAgency) && !(isAnalytics && !isProOrAgency) && (
+                    {isSignalRadar && !isProOrAgency && (
+                      <span style={{
+                        fontSize: 9, fontWeight: 700, lineHeight: 1,
+                        padding: "2px 6px", borderRadius: 99,
+                        backgroundColor: "rgba(255,82,0,0.1)",
+                        color: "#FF5200",
+                        border: "1px solid rgba(255,82,0,0.2)",
+                        fontFamily: "var(--font-outfit)",
+                        letterSpacing: "0.04em",
+                      }}>
+                        Pro
+                      </span>
+                    )}
+                    {active && !showReplyBadge && !(isGhostWriter && !isAgency) && !(isAnalytics && !isProOrAgency) && !(isSignalRadar && !isProOrAgency) && (
                       <span
                         style={{
                           width: 5,

@@ -87,6 +87,13 @@ export async function POST(req: NextRequest) {
           ? `\n\nIMPORTANT: Write in the user's personal style. Here is their style guide:\n${ghostWriterStyle}\nMatch their tone, sentence structure, vocabulary, and patterns exactly.`
           : "";
 
+        const signalData = lead.signal_data || null;
+        const signalInstruction = signalData
+          ? `\n\nSIGNAL RADAR INTELLIGENCE — Use this research to make the email hyper-personalized. Weave in specific details naturally; do not list them:\n${JSON.stringify(signalData)}`
+          : "";
+
+        const leadName = lead.name || lead.first_name || "";
+
         const message = await anthropic.messages.create({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 500,
@@ -94,7 +101,7 @@ export async function POST(req: NextRequest) {
             role: "user",
             content: `Write a cold email. Return ONLY a raw JSON object with "subject" and "body" keys. No markdown, no code fences, no explanation.
 
-Name: ${lead.name}
+Name: ${leadName}
 Company: ${lead.company}
 Role: ${lead.role}
 Situation: ${note}
@@ -102,7 +109,7 @@ Situation: ${note}
 The email body MUST start by directly mentioning: "${note}"
 Tone: ${tone}
 Max 3 sentences in body.
-No generic openers. Reference the situation in the first word.${styleInstruction}`
+No generic openers. Reference the situation in the first word.${signalInstruction}${styleInstruction}`
           }]
         });
 
@@ -122,13 +129,15 @@ No generic openers. Reference the situation in the first word.${styleInstruction
         if (campaign) {
           await supabase.from("leads").insert({
             campaign_id: campaign.id,
-            first_name: lead.name,
+            first_name: lead.name || lead.first_name,
             company: lead.company,
             role: lead.role,
             email: lead.email,
             custom_note: note,
             generated_subject: parsed.subject,
             generated_body: parsed.body,
+            signal_data: signalData ?? null,
+            signal_status: signalData ? "done" : "pending",
           });
         }
 

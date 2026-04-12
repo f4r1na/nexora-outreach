@@ -333,6 +333,20 @@ export default function NewCampaignPage() {
   // ── Ghost Writer state
   const [ghostWriterActive, setGhostWriterActive] = useState(false);
 
+  // ── Signal Radar state
+  type SignalData = {
+    company_insights: string;
+    role_insights: string;
+    pain_points: string[];
+    talking_points: string[];
+    recent_signals: string[];
+    personalization_hooks: string[];
+  };
+  const [signalResults, setSignalResults] = useState<Record<number, SignalData>>({});
+  const [signalResearching, setSignalResearching] = useState(false);
+  const [signalError, setSignalError] = useState<string | null>(null);
+  const [signalExpandedIdx, setSignalExpandedIdx] = useState<number | null>(null);
+
   // Fetch user plan for export gate
   useEffect(() => {
     fetch("/api/subscription")
@@ -570,6 +584,38 @@ export default function NewCampaignPage() {
     return () => clearInterval(interval);
   }, [isGenerating]);
 
+  // ── Signal Radar research
+  const handleResearch = async () => {
+    setSignalResearching(true);
+    setSignalError(null);
+    try {
+      const res = await fetch("/api/signals/research", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leads }),
+      });
+      const data = await res.json() as {
+        results?: Array<{ lead_index: number; signal_data: SignalData | null; status: string }>;
+        error?: string;
+      };
+      if (!res.ok) {
+        setSignalError(data.error ?? "Research failed");
+        return;
+      }
+      const map: Record<number, SignalData> = {};
+      for (const r of data.results ?? []) {
+        if (r.status === "done" && r.signal_data) {
+          map[r.lead_index] = r.signal_data;
+        }
+      }
+      setSignalResults(map);
+    } catch {
+      setSignalError("Network error — please try again.");
+    } finally {
+      setSignalResearching(false);
+    }
+  };
+
   // ── Generate
   const handleGenerate = async () => {
     setError(null);
@@ -585,7 +631,11 @@ export default function NewCampaignPage() {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ campaignName: name, tone, leads }),
+        body: JSON.stringify({
+          campaignName: name,
+          tone,
+          leads: leads.map((l, i) => ({ ...l, signal_data: signalResults[i] || null })),
+        }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Generation failed");
@@ -1194,6 +1244,149 @@ export default function NewCampaignPage() {
               </div>
             )}
 
+            {/* ── Signal Radar ── */}
+            {leads.length > 0 && (
+              <div style={{ marginBottom: 28 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 700, color: "#fff", fontFamily: "var(--font-outfit)", margin: 0, marginBottom: 2 }}>
+                      🛰️ Signal Radar
+                    </p>
+                    <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-outfit)", margin: 0 }}>
+                      AI researches each lead so emails reference real context.
+                    </p>
+                  </div>
+                  {Object.keys(signalResults).length > 0 && (
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, color: "#4ade80",
+                      backgroundColor: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.2)",
+                      padding: "3px 10px", borderRadius: 999, fontFamily: "var(--font-outfit)",
+                    }}>
+                      ✓ {Object.keys(signalResults).length} researched
+                    </span>
+                  )}
+                </div>
+
+                {(userPlan === "pro" || userPlan === "agency") ? (
+                  <>
+                    {Object.keys(signalResults).length === 0 ? (
+                      <div>
+                        {signalError && (
+                          <p style={{ fontSize: 12, color: "#ef4444", fontFamily: "var(--font-outfit)", marginBottom: 8 }}>
+                            {signalError}
+                          </p>
+                        )}
+                        <button
+                          type="button"
+                          onClick={handleResearch}
+                          disabled={signalResearching}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 8,
+                            padding: "10px 20px", borderRadius: 9,
+                            backgroundColor: signalResearching ? "rgba(255,82,0,0.07)" : "rgba(255,82,0,0.1)",
+                            color: "#FF5200", border: "1px solid rgba(255,82,0,0.25)",
+                            fontSize: 13, fontWeight: 700, fontFamily: "var(--font-outfit)",
+                            cursor: signalResearching ? "not-allowed" : "pointer",
+                          }}
+                        >
+                          {signalResearching ? (
+                            <>
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" style={{ animation: "spin 1s linear infinite", flexShrink: 0 }}>
+                                <path d="M12 2C6.477 2 2 6.477 2 12" />
+                              </svg>
+                              Analyzing {leads.length} lead{leads.length !== 1 ? "s" : ""} with Signal Radar…
+                            </>
+                          ) : (
+                            <>🛰️ Research Leads with Signal Radar</>
+                          )}
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                        {leads.slice(0, 5).map((lead, i) => {
+                          const sd = signalResults[i];
+                          if (!sd) return null;
+                          const isExpanded = signalExpandedIdx === i;
+                          return (
+                            <div key={i} style={{
+                              backgroundColor: "#0e0e0e",
+                              border: "1px solid rgba(255,82,0,0.15)",
+                              borderLeft: "3px solid rgba(255,82,0,0.4)",
+                              borderRadius: 9, padding: "10px 14px",
+                            }}>
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+                                <p style={{ fontSize: 12, fontWeight: 700, color: "#FF5200", fontFamily: "var(--font-syne)", margin: 0 }}>
+                                  🛰️ {lead.first_name}{lead.company ? ` · ${lead.company}` : ""}
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => setSignalExpandedIdx(isExpanded ? null : i)}
+                                  style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-outfit)", padding: 0 }}
+                                >
+                                  {isExpanded ? "Less ↑" : "More ↓"}
+                                </button>
+                              </div>
+                              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", fontFamily: "var(--font-outfit)", lineHeight: 1.55, margin: 0 }}>
+                                {sd.company_insights}
+                              </p>
+                              {isExpanded && (
+                                <div style={{ marginTop: 10 }}>
+                                  {sd.pain_points?.length > 0 && (
+                                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
+                                      {sd.pain_points.map((p, j) => (
+                                        <span key={j} style={{
+                                          fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 999,
+                                          backgroundColor: "rgba(255,82,0,0.08)", color: "rgba(255,82,0,0.7)",
+                                          border: "1px solid rgba(255,82,0,0.15)", fontFamily: "var(--font-outfit)",
+                                        }}>
+                                          {p}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  )}
+                                  {sd.personalization_hooks?.[0] && (
+                                    <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontFamily: "var(--font-outfit)", lineHeight: 1.5, margin: 0 }}>
+                                      <span style={{ color: "rgba(255,82,0,0.5)", fontWeight: 700 }}>Hook: </span>
+                                      {sd.personalization_hooks[0]}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {leads.length > 5 && (
+                          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", fontFamily: "var(--font-outfit)", margin: 0 }}>
+                            +{Object.keys(signalResults).length - Math.min(5, leads.length)} more leads researched
+                          </p>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => { setSignalResults({}); setSignalError(null); setSignalExpandedIdx(null); }}
+                          style={{ fontSize: 11, color: "rgba(255,255,255,0.22)", background: "none", border: "none", cursor: "pointer", fontFamily: "var(--font-outfit)", textAlign: "left", padding: 0, marginTop: 2 }}
+                        >
+                          Clear research ×
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div style={{
+                    padding: "12px 16px", borderRadius: 9,
+                    backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)",
+                    display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+                  }}>
+                    <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-outfit)", margin: 0 }}>
+                      🛰️ Signal Radar requires a Pro plan
+                    </p>
+                    <Link href="/dashboard/settings" style={{ fontSize: 12, fontWeight: 700, color: "#FF5200", fontFamily: "var(--font-outfit)", textDecoration: "none", flexShrink: 0 }}>
+                      Upgrade →
+                    </Link>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Actions */}
             <div style={{ display: "flex", gap: 12 }}>
               <button
@@ -1467,9 +1660,10 @@ export default function NewCampaignPage() {
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {emails.map((email) => {
+              {emails.map((email, emailIdx) => {
                 const isEditing = editingId === email.lead_id;
                 const isExpanded = expandedId === email.lead_id;
+                const emailSignal = signalResults[emailIdx] || null;
 
                 return (
                   <div
@@ -1520,6 +1714,19 @@ export default function NewCampaignPage() {
                           >
                             {email.email}
                           </p>
+                        )}
+                        {emailSignal && (
+                          <span style={{
+                            display: "inline-flex", alignItems: "center", gap: 4,
+                            fontSize: 10, fontWeight: 700, marginTop: 4,
+                            color: "rgba(255,82,0,0.7)",
+                            backgroundColor: "rgba(255,82,0,0.07)",
+                            border: "1px solid rgba(255,82,0,0.15)",
+                            padding: "2px 7px", borderRadius: 999,
+                            fontFamily: "var(--font-outfit)",
+                          }}>
+                            🛰️ Signal data used
+                          </span>
                         )}
                       </div>
                       <button

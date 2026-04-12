@@ -60,6 +60,10 @@ create policy "Users can insert own replies" on replies
 create policy "Users can update own replies" on replies
   for update using (auth.uid() = user_id);
 
+-- Signal Radar
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS signal_data jsonb DEFAULT '{}';
+ALTER TABLE leads ADD COLUMN IF NOT EXISTS signal_status text DEFAULT 'pending' CHECK (signal_status IN ('pending', 'researching', 'done', 'failed'));
+
 -- Analytics — Email Events
 CREATE TABLE IF NOT EXISTS email_events (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
