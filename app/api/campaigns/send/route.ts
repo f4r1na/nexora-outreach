@@ -17,19 +17,36 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+const TRACKING_BASE = "https://nexoraoutreach.com";
+
 // Build a base64url-encoded RFC 2822 MIME message for the Gmail API.
+// Injects open-tracking pixel and rewrites URLs for click tracking.
 function buildRawMessage(opts: {
   to: string;
   from: string;
   subject: string;
   body: string;
+  leadId: string;
 }): string {
-  const htmlBody = opts.body
+  // Step 1: HTML-escape the body
+  let htmlBody = opts.body
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .split("\n")
-    .join("<br>\n");
+    .replace(/>/g, "&gt;");
+
+  // Step 2: Wrap plain-text URLs in tracked anchor tags (after escaping)
+  htmlBody = htmlBody.replace(/(https?:\/\/[^\s<>"]+)/g, (rawUrl) => {
+    const url = rawUrl.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">");
+    const payload = Buffer.from(JSON.stringify({ lead_id: opts.leadId, url })).toString("base64url");
+    const trackUrl = `${TRACKING_BASE}/api/track/click/${payload}`;
+    return `<a href="${trackUrl}" style="color:#FF5200;text-decoration:underline">${rawUrl}</a>`;
+  });
+
+  // Step 3: Convert newlines to <br>
+  htmlBody = htmlBody.split("\n").join("<br>\n");
+
+  // Step 4: Open-tracking pixel
+  const pixel = `<img src="${TRACKING_BASE}/api/track/open/${opts.leadId}" width="1" height="1" style="display:none" alt="" />`;
 
   const mime = [
     `To: ${opts.to}`,
@@ -38,7 +55,7 @@ function buildRawMessage(opts: {
     "MIME-Version: 1.0",
     "Content-Type: text/html; charset=UTF-8",
     "",
-    `<html><body><div style="font-family:Arial,sans-serif;line-height:1.7;color:#222;max-width:600px">${htmlBody}</div></body></html>`,
+    `<html><body><div style="font-family:Arial,sans-serif;line-height:1.7;color:#222;max-width:600px">${htmlBody}${pixel}</div></body></html>`,
   ].join("\r\n");
 
   return Buffer.from(mime).toString("base64url");
@@ -216,6 +233,7 @@ export async function POST(req: NextRequest) {
             from: fromEmail,
             subject: lead.generated_subject ?? "(no subject)",
             body: lead.generated_body ?? "",
+            leadId: lead.id,
           });
 
           let result = await sendGmail({ accessToken, raw });
@@ -244,6 +262,14 @@ export async function POST(req: NextRequest) {
               .from("subscriptions")
               .update({ sends_used: sendsUsed + sentCount })
               .eq("user_id", user.id);
+
+            // Record sent event for analytics
+            await db.from("email_events").insert({
+              lead_id: lead.id,
+              campaign_id: campaignId,
+              user_id: user.id,
+              event_type: "sent",
+            });
 
             console.log(JSON.stringify({ step: "send_email_sent", index: i + 1, to: lead.email }));
             event(controller, { type: "progress", sent: sentCount, total, to: lead.email });

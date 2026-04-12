@@ -60,6 +60,21 @@ create policy "Users can insert own replies" on replies
 create policy "Users can update own replies" on replies
   for update using (auth.uid() = user_id);
 
+-- Analytics — Email Events
+CREATE TABLE IF NOT EXISTS email_events (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  lead_id uuid REFERENCES leads(id),
+  campaign_id uuid REFERENCES campaigns(id),
+  user_id uuid REFERENCES auth.users NOT NULL,
+  event_type text NOT NULL CHECK (event_type IN ('sent', 'opened', 'clicked', 'replied')),
+  metadata jsonb DEFAULT '{}',
+  created_at timestamptz DEFAULT now()
+);
+ALTER TABLE email_events ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view own events" ON email_events FOR ALL USING (auth.uid() = user_id);
+CREATE INDEX idx_email_events_campaign ON email_events(campaign_id);
+CREATE INDEX idx_email_events_user ON email_events(user_id);
+
 -- Ghost Writer Mode
 CREATE TABLE IF NOT EXISTS writing_styles (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,

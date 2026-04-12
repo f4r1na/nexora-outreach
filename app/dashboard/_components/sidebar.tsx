@@ -58,6 +58,16 @@ function IconReplies() {
   );
 }
 
+function IconAnalytics() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="1" y="9" width="3" height="6" rx="1" stroke="currentColor" strokeWidth="1.4" />
+      <rect x="6" y="5" width="3" height="10" rx="1" stroke="currentColor" strokeWidth="1.4" />
+      <rect x="11" y="1" width="3" height="14" rx="1" stroke="currentColor" strokeWidth="1.4" />
+    </svg>
+  );
+}
+
 function IconGhostWriter() {
   return (
     <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -100,6 +110,7 @@ const navLinks = [
   { label: "Dashboard", href: "/dashboard", icon: <IconDashboard /> },
   { label: "Campaigns", href: "/dashboard/campaigns", icon: <IconCampaigns /> },
   { label: "Replies", href: "/dashboard/replies", icon: <IconReplies /> },
+  { label: "Analytics", href: "/dashboard/analytics", icon: <IconAnalytics /> },
   { label: "Ghost Writer", href: "/dashboard/ghostwriter", icon: <IconGhostWriter />, agencyOnly: true },
   { label: "Settings", href: "/dashboard/settings", icon: <IconSettings /> },
 ];
@@ -195,7 +206,9 @@ export default function Sidebar({ email, plan, creditsUsed, creditsLimit, pendin
             const isReplies = link.label === "Replies";
             const showReplyBadge = isReplies && pendingReplies > 0;
             const isGhostWriter = link.label === "Ghost Writer";
+            const isAnalytics = link.label === "Analytics";
             const isAgency = plan === "agency";
+            const isProOrAgency = plan === "pro" || plan === "agency";
             return (
               <li key={link.label}>
                 <Link
@@ -251,7 +264,20 @@ export default function Sidebar({ email, plan, creditsUsed, creditsLimit, pendin
                         Agency
                       </span>
                     )}
-                    {active && !showReplyBadge && !(isGhostWriter && !isAgency) && (
+                    {isAnalytics && !isProOrAgency && (
+                      <span style={{
+                        fontSize: 9, fontWeight: 700, lineHeight: 1,
+                        padding: "2px 6px", borderRadius: 99,
+                        backgroundColor: "rgba(255,82,0,0.1)",
+                        color: "#FF5200",
+                        border: "1px solid rgba(255,82,0,0.2)",
+                        fontFamily: "var(--font-outfit)",
+                        letterSpacing: "0.04em",
+                      }}>
+                        Pro
+                      </span>
+                    )}
+                    {active && !showReplyBadge && !(isGhostWriter && !isAgency) && !(isAnalytics && !isProOrAgency) && (
                       <span
                         style={{
                           width: 5,

@@ -240,6 +240,14 @@ export async function POST(req: NextRequest) {
           continue;
         }
 
+        // Record replied event for analytics
+        await db.from("email_events").insert({
+          lead_id: lead.id,
+          campaign_id: lead.campaign_id,
+          user_id: user.id,
+          event_type: "replied",
+        });
+
         // Mark as read
         await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${msg.id}/modify`, {
           method: "POST",
