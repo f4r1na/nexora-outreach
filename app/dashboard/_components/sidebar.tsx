@@ -78,82 +78,77 @@ const navLinks = [
   { label: "Settings",   href: "/dashboard/settings",  icon: <IconSettings /> },
 ];
 
-export default function Sidebar({ email, plan, creditsUsed, creditsLimit }: SidebarProps) {
+export default function Sidebar({ email, plan, creditsUsed, creditsLimit, pendingReplies }: SidebarProps) {
   const pathname = usePathname();
 
-  const creditsDisplay = creditsLimit === 999999
-    ? "Unlimited credits"
-    : `${creditsLimit - creditsUsed} of ${creditsLimit} credits`;
-
+  const isUnlimited = creditsLimit === 999999;
+  const creditsLeft = isUnlimited ? 0 : Math.max(0, creditsLimit - creditsUsed);
+  const creditPct = isUnlimited ? 0 : Math.min(100, Math.round((creditsUsed / creditsLimit) * 100));
   const planLabel = plan.charAt(0).toUpperCase() + plan.slice(1);
 
   return (
     <aside style={{
-      width: 216,
+      width: 232,
       flexShrink: 0,
       position: "fixed",
       top: 0,
       left: 0,
       bottom: 0,
-      backgroundColor: "#080808",
-      borderRight: "1px solid rgba(255,255,255,0.06)",
+      backgroundColor: "#070707",
+      borderRight: "1px solid rgba(255,255,255,0.055)",
       display: "flex",
       flexDirection: "column",
       zIndex: 40,
     }}>
       {/* Logo */}
-      <div style={{ padding: "18px 14px 14px" }}>
-        <Link href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none" }}>
+      <div style={{ padding: "20px 16px 16px" }}>
+        <Link href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
           <div style={{
-            width: 26,
-            height: 26,
+            width: 28,
+            height: 28,
             backgroundColor: "#FF5200",
-            borderRadius: 6,
+            borderRadius: 7,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
           }}>
-            <span style={{
-              fontSize: 13,
-              fontWeight: 700,
-              color: "#fff",
-              fontFamily: "var(--font-syne)",
-              lineHeight: 1,
-            }}>N</span>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M2 12V2h2.5l5.5 7V2H12v10h-2.5L4 5v7H2z" fill="white" />
+            </svg>
           </div>
           <span style={{
             fontSize: 14,
-            fontWeight: 500,
+            fontWeight: 600,
             color: "#fff",
             fontFamily: "var(--font-syne)",
-            letterSpacing: "-0.01em",
+            letterSpacing: "-0.02em",
           }}>
             Nexora
           </span>
         </Link>
       </div>
 
-      <div style={{ height: 1, backgroundColor: "rgba(255,255,255,0.05)", marginBottom: 6 }} />
+      <div style={{ height: 1, backgroundColor: "rgba(255,255,255,0.05)", margin: "0 0 8px" }} />
 
       {/* Nav */}
-      <nav style={{ flex: 1, padding: "4px 8px" }}>
-        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 1 }}>
+      <nav style={{ flex: 1, padding: "4px 10px" }}>
+        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 2 }}>
           {navLinks.map((link) => {
             const active = link.href === "/dashboard"
               ? pathname === "/dashboard"
               : pathname.startsWith(link.href);
+            const hasBadge = link.href === "/dashboard/inbox" && (pendingReplies ?? 0) > 0;
 
             return (
               <li key={link.label} style={{ position: "relative" }}>
-                {/* Animated background pill */}
                 {active && (
                   <motion.div
                     layoutId="sidebar-active-bg"
                     style={{
                       position: "absolute",
                       inset: 0,
-                      borderRadius: 6,
+                      borderRadius: 7,
                       backgroundColor: "rgba(255,82,0,0.07)",
                       borderLeft: "2px solid #FF5200",
                     }}
@@ -166,21 +161,39 @@ export default function Sidebar({ email, plan, creditsUsed, creditsLimit }: Side
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 9,
-                    padding: "7px 10px",
+                    justifyContent: "space-between",
+                    padding: "8px 10px",
                     paddingLeft: active ? 10 : 12,
-                    borderRadius: 6,
+                    borderRadius: 7,
                     fontSize: 13,
                     fontFamily: "var(--font-outfit)",
-                    fontWeight: 400,
-                    color: active ? "#fff" : "#5a5a5a",
+                    fontWeight: active ? 500 : 400,
+                    color: active ? "#e8e8e8" : "#4a4a4a",
                     textDecoration: "none",
                     position: "relative",
                     zIndex: 1,
                   }}
                 >
-                  <span style={{ flexShrink: 0, display: "flex" }}>{link.icon}</span>
-                  {link.label}
+                  <span style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                    <span style={{ flexShrink: 0, display: "flex" }}>{link.icon}</span>
+                    {link.label}
+                  </span>
+                  {hasBadge && (
+                    <span style={{
+                      fontSize: 9,
+                      fontWeight: 600,
+                      color: "#FF5200",
+                      backgroundColor: "rgba(255,82,0,0.1)",
+                      border: "1px solid rgba(255,82,0,0.2)",
+                      borderRadius: 999,
+                      padding: "1px 5px",
+                      lineHeight: 1.6,
+                      fontFamily: "var(--font-outfit)",
+                      flexShrink: 0,
+                    }}>
+                      {pendingReplies}
+                    </span>
+                  )}
                 </Link>
               </li>
             );
@@ -188,38 +201,68 @@ export default function Sidebar({ email, plan, creditsUsed, creditsLimit }: Side
         </ul>
       </nav>
 
-      {/* Bottom user section */}
-      <div style={{ padding: "10px 10px 14px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+      {/* Bottom: credits + user */}
+      <div style={{ padding: "12px 12px 16px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+        {/* Credit usage bar */}
+        {!isUnlimited && (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+              <span style={{ fontSize: 10, color: "#383838", fontFamily: "var(--font-outfit)" }}>
+                {creditsLeft} credits left
+              </span>
+              <span style={{ fontSize: 10, color: "#2e2e2e", fontFamily: "var(--font-outfit)" }}>
+                {creditsLimit}
+              </span>
+            </div>
+            <div className="credit-bar-track">
+              <div className="credit-bar-fill" style={{ width: `${creditPct}%` }} />
+            </div>
+          </div>
+        )}
+
+        {/* Email + plan badge */}
         <div style={{ marginBottom: 8 }}>
           <div style={{
             fontSize: 11,
-            color: "#444",
+            color: "#3a3a3a",
             fontFamily: "var(--font-outfit)",
-            marginBottom: 1,
+            marginBottom: 4,
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
           }} title={email}>
             {email}
           </div>
-          <div style={{ fontSize: 11, color: "#383838", fontFamily: "var(--font-outfit)" }}>
-            {planLabel} · {creditsDisplay}
-          </div>
+          <span style={{
+            fontSize: 9,
+            fontWeight: 600,
+            fontFamily: "var(--font-outfit)",
+            color: "#FF5200",
+            backgroundColor: "rgba(255,82,0,0.08)",
+            border: "1px solid rgba(255,82,0,0.15)",
+            borderRadius: 999,
+            padding: "2px 7px",
+            letterSpacing: "0.04em",
+            textTransform: "uppercase",
+          }}>
+            {planLabel}
+          </span>
         </div>
 
         <form action={logout}>
           <button
             type="submit"
             className="btn-ghost"
+            aria-label="Sign out"
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 6,
-              padding: "5px 10px",
+              gap: 7,
+              padding: "6px 10px",
               borderRadius: 6,
-              border: "1px solid rgba(255,255,255,0.07)",
+              border: "1px solid rgba(255,255,255,0.06)",
               backgroundColor: "transparent",
-              color: "#444",
+              color: "#383838",
               fontSize: 12,
               fontFamily: "var(--font-outfit)",
               cursor: "pointer",

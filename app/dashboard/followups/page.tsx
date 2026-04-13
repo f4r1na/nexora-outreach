@@ -193,7 +193,7 @@ function CampaignCard({
       backgroundColor: "#0e0e0e",
       border: "1px solid rgba(255,255,255,0.07)",
       borderLeft: "3px solid rgba(255,82,0,0.4)",
-      borderRadius: 12,
+      borderRadius: 10,
       overflow: "hidden",
     }}>
       {/* Campaign header */}
@@ -322,15 +322,15 @@ export default function FollowupsPage() {
       <header style={{
         padding: "0 32px", height: 68,
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-        backgroundColor: "rgba(6,6,6,0.85)", backdropFilter: "blur(12px)",
+        borderBottom: "1px solid rgba(255,255,255,0.055)",
+        backgroundColor: "rgba(6,6,6,0.94)", backdropFilter: "blur(12px)",
         position: "sticky", top: 0, zIndex: 30, gap: 16,
       }}>
         <div>
-          <h1 style={{ fontSize: 17, fontWeight: 800, color: "#fff", fontFamily: "var(--font-syne)", margin: 0, lineHeight: 1.2 }}>
+          <h1 style={{ fontSize: 16, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)", margin: 0, lineHeight: 1, letterSpacing: "-0.02em" }}>
             Follow-up Sequences
           </h1>
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", fontFamily: "var(--font-outfit)", margin: 0, marginTop: 2 }}>
+          <p style={{ fontSize: 11, color: "#383838", fontFamily: "var(--font-outfit)", margin: 0, marginTop: 3 }}>
             Automatic follow-ups for leads who haven&apos;t replied
           </p>
         </div>
@@ -340,7 +340,7 @@ export default function FollowupsPage() {
             disabled={sending}
             style={{
               display: "inline-flex", alignItems: "center", gap: 7,
-              padding: "8px 16px", borderRadius: 8, fontSize: 12.5, fontWeight: 700,
+              padding: "8px 16px", borderRadius: 7, fontSize: 12, fontWeight: 500,
               fontFamily: "var(--font-outfit)", cursor: sending ? "not-allowed" : "pointer",
               backgroundColor: sending ? "rgba(255,82,0,0.4)" : "#FF5200", color: "#fff", border: "none",
               transition: "background-color 0.15s",

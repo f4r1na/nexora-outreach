@@ -287,7 +287,7 @@ export default function FollowUpsTab({
       <div style={{
         backgroundColor: "#0e0e0e",
         border: "1px solid rgba(255,255,255,0.06)",
-        borderRadius: 8, overflow: "hidden",
+        borderRadius: 10, overflow: "hidden",
       }}>
         {sequences
           .sort((a, b) => a.follow_up_number - b.follow_up_number)

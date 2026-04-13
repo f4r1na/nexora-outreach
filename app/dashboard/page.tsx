@@ -43,33 +43,33 @@ export default async function DashboardPage({
       {/* Header */}
       <header style={{
         padding: "0 32px",
-        height: 60,
+        height: 68,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-        backgroundColor: "rgba(6,6,6,0.92)",
-        backdropFilter: "blur(10px)",
+        borderBottom: "1px solid rgba(255,255,255,0.055)",
+        backgroundColor: "rgba(6,6,6,0.94)",
+        backdropFilter: "blur(12px)",
         position: "sticky",
         top: 0,
         zIndex: 30,
       }}>
         <div>
           <h1 style={{
-            fontSize: 14,
+            fontSize: 16,
             fontWeight: 500,
             color: "#fff",
             fontFamily: "var(--font-syne)",
             lineHeight: 1,
-            letterSpacing: "-0.01em",
+            letterSpacing: "-0.02em",
           }}>
             Dashboard
           </h1>
           <p style={{
             fontSize: 11,
-            color: "#484848",
+            color: "#383838",
             fontFamily: "var(--font-outfit)",
-            marginTop: 2,
+            marginTop: 3,
           }}>
             {user.email}
           </p>
@@ -77,24 +77,24 @@ export default async function DashboardPage({
         <Link href="/dashboard/campaigns/new" className="btn-primary" style={{
           display: "inline-flex",
           alignItems: "center",
-          gap: 6,
-          padding: "7px 14px",
+          gap: 7,
+          padding: "8px 16px",
           backgroundColor: "#FF5200",
           color: "#fff",
-          borderRadius: 6,
+          borderRadius: 7,
           fontSize: 12,
           fontWeight: 500,
           fontFamily: "var(--font-outfit)",
           textDecoration: "none",
         }}>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
           </svg>
           New Campaign
         </Link>
       </header>
 
-      <main style={{ flex: 1, padding: "28px 32px 64px" }}>
+      <main style={{ flex: 1, padding: "32px 32px 80px" }}>
         {params.success === "true" && <PaymentBanner type="success" />}
         {params.canceled === "true" && <PaymentBanner type="canceled" />}
         {!user.email_confirmed_at && <VerifyBanner />}

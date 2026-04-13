@@ -105,22 +105,22 @@ export default function AnalyticsPage() {
       {/* Header */}
       <header style={{
         padding: "0 32px",
-        height: 60,
+        height: 68,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-        backgroundColor: "rgba(6,6,6,0.92)",
-        backdropFilter: "blur(10px)",
+        borderBottom: "1px solid rgba(255,255,255,0.055)",
+        backgroundColor: "rgba(6,6,6,0.94)",
+        backdropFilter: "blur(12px)",
         position: "sticky",
         top: 0,
         zIndex: 30,
       }}>
         <div>
-          <h1 style={{ fontSize: 14, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)", lineHeight: 1, letterSpacing: "-0.01em" }}>
+          <h1 style={{ fontSize: 16, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)", lineHeight: 1, letterSpacing: "-0.02em" }}>
             Analytics
           </h1>
-          <p style={{ fontSize: 11, color: "#484848", fontFamily: "var(--font-outfit)", marginTop: 2 }}>
+          <p style={{ fontSize: 11, color: "#383838", fontFamily: "var(--font-outfit)", marginTop: 3 }}>
             Campaign performance
           </p>
         </div>
@@ -215,13 +215,13 @@ export default function AnalyticsPage() {
                   <div className="stat-card" style={{
                     backgroundColor: "#0e0e0e",
                     border: "1px solid rgba(255,255,255,0.06)",
-                    borderRadius: 8,
-                    padding: "16px 18px",
+                    borderRadius: 10,
+                    padding: "18px 22px",
                   }}>
-                    <div style={{ fontSize: 9, fontWeight: 500, letterSpacing: "0.07em", color: "#484848", fontFamily: "var(--font-outfit)", marginBottom: 8, textTransform: "uppercase" }}>
+                    <div className="nx-section-label" style={{ marginBottom: 10 }}>
                       {card.label}
                     </div>
-                    <div style={{ fontSize: 22, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)", lineHeight: 1, marginBottom: 4 }}>
+                    <div style={{ fontSize: 24, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)", lineHeight: 1, marginBottom: 4 }}>
                       <CountUp value={card.value} suffix={card.suffix ?? ""} duration={900} />
                     </div>
                     {card.sub && (
@@ -239,14 +239,11 @@ export default function AnalyticsPage() {
               <div style={{
                 backgroundColor: "#0e0e0e",
                 border: "1px solid rgba(255,255,255,0.06)",
-                borderRadius: 8,
+                borderRadius: 10,
                 padding: "20px 24px",
                 marginBottom: 16,
               }}>
-                <p style={{
-                  fontSize: 9, fontWeight: 500, letterSpacing: "0.06em", textTransform: "uppercase",
-                  color: "#484848", fontFamily: "var(--font-outfit)", marginBottom: 16,
-                }}>
+                <p className="nx-section-label" style={{ marginBottom: 16 }}>
                   Daily send volume — last 30 days
                 </p>
                 <ResponsiveContainer width="100%" height={160}>
@@ -288,21 +285,17 @@ export default function AnalyticsPage() {
                 <div style={{
                   backgroundColor: "#0e0e0e",
                   border: "1px solid rgba(255,255,255,0.06)",
-                  borderRadius: 8,
+                  borderRadius: 10,
                   overflow: "hidden",
                 }}>
                   <div style={{
                     display: "grid",
                     gridTemplateColumns: "2fr 60px 60px 80px 60px 80px 60px 80px",
-                    padding: "10px 20px",
+                    padding: "10px 22px",
                     borderBottom: "1px solid rgba(255,255,255,0.05)",
                   }}>
                     {["Campaign", "Sent", "Opens", "Open %", "Clicks", "Click %", "Replies", "Reply %"].map((col) => (
-                      <div key={col} style={{
-                        fontSize: 9, fontWeight: 500, letterSpacing: "0.06em",
-                        textTransform: "uppercase", color: "#383838",
-                        fontFamily: "var(--font-outfit)",
-                      }}>
+                      <div key={col} className="nx-section-label">
                         {col}
                       </div>
                     ))}
@@ -315,7 +308,7 @@ export default function AnalyticsPage() {
                       style={{
                         display: "grid",
                         gridTemplateColumns: "2fr 60px 60px 80px 60px 80px 60px 80px",
-                        padding: "12px 20px",
+                        padding: "12px 22px",
                         borderTop: idx === 0 ? "none" : "1px solid rgba(255,255,255,0.03)",
                         alignItems: "center",
                       }}

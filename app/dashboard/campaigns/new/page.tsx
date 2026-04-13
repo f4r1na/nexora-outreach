@@ -670,13 +670,13 @@ export default function NewCampaignPage() {
       <header
         style={{
           padding: "0 32px",
-          height: 60,
+          height: 68,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
-          backgroundColor: "rgba(6,6,6,0.92)",
-          backdropFilter: "blur(10px)",
+          borderBottom: "1px solid rgba(255,255,255,0.055)",
+          backgroundColor: "rgba(6,6,6,0.94)",
+          backdropFilter: "blur(12px)",
           position: "sticky",
           top: 0,
           zIndex: 30,

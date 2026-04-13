@@ -153,7 +153,7 @@ function ReplyCard({
     <div style={{
       backgroundColor: "#0e0e0e",
       border: "1px solid rgba(255,255,255,0.06)",
-      borderRadius: 8, overflow: "hidden",
+      borderRadius: 10, overflow: "hidden",
       opacity: isDone ? 0.65 : 1,
     }}>
       {/* Card header */}
@@ -185,11 +185,12 @@ function ReplyCard({
           <span style={{ fontSize: 11, color: "#444", fontFamily: "var(--font-outfit)" }}>
             {formatDate(reply.created_at)}
           </span>
-          <span style={{
-            fontSize: 11, fontWeight: 400,
-            color: cfg.color,
-            fontFamily: "var(--font-outfit)",
-          }}>
+          <span className={`nx-badge ${
+            reply.status === "sent" ? "nx-badge-green" :
+            reply.status === "draft_ready" ? "nx-badge-blue" :
+            reply.status === "pending" ? "nx-badge-orange" :
+            "nx-badge-gray"
+          }`}>
             {cfg.label}
           </span>
           <button
@@ -553,17 +554,17 @@ export default function InboxPage() {
     <>
       {/* Header */}
       <header style={{
-        padding: "0 32px", height: 60,
+        padding: "0 32px", height: 68,
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-        backgroundColor: "rgba(6,6,6,0.92)", backdropFilter: "blur(10px)",
+        borderBottom: "1px solid rgba(255,255,255,0.055)",
+        backgroundColor: "rgba(6,6,6,0.94)", backdropFilter: "blur(12px)",
         position: "sticky", top: 0, zIndex: 30, gap: 16,
       }}>
         <div>
-          <h1 style={{ fontSize: 14, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)", margin: 0, lineHeight: 1, letterSpacing: "-0.01em" }}>
+          <h1 style={{ fontSize: 16, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)", margin: 0, lineHeight: 1, letterSpacing: "-0.02em" }}>
             Inbox
           </h1>
-          <p style={{ fontSize: 11, color: "#484848", fontFamily: "var(--font-outfit)", margin: 0, marginTop: 2 }}>
+          <p style={{ fontSize: 11, color: "#383838", fontFamily: "var(--font-outfit)", margin: 0, marginTop: 3 }}>
             Responses from your campaigns
           </p>
         </div>
@@ -665,13 +666,13 @@ export default function InboxPage() {
         {loading ? (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="skeleton" style={{ height: 64, borderRadius: 8, animationDelay: `${i * 0.08}s` }} />
+              <div key={i} className="skeleton" style={{ height: 64, borderRadius: 10, animationDelay: `${i * 0.08}s` }} />
             ))}
           </div>
         ) : filtered.length === 0 ? (
           <div style={{
             backgroundColor: "#0e0e0e", border: "1px solid rgba(255,255,255,0.06)",
-            borderRadius: 8, padding: "64px 24px",
+            borderRadius: 10, padding: "64px 24px",
             display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
           }}>
             <div style={{ color: "#333" }}>

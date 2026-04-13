@@ -68,13 +68,13 @@ export default async function CampaignDetailPage({ params, searchParams }: Props
       {/* Header */}
       <header style={{
         padding: "0 32px",
-        height: 60,
+        height: 68,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-        backgroundColor: "rgba(6,6,6,0.92)",
-        backdropFilter: "blur(10px)",
+        borderBottom: "1px solid rgba(255,255,255,0.055)",
+        backgroundColor: "rgba(6,6,6,0.94)",
+        backdropFilter: "blur(12px)",
         position: "sticky",
         top: 0,
         zIndex: 30,
@@ -169,18 +169,10 @@ export default async function CampaignDetailPage({ params, searchParams }: Props
             <div style={{
               backgroundColor: "#0e0e0e",
               border: "1px solid rgba(255,255,255,0.06)",
-              borderRadius: 8,
-              padding: "20px 20px",
+              borderRadius: 10,
+              padding: "20px 22px",
             }}>
-              <p style={{
-                fontSize: 10,
-                fontWeight: 500,
-                letterSpacing: "0.06em",
-                textTransform: "uppercase",
-                color: "#444",
-                fontFamily: "var(--font-outfit)",
-                marginBottom: 16,
-              }}>
+              <p className="nx-section-label" style={{ marginBottom: 16 }}>
                 Campaign details
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -188,16 +180,9 @@ export default async function CampaignDetailPage({ params, searchParams }: Props
                 <OverviewRow label="Tone" value={campaign.tone ? campaign.tone.charAt(0).toUpperCase() + campaign.tone.slice(1) : "—"} />
                 <OverviewRow label="Leads" value={`${allLeads.length}`} />
                 <OverviewRow label="Status">
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{
-                      width: 6, height: 6, borderRadius: "50%",
-                      backgroundColor: isSent ? "#4ade80" : "#555",
-                      flexShrink: 0,
-                    }} />
-                    <span style={{ fontSize: 13, color: "#888", fontFamily: "var(--font-outfit)" }}>
-                      {isSent ? "Sent" : "Draft"}
-                    </span>
-                  </div>
+                  <span className={`nx-badge ${isSent ? "nx-badge-green" : "nx-badge-gray"}`}>
+                    {isSent ? "Sent" : "Draft"}
+                  </span>
                 </OverviewRow>
                 <OverviewRow label="Created" value={createdDate} />
               </div>
@@ -219,8 +204,8 @@ export default async function CampaignDetailPage({ params, searchParams }: Props
                   <div style={{
                     backgroundColor: "#0e0e0e",
                     border: "1px solid rgba(255,255,255,0.06)",
-                    borderRadius: 8,
-                    padding: "18px 20px",
+                    borderRadius: 10,
+                    padding: "18px 22px",
                   }}>
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12, gap: 12 }}>
                       <div>

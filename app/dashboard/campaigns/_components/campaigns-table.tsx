@@ -112,17 +112,18 @@ export default function CampaignsTable({ campaigns }: { campaigns: Campaign[] })
           />
         </div>
 
-        <div style={{ display: "flex", gap: 2, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 7, padding: 2 }}>
+        <div style={{ display: "flex", gap: 2, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 8, padding: 3, border: "1px solid rgba(255,255,255,0.05)" }}>
           {(["all", "complete", "draft"] as const).map((f) => (
             <button key={f} onClick={() => setFilter(f)} className="btn-ghost" style={{
-              padding: "5px 12px",
-              borderRadius: 5,
+              padding: "5px 13px",
+              borderRadius: 6,
               fontSize: 11,
               fontFamily: "var(--font-outfit)",
               border: "none",
               cursor: "pointer",
-              backgroundColor: filter === f ? "rgba(255,255,255,0.08)" : "transparent",
-              color: filter === f ? "#ddd" : "#484848",
+              backgroundColor: filter === f ? "rgba(255,255,255,0.07)" : "transparent",
+              color: filter === f ? "#ccc" : "#3a3a3a",
+              fontWeight: filter === f ? 500 : 400,
             }}>
               {f === "all" ? "All" : f === "complete" ? "Sent" : "Draft"}
             </button>
@@ -155,34 +156,34 @@ export default function CampaignsTable({ campaigns }: { campaigns: Campaign[] })
       <div style={{
         backgroundColor: "#0e0e0e",
         border: "1px solid rgba(255,255,255,0.06)",
-        borderRadius: 8,
+        borderRadius: 10,
         overflow: "hidden",
       }}>
         {/* Column headers */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: "1fr 70px 90px 130px 100px",
-          padding: "10px 20px",
+          gridTemplateColumns: "1fr 70px 100px 130px 90px",
+          padding: "10px 22px",
           borderBottom: "1px solid rgba(255,255,255,0.05)",
         }}>
           {["Campaign", "Leads", "Status", "Created", ""].map((col) => (
-            <div key={col} style={{
-              fontSize: 9,
-              fontWeight: 500,
-              color: "#383838",
-              textTransform: "uppercase",
-              letterSpacing: "0.06em",
-              fontFamily: "var(--font-outfit)",
-            }}>
-              {col}
-            </div>
+            <div key={col} className="nx-section-label">{col}</div>
           ))}
         </div>
 
         {/* Rows */}
         {filtered.length === 0 ? (
-          <div style={{ padding: "48px 20px", textAlign: "center" }}>
-            <p style={{ fontSize: 13, color: "#383838", fontFamily: "var(--font-outfit)" }}>
+          <div style={{ padding: "56px 24px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+            <div style={{
+              width: 40, height: 40, borderRadius: 9,
+              border: "1px solid rgba(255,255,255,0.07)",
+              display: "flex", alignItems: "center", justifyContent: "center", color: "#383838",
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+              </svg>
+            </div>
+            <p style={{ fontSize: 13, color: "#444", fontFamily: "var(--font-outfit)" }}>
               {search ? `No campaigns matching "${search}"` : "No campaigns yet."}
             </p>
           </div>
@@ -201,15 +202,15 @@ export default function CampaignsTable({ campaigns }: { campaigns: Campaign[] })
                   className="table-row"
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "1fr 70px 90px 130px 100px",
-                    padding: "11px 20px",
+                    gridTemplateColumns: "1fr 70px 100px 130px 90px",
+                    padding: "11px 22px",
                     borderTop: i === 0 ? "none" : "1px solid rgba(255,255,255,0.03)",
                     alignItems: "center",
                   }}
                 >
                   <div style={{
                     fontSize: 13,
-                    color: "#c0c0c0",
+                    color: "#b8b8b8",
                     fontFamily: "var(--font-outfit)",
                     overflow: "hidden",
                     textOverflow: "ellipsis",
@@ -219,19 +220,12 @@ export default function CampaignsTable({ campaigns }: { campaigns: Campaign[] })
                     {c.name}
                   </div>
 
-                  <div style={{ fontSize: 13, color: "#666", fontFamily: "var(--font-outfit)" }}>
+                  <div style={{ fontSize: 13, color: "#555", fontFamily: "var(--font-outfit)", fontVariantNumeric: "tabular-nums" }}>
                     {c.lead_count}
                   </div>
 
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{
-                      width: 5,
-                      height: 5,
-                      borderRadius: "50%",
-                      backgroundColor: isSent ? "#4ade80" : "#3a3a3a",
-                      flexShrink: 0,
-                    }} />
-                    <span style={{ fontSize: 12, color: "#555", fontFamily: "var(--font-outfit)" }}>
+                  <div>
+                    <span className={`nx-badge ${isSent ? "nx-badge-green" : "nx-badge-gray"}`}>
                       {isSent ? "Sent" : "Draft"}
                     </span>
                   </div>
@@ -240,15 +234,14 @@ export default function CampaignsTable({ campaigns }: { campaigns: Campaign[] })
                     {formatDate(c.created_at)}
                   </div>
 
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <Link
                       href={`/dashboard/campaigns/${c.id}`}
                       style={{
-                        fontSize: 12,
+                        fontSize: 11,
                         color: "#FF5200",
                         fontFamily: "var(--font-outfit)",
                         textDecoration: "none",
-                        transition: "opacity 0.15s ease",
                       }}
                     >
                       View
@@ -257,6 +250,7 @@ export default function CampaignsTable({ campaigns }: { campaigns: Campaign[] })
                       onClick={() => handleDelete(c.id)}
                       disabled={deletingId === c.id}
                       className="btn-ghost"
+                      aria-label="Delete campaign"
                       style={{
                         display: "flex",
                         alignItems: "center",
@@ -269,7 +263,6 @@ export default function CampaignsTable({ campaigns }: { campaigns: Campaign[] })
                         color: "#383838",
                         cursor: "pointer",
                       }}
-                      title="Delete campaign"
                     >
                       {deletingId === c.id ? <SpinnerIcon /> : <TrashIcon />}
                     </button>

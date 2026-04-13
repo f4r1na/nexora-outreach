@@ -54,7 +54,7 @@ function SignalCard({ lead }: { lead: SignalLead }) {
       backgroundColor: "#0e0e0e",
       border: "1px solid rgba(255,255,255,0.07)",
       borderLeft: "3px solid rgba(255,82,0,0.4)",
-      borderRadius: 12, padding: "16px 18px",
+      borderRadius: 10, padding: "16px 18px",
     }}>
       {/* Lead header */}
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12, gap: 12 }}>
@@ -256,20 +256,20 @@ export default function SignalsPage() {
       <header style={{
         padding: "0 32px", height: 68,
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-        backgroundColor: "rgba(6,6,6,0.85)", backdropFilter: "blur(12px)",
+        borderBottom: "1px solid rgba(255,255,255,0.055)",
+        backgroundColor: "rgba(6,6,6,0.94)", backdropFilter: "blur(12px)",
         position: "sticky", top: 0, zIndex: 30, gap: 16,
       }}>
         <div>
           <h1 style={{
-            fontSize: 17, fontWeight: 800, color: "#fff",
-            fontFamily: "var(--font-syne)", margin: 0, lineHeight: 1.2,
+            fontSize: 16, fontWeight: 500, color: "#fff",
+            fontFamily: "var(--font-syne)", margin: 0, lineHeight: 1, letterSpacing: "-0.02em",
           }}>
             Signal Radar
           </h1>
           <p style={{
-            fontSize: 12, color: "rgba(255,255,255,0.35)",
-            fontFamily: "var(--font-outfit)", margin: 0, marginTop: 2,
+            fontSize: 11, color: "#383838",
+            fontFamily: "var(--font-outfit)", margin: 0, marginTop: 3,
           }}>
             AI intelligence gathered on your leads
           </p>

@@ -64,8 +64,8 @@ function SectionCard({ children, style }: { children: React.ReactNode; style?: R
     <div style={{
       backgroundColor: "#0e0e0e",
       border: "1px solid rgba(255,255,255,0.06)",
-      borderRadius: 8,
-      padding: "20px",
+      borderRadius: 10,
+      padding: "20px 22px",
       marginBottom: 24,
       ...style,
     }}>
@@ -193,17 +193,17 @@ export default function SettingsPage() {
       {/* Header */}
       <header style={{
         padding: "0 32px",
-        height: 60,
+        height: 68,
         display: "flex",
         alignItems: "center",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-        backgroundColor: "rgba(6,6,6,0.92)",
-        backdropFilter: "blur(10px)",
+        borderBottom: "1px solid rgba(255,255,255,0.055)",
+        backgroundColor: "rgba(6,6,6,0.94)",
+        backdropFilter: "blur(12px)",
         position: "sticky",
         top: 0,
         zIndex: 30,
       }}>
-        <h1 style={{ fontSize: 14, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)", letterSpacing: "-0.01em" }}>
+        <h1 style={{ fontSize: 16, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)", letterSpacing: "-0.02em" }}>
           Settings
         </h1>
       </header>

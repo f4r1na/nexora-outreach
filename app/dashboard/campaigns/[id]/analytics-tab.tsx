@@ -37,12 +37,12 @@ function StatBlock({ label, value, color }: { label: string; value: number | str
     <div style={{
       backgroundColor: "#0e0e0e",
       border: "1px solid rgba(255,255,255,0.06)",
-      borderRadius: 8, padding: "16px 20px", flex: 1, minWidth: 0,
+      borderRadius: 10, padding: "18px 22px", flex: 1, minWidth: 0,
     }}>
-      <div style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.06em", color: "#555", fontFamily: "var(--font-outfit)", textTransform: "uppercase", marginBottom: 8 }}>
+      <div className="nx-section-label" style={{ marginBottom: 10 }}>
         {label}
       </div>
-      <div style={{ fontSize: 22, fontWeight: 500, color: color ?? "#fff", fontFamily: "var(--font-syne)", lineHeight: 1 }}>
+      <div style={{ fontSize: 24, fontWeight: 500, color: color ?? "#fff", fontFamily: "var(--font-syne)", lineHeight: 1 }}>
         {value}
       </div>
     </div>
@@ -166,7 +166,7 @@ export default function AnalyticsTab({
       <div style={{
         backgroundColor: "#0e0e0e",
         border: "1px solid rgba(255,255,255,0.06)",
-        borderRadius: 8, padding: "18px 20px",
+        borderRadius: 10, padding: "18px 22px",
         display: "flex", flexDirection: "column", gap: 14,
       }}>
         <RateBar label="Open rate" value={stats.open_rate} color="#FF5200" />
