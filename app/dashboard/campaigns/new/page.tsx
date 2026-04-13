@@ -183,23 +183,23 @@ function StepIndicator({ current }: { current: 1 | 2 | 3 }) {
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
               <div
                 style={{
-                  width: 28,
-                  height: 28,
+                  width: 24,
+                  height: 24,
                   borderRadius: "50%",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  fontFamily: "var(--font-syne)",
+                  fontSize: 11,
+                  fontWeight: 500,
+                  fontFamily: "var(--font-outfit)",
                   backgroundColor: done || active ? "#FF5200" : "rgba(255,255,255,0.06)",
-                  color: done || active ? "#fff" : "rgba(255,255,255,0.3)",
-                  border: done || active ? "none" : "1px solid rgba(255,255,255,0.1)",
+                  color: done || active ? "#fff" : "#444",
+                  border: done || active ? "none" : "1px solid rgba(255,255,255,0.08)",
                   transition: "all 0.2s",
                 }}
               >
                 {done ? (
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
                     <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 ) : (
@@ -210,8 +210,8 @@ function StepIndicator({ current }: { current: 1 | 2 | 3 }) {
                 style={{
                   fontSize: 13,
                   fontFamily: "var(--font-outfit)",
-                  fontWeight: active ? 600 : 400,
-                  color: active ? "#fff" : done ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.25)",
+                  fontWeight: 400,
+                  color: active ? "#ccc" : done ? "#555" : "#333",
                   whiteSpace: "nowrap",
                 }}
               >
@@ -241,8 +241,8 @@ function ProgressBar({ progress }: { progress: number }) {
     <div
       style={{
         width: "100%",
-        height: 4,
-        borderRadius: 99,
+        height: 3,
+        borderRadius: 2,
         backgroundColor: "rgba(255,255,255,0.06)",
         overflow: "hidden",
       }}
@@ -251,10 +251,9 @@ function ProgressBar({ progress }: { progress: number }) {
         style={{
           height: "100%",
           width: `${progress}%`,
-          borderRadius: 99,
+          borderRadius: 2,
           backgroundColor: "#FF5200",
           transition: "width 0.4s ease",
-          boxShadow: "0 0 12px rgba(255,82,0,0.6)",
         }}
       />
     </div>
@@ -707,13 +706,13 @@ export default function NewCampaignPage() {
           <span style={{ color: "rgba(255,255,255,0.12)", fontSize: 16 }}>/</span>
           <span
             style={{
-              fontSize: 15,
-              fontWeight: 700,
-              color: "#fff",
+              fontSize: 14,
+              fontWeight: 500,
+              color: "#ccc",
               fontFamily: "var(--font-syne)",
             }}
           >
-            New Campaign
+            New campaign
           </span>
         </div>
 
@@ -731,33 +730,29 @@ export default function NewCampaignPage() {
             ) : sendState.phase === "done" ? (
               <span style={{
                 display: "flex", alignItems: "center", gap: 5,
-                padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+                padding: "6px 12px", borderRadius: 6, fontSize: 12, fontWeight: 400,
                 fontFamily: "var(--font-outfit)",
-                backgroundColor: "rgba(74,222,128,0.1)", color: "#4ade80",
-                border: "1px solid rgba(74,222,128,0.2)",
-              }}>✓ {sendState.sent} sent</span>
+                color: "#4ade80",
+              }}>{sendState.sent} sent</span>
             ) : (userPlan === "pro" || userPlan === "agency") && gmailEmail ? (
               <button
                 onClick={() => setSendState({ phase: "confirming" })}
                 style={{
                   display: "flex", alignItems: "center", gap: 6,
-                  padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 700,
+                  padding: "6px 12px", borderRadius: 6, fontSize: 12, fontWeight: 500,
                   fontFamily: "var(--font-outfit)", cursor: "pointer",
                   backgroundColor: "#FF5200", color: "#fff", border: "none",
                 }}
               >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
-                </svg>
                 Send via Gmail
               </button>
             ) : (userPlan === "pro" || userPlan === "agency") && !gmailEmail ? (
               <Link href="/dashboard/settings" style={{
                 display: "flex", alignItems: "center", gap: 6,
-                padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+                padding: "6px 12px", borderRadius: 6, fontSize: 12, fontWeight: 400,
                 fontFamily: "var(--font-outfit)", textDecoration: "none",
-                backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.4)",
-                border: "1px solid rgba(255,255,255,0.1)",
+                backgroundColor: "transparent", color: "#555",
+                border: "1px solid rgba(255,255,255,0.08)",
               }}>
                 Connect Gmail
               </Link>
@@ -768,14 +763,11 @@ export default function NewCampaignPage() {
               disabled={downloading === "csv"}
               style={{
                 display: "flex", alignItems: "center", gap: 6,
-                padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+                padding: "6px 12px", borderRadius: 6, fontSize: 12, fontWeight: 400,
                 fontFamily: "var(--font-outfit)", cursor: "pointer",
-                backgroundColor: (userPlan === "pro" || userPlan === "agency") && gmailEmail && sendState.phase === "idle"
-                  ? "rgba(255,255,255,0.06)" : "#FF5200",
-                color: (userPlan === "pro" || userPlan === "agency") && gmailEmail && sendState.phase === "idle"
-                  ? "rgba(255,255,255,0.6)" : "#fff",
-                border: (userPlan === "pro" || userPlan === "agency") && gmailEmail && sendState.phase === "idle"
-                  ? "1px solid rgba(255,255,255,0.1)" : "none",
+                backgroundColor: "transparent",
+                color: "#555",
+                border: "1px solid rgba(255,255,255,0.08)",
                 opacity: downloading === "csv" ? 0.7 : 1,
               }}
             >
@@ -800,44 +792,34 @@ export default function NewCampaignPage() {
             display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
           }}>
             <div style={{
-              backgroundColor: "#0e0e0e", border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: 16, padding: "32px 28px", maxWidth: 400, width: "100%",
-              boxShadow: "0 24px 64px rgba(0,0,0,0.6)",
+              backgroundColor: "#0e0e0e", border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 8, padding: "24px", maxWidth: 400, width: "100%",
             }}>
-              <div style={{
-                width: 48, height: 48, borderRadius: 12, marginBottom: 20,
-                backgroundColor: "rgba(255,82,0,0.1)", border: "1px solid rgba(255,82,0,0.2)",
-                display: "flex", alignItems: "center", justifyContent: "center", color: "#FF5200",
-              }}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
-                </svg>
-              </div>
-              <h2 style={{ fontSize: 18, fontWeight: 800, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 8 }}>
+              <h2 style={{ fontSize: 15, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 8 }}>
                 Send {emails.length} email{emails.length !== 1 ? "s" : ""}?
               </h2>
-              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", fontFamily: "var(--font-outfit)", lineHeight: 1.6, marginBottom: 6 }}>
-                From: <span style={{ color: "#FF5200", fontWeight: 600 }}>{gmailEmail}</span>
+              <p style={{ fontSize: 13, color: "#555", fontFamily: "var(--font-outfit)", lineHeight: 1.6, marginBottom: 6 }}>
+                From: <span style={{ color: "#888" }}>{gmailEmail}</span>
               </p>
-              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-outfit)", marginBottom: 28, lineHeight: 1.6 }}>
+              <p style={{ fontSize: 12, color: "#444", fontFamily: "var(--font-outfit)", marginBottom: 24, lineHeight: 1.6 }}>
                 Emails will be sent one by one with a short delay to avoid spam filters.
               </p>
               <div style={{ display: "flex", gap: 10 }}>
                 <button
                   onClick={handleSend}
                   style={{
-                    flex: 1, padding: "11px 0", borderRadius: 9,
+                    flex: 1, padding: "9px 0", borderRadius: 6,
                     backgroundColor: "#FF5200", color: "#fff", border: "none",
-                    fontSize: 14, fontWeight: 700, fontFamily: "var(--font-outfit)", cursor: "pointer",
+                    fontSize: 13, fontWeight: 500, fontFamily: "var(--font-outfit)", cursor: "pointer",
                   }}
-                >Send Now</button>
+                >Send now</button>
                 <button
                   onClick={() => setSendState({ phase: "idle" })}
                   style={{
-                    flex: 1, padding: "11px 0", borderRadius: 9,
-                    backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.6)",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    fontSize: 14, fontWeight: 600, fontFamily: "var(--font-outfit)", cursor: "pointer",
+                    flex: 1, padding: "9px 0", borderRadius: 6,
+                    backgroundColor: "transparent", color: "#555",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    fontSize: 13, fontWeight: 400, fontFamily: "var(--font-outfit)", cursor: "pointer",
                   }}
                 >Cancel</button>
               </div>
@@ -863,8 +845,8 @@ export default function NewCampaignPage() {
           <div className="fade-up">
             <h1
               style={{
-                fontSize: 26,
-                fontWeight: 700,
+                fontSize: 20,
+                fontWeight: 500,
                 color: "#fff",
                 fontFamily: "var(--font-syne)",
                 marginBottom: 6,
@@ -874,13 +856,13 @@ export default function NewCampaignPage() {
             </h1>
             <p
               style={{
-                fontSize: 14,
-                color: "rgba(255,255,255,0.4)",
+                fontSize: 13,
+                color: "#555",
                 fontFamily: "var(--font-outfit)",
                 marginBottom: 32,
               }}
             >
-              Give it a clear name and choose the tone for your cold emails.
+              Give it a name and choose the tone for your cold emails.
             </p>
 
             {/* Campaign name */}
@@ -958,17 +940,13 @@ export default function NewCampaignPage() {
             {ghostWriterActive && (
               <div style={{
                 display: "flex", alignItems: "center", gap: 10,
-                padding: "12px 16px", borderRadius: 10, marginBottom: 28,
-                backgroundColor: "rgba(167,139,250,0.06)",
-                border: "1px solid rgba(167,139,250,0.2)",
+                padding: "10px 14px", borderRadius: 6, marginBottom: 28,
+                backgroundColor: "rgba(255,255,255,0.02)",
+                border: "1px solid rgba(255,255,255,0.06)",
               }}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a2 2 0 012 2v2a2 2 0 01-2 2 2 2 0 01-2-2V4a2 2 0 012-2z"/><path d="M2 12h3M19 12h3M12 19v3"/><circle cx="12" cy="12" r="4"/></svg>
                 <div>
-                  <p style={{ fontSize: 13, fontWeight: 700, color: "#a78bfa", fontFamily: "var(--font-syne)", margin: 0 }}>
-                    Writing Style: Active
-                  </p>
-                  <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: "var(--font-outfit)", margin: 0, marginTop: 2 }}>
-                    AI will write in your personal style. Tone selection is still applied as a secondary guide.
+                  <p style={{ fontSize: 12, fontWeight: 500, color: "#888", fontFamily: "var(--font-outfit)", margin: 0 }}>
+                    Writing style active — emails will match your personal tone
                   </p>
                 </div>
               </div>
@@ -991,8 +969,8 @@ export default function NewCampaignPage() {
           <div className="fade-up">
             <h1
               style={{
-                fontSize: 26,
-                fontWeight: 700,
+                fontSize: 20,
+                fontWeight: 500,
                 color: "#fff",
                 fontFamily: "var(--font-syne)",
                 marginBottom: 6,
@@ -1002,8 +980,8 @@ export default function NewCampaignPage() {
             </h1>
             <p
               style={{
-                fontSize: 14,
-                color: "rgba(255,255,255,0.4)",
+                fontSize: 13,
+                color: "#555",
                 fontFamily: "var(--font-outfit)",
                 marginBottom: 32,
               }}
@@ -1029,7 +1007,7 @@ export default function NewCampaignPage() {
                 border: isDragging
                   ? "2px solid #FF5200"
                   : "2px dashed rgba(255,255,255,0.12)",
-                borderRadius: 14,
+                borderRadius: 8,
                 padding: "40px 24px",
                 display: "flex",
                 flexDirection: "column",
@@ -1045,14 +1023,7 @@ export default function NewCampaignPage() {
             >
               <div
                 style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 12,
-                  backgroundColor: "rgba(255,82,0,0.1)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#FF5200",
+                  color: "#333",
                   marginBottom: 4,
                 }}
               >
@@ -1249,20 +1220,19 @@ export default function NewCampaignPage() {
               <div style={{ marginBottom: 28 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                   <div>
-                    <p style={{ fontSize: 13, fontWeight: 700, color: "#fff", fontFamily: "var(--font-outfit)", margin: 0, marginBottom: 2 }}>
-                      Signal Radar
+                    <p style={{ fontSize: 13, fontWeight: 500, color: "#ccc", fontFamily: "var(--font-outfit)", margin: 0, marginBottom: 2 }}>
+                      Lead research
                     </p>
-                    <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-outfit)", margin: 0 }}>
-                      AI researches each lead so emails reference real context.
+                    <p style={{ fontSize: 12, color: "#444", fontFamily: "var(--font-outfit)", margin: 0 }}>
+                      Researches each lead so emails reference real context.
                     </p>
                   </div>
                   {Object.keys(signalResults).length > 0 && (
                     <span style={{
-                      fontSize: 11, fontWeight: 700, color: "#4ade80",
-                      backgroundColor: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.2)",
-                      padding: "3px 10px", borderRadius: 999, fontFamily: "var(--font-outfit)",
+                      fontSize: 11, fontWeight: 400, color: "#4ade80",
+                      fontFamily: "var(--font-outfit)",
                     }}>
-                      ✓ {Object.keys(signalResults).length} researched
+                      {Object.keys(signalResults).length} researched
                     </span>
                   )}
                 </div>
@@ -1282,10 +1252,10 @@ export default function NewCampaignPage() {
                           disabled={signalResearching}
                           style={{
                             display: "flex", alignItems: "center", gap: 8,
-                            padding: "10px 20px", borderRadius: 9,
+                            padding: "8px 16px", borderRadius: 6,
                             backgroundColor: signalResearching ? "rgba(255,82,0,0.07)" : "rgba(255,82,0,0.1)",
                             color: "#FF5200", border: "1px solid rgba(255,82,0,0.25)",
-                            fontSize: 13, fontWeight: 700, fontFamily: "var(--font-outfit)",
+                            fontSize: 13, fontWeight: 400, fontFamily: "var(--font-outfit)",
                             cursor: signalResearching ? "not-allowed" : "pointer",
                           }}
                         >
@@ -1294,10 +1264,10 @@ export default function NewCampaignPage() {
                               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" style={{ animation: "spin 1s linear infinite", flexShrink: 0 }}>
                                 <path d="M12 2C6.477 2 2 6.477 2 12" />
                               </svg>
-                              Analyzing {leads.length} lead{leads.length !== 1 ? "s" : ""} with Signal Radar…
+                              Researching {leads.length} lead{leads.length !== 1 ? "s" : ""}…
                             </>
                           ) : (
-                            <>Research Leads with Signal Radar</>
+                            <>Research leads</>
                           )}
                         </button>
                       </div>
@@ -1310,12 +1280,12 @@ export default function NewCampaignPage() {
                           return (
                             <div key={i} style={{
                               backgroundColor: "#0e0e0e",
-                              border: "1px solid rgba(255,82,0,0.15)",
-                              borderLeft: "3px solid rgba(255,82,0,0.4)",
-                              borderRadius: 9, padding: "10px 14px",
+                              border: "1px solid rgba(255,255,255,0.06)",
+                              borderLeft: "2px solid rgba(255,82,0,0.3)",
+                              borderRadius: 6, padding: "10px 14px",
                             }}>
                               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
-                                <p style={{ fontSize: 12, fontWeight: 700, color: "#FF5200", fontFamily: "var(--font-syne)", margin: 0 }}>
+                                <p style={{ fontSize: 12, fontWeight: 500, color: "#ccc", fontFamily: "var(--font-outfit)", margin: 0 }}>
                                   {lead.first_name}{lead.company ? ` · ${lead.company}` : ""}
                                 </p>
                                 <button
@@ -1335,8 +1305,8 @@ export default function NewCampaignPage() {
                                     <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 8 }}>
                                       {sd.pain_points.map((p, j) => (
                                         <span key={j} style={{
-                                          fontSize: 10, fontWeight: 600, padding: "2px 8px", borderRadius: 999,
-                                          backgroundColor: "rgba(255,82,0,0.08)", color: "rgba(255,82,0,0.7)",
+                                          fontSize: 10, fontWeight: 400, padding: "2px 6px", borderRadius: 4,
+                                          backgroundColor: "rgba(255,82,0,0.06)", color: "rgba(255,82,0,0.6)",
                                           border: "1px solid rgba(255,82,0,0.15)", fontFamily: "var(--font-outfit)",
                                         }}>
                                           {p}
@@ -1346,7 +1316,7 @@ export default function NewCampaignPage() {
                                   )}
                                   {sd.personalization_hooks?.[0] && (
                                     <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", fontFamily: "var(--font-outfit)", lineHeight: 1.5, margin: 0 }}>
-                                      <span style={{ color: "rgba(255,82,0,0.5)", fontWeight: 700 }}>Hook: </span>
+                                      <span style={{ color: "rgba(255,82,0,0.5)", fontWeight: 500 }}>Hook: </span>
                                       {sd.personalization_hooks[0]}
                                     </p>
                                   )}
@@ -1372,15 +1342,15 @@ export default function NewCampaignPage() {
                   </>
                 ) : (
                   <div style={{
-                    padding: "12px 16px", borderRadius: 9,
-                    backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.07)",
+                    padding: "10px 14px", borderRadius: 6,
+                    backgroundColor: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)",
                     display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
                   }}>
-                    <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-outfit)", margin: 0 }}>
-                      Signal Radar requires a Pro plan
+                    <p style={{ fontSize: 12, color: "#444", fontFamily: "var(--font-outfit)", margin: 0 }}>
+                      Lead research requires Pro
                     </p>
-                    <Link href="/dashboard/settings" style={{ fontSize: 12, fontWeight: 700, color: "#FF5200", fontFamily: "var(--font-outfit)", textDecoration: "none", flexShrink: 0 }}>
-                      Upgrade →
+                    <Link href="/dashboard/settings" style={{ fontSize: 12, fontWeight: 400, color: "#FF5200", fontFamily: "var(--font-outfit)", textDecoration: "none", flexShrink: 0 }}>
+                      View plans
                     </Link>
                   </div>
                 )}
@@ -1431,22 +1401,11 @@ export default function NewCampaignPage() {
               gap: 24,
             }}
           >
-            <div
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: 16,
-                backgroundColor: "rgba(255,82,0,0.1)",
-                border: "1px solid rgba(255,82,0,0.2)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <div style={{ color: "#FF5200" }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                 <path
                   d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10"
-                  stroke="#FF5200"
+                  stroke="currentColor"
                   strokeWidth="2"
                   strokeLinecap="round"
                   style={{ animation: "spin 1s linear infinite" }}
@@ -1457,23 +1416,23 @@ export default function NewCampaignPage() {
             <div style={{ textAlign: "center" }}>
               <h2
                 style={{
-                  fontSize: 22,
-                  fontWeight: 700,
-                  color: "#fff",
+                  fontSize: 18,
+                  fontWeight: 500,
+                  color: "#ccc",
                   fontFamily: "var(--font-syne)",
                   marginBottom: 8,
                 }}
               >
-                AI is writing {leads.length} email{leads.length !== 1 ? "s" : ""}…
+                Writing {leads.length} email{leads.length !== 1 ? "s" : ""}…
               </h2>
               <p
                 style={{
                   fontSize: 13,
-                  color: "rgba(255,255,255,0.35)",
+                  color: "#555",
                   fontFamily: "var(--font-outfit)",
                 }}
               >
-                Crafting hyper-personalized cold emails for each lead.
+                Generating personalized cold emails for each lead.
               </p>
             </div>
 
@@ -1518,23 +1477,23 @@ export default function NewCampaignPage() {
               <div>
                 <h1
                   style={{
-                    fontSize: 24,
-                    fontWeight: 700,
+                    fontSize: 20,
+                    fontWeight: 500,
                     color: "#fff",
                     fontFamily: "var(--font-syne)",
                     marginBottom: 4,
                   }}
                 >
-                  Review your emails
+                  Review emails
                 </h1>
                 <p
                   style={{
                     fontSize: 13,
-                    color: "rgba(255,255,255,0.4)",
+                    color: "#555",
                     fontFamily: "var(--font-outfit)",
                   }}
                 >
-                  {emails.length} email{emails.length !== 1 ? "s" : ""} generated · Click edit to refine any email
+                  {emails.length} email{emails.length !== 1 ? "s" : ""} generated
                 </p>
               </div>
               <Link
@@ -1563,13 +1522,13 @@ export default function NewCampaignPage() {
                     <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", fontFamily: "var(--font-outfit)" }}>
                       Sending {sendState.sent} of {sendState.total}…
                     </span>
-                    <span style={{ fontSize: 12, color: "#FF5200", fontWeight: 700, fontFamily: "var(--font-outfit)" }}>
+                    <span style={{ fontSize: 12, color: "#FF5200", fontWeight: 400, fontFamily: "var(--font-outfit)" }}>
                       {sendState.total > 0 ? Math.round((sendState.sent / sendState.total) * 100) : 0}%
                     </span>
                   </div>
-                  <div style={{ height: 4, backgroundColor: "rgba(255,255,255,0.07)", borderRadius: 99, overflow: "hidden" }}>
+                  <div style={{ height: 3, backgroundColor: "rgba(255,255,255,0.07)", borderRadius: 2, overflow: "hidden" }}>
                     <div style={{
-                      height: "100%", borderRadius: 99, backgroundColor: "#FF5200",
+                      height: "100%", borderRadius: 2, backgroundColor: "#FF5200",
                       width: `${sendState.total > 0 ? Math.round((sendState.sent / sendState.total) * 100) : 0}%`,
                       transition: "width 0.4s ease",
                     }} />
@@ -1577,31 +1536,28 @@ export default function NewCampaignPage() {
                 </div>
               ) : sendState.phase === "done" ? (
                 <span style={{
-                  display: "inline-flex", alignItems: "center", gap: 6,
-                  padding: "10px 18px", borderRadius: 8, fontSize: 13, fontWeight: 600,
-                  fontFamily: "var(--font-outfit)",
-                  backgroundColor: "rgba(74,222,128,0.1)", color: "#4ade80",
-                  border: "1px solid rgba(74,222,128,0.2)",
+                  fontSize: 12, fontWeight: 400,
+                  fontFamily: "var(--font-outfit)", color: "#4ade80",
                 }}>
-                  ✓ {sendState.failures.length === 0
-                    ? `All ${sendState.sent} emails sent!`
+                  {sendState.failures.length === 0
+                    ? `${sendState.sent} sent`
                     : `${sendState.sent} sent, ${sendState.failures.length} failed`}
                 </span>
               ) : sendState.phase === "error" ? (
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                   <span style={{
-                    padding: "10px 16px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                    padding: "8px 12px", borderRadius: 6, fontSize: 12, fontWeight: 400,
                     fontFamily: "var(--font-outfit)", maxWidth: 260,
-                    backgroundColor: "rgba(239,68,68,0.08)", color: "#ef4444",
-                    border: "1px solid rgba(239,68,68,0.2)",
+                    backgroundColor: "rgba(239,68,68,0.06)", color: "#f87171",
+                    border: "1px solid rgba(239,68,68,0.15)",
                   }}>{sendState.message}</span>
                   <button
                     onClick={() => setSendState({ phase: "idle" })}
                     style={{
-                      padding: "8px 14px", borderRadius: 8, fontSize: 12, fontWeight: 600,
+                      padding: "7px 12px", borderRadius: 6, fontSize: 12, fontWeight: 400,
                       fontFamily: "var(--font-outfit)", cursor: "pointer",
-                      backgroundColor: "rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.5)",
-                      border: "1px solid rgba(255,255,255,0.1)",
+                      backgroundColor: "transparent", color: "#555",
+                      border: "1px solid rgba(255,255,255,0.08)",
                     }}
                   >Retry</button>
                 </div>
@@ -1612,46 +1568,40 @@ export default function NewCampaignPage() {
                   style={{
                     display: "flex", alignItems: "center", gap: 7,
                     background: "#FF5200", color: "#fff", border: "none",
-                    padding: "10px 20px", borderRadius: 8, cursor: "pointer",
-                    fontWeight: 700, fontFamily: "var(--font-outfit)", fontSize: 13,
+                    padding: "8px 16px", borderRadius: 6, cursor: "pointer",
+                    fontWeight: 500, fontFamily: "var(--font-outfit)", fontSize: 13,
                     opacity: !campaignId ? 0.5 : 1,
                   }}
                 >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
-                  </svg>
                   Send via Gmail
                 </button>
               ) : (userPlan === "pro" || userPlan === "agency") ? (
                 <Link href="/dashboard/settings" style={{
                   display: "inline-flex", alignItems: "center", gap: 6,
-                  padding: "10px 18px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+                  padding: "8px 14px", borderRadius: 6, fontSize: 13, fontWeight: 400,
                   fontFamily: "var(--font-outfit)", textDecoration: "none",
-                  backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.4)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                }}>Connect Gmail to Send</Link>
+                  backgroundColor: "transparent", color: "#555",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}>Connect Gmail to send</Link>
               ) : (
                 <Link href="/dashboard/settings" style={{
                   display: "inline-flex", alignItems: "center", gap: 6,
-                  padding: "10px 18px", borderRadius: 8, fontSize: 13, fontWeight: 600,
+                  padding: "8px 14px", borderRadius: 6, fontSize: 13, fontWeight: 400,
                   fontFamily: "var(--font-outfit)", textDecoration: "none",
-                  backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.4)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                }}>Upgrade to Send</Link>
+                  backgroundColor: "transparent", color: "#555",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                }}>Upgrade to send</Link>
               )}
 
               <button
                 onClick={() => handleDownload("csv")}
                 disabled={downloading === "csv" || !campaignId}
                 style={{
-                  background: (userPlan === "pro" || userPlan === "agency") && gmailEmail
-                    ? "rgba(255,255,255,0.06)" : "#FF5200",
-                  color: (userPlan === "pro" || userPlan === "agency") && gmailEmail
-                    ? "rgba(255,255,255,0.6)" : "#fff",
-                  border: (userPlan === "pro" || userPlan === "agency") && gmailEmail
-                    ? "1px solid rgba(255,255,255,0.1)" : "none",
-                  padding: "10px 20px", borderRadius: 8, cursor: "pointer",
-                  fontWeight: 600, fontFamily: "var(--font-outfit)", fontSize: 13,
+                  background: "transparent",
+                  color: "#555",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  padding: "8px 16px", borderRadius: 6, cursor: "pointer",
+                  fontWeight: 400, fontFamily: "var(--font-outfit)", fontSize: 13,
                   opacity: downloading === "csv" ? 0.7 : 1,
                 }}
               >
@@ -1669,11 +1619,10 @@ export default function NewCampaignPage() {
                   <div
                     key={email.lead_id}
                     style={{
-                      backgroundColor: "var(--black-2)",
-                      border: "1px solid rgba(255,255,255,0.07)",
-                      borderRadius: 12,
+                      backgroundColor: "#0e0e0e",
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      borderRadius: 8,
                       overflow: "hidden",
-                      transition: "border-color 0.15s",
                     }}
                   >
                     {/* Card header */}
@@ -1690,16 +1639,16 @@ export default function NewCampaignPage() {
                       <div style={{ minWidth: 0 }}>
                         <p
                           style={{
-                            fontSize: 13.5,
-                            fontWeight: 600,
-                            color: "#FF5200",
+                            fontSize: 13,
+                            fontWeight: 500,
+                            color: "#ccc",
                             fontFamily: "var(--font-outfit)",
                             marginBottom: 1,
                           }}
                         >
                           {email.first_name || "Lead"}
                           {email.company && (
-                            <span style={{ color: "rgba(255,82,0,0.7)" }}>
+                            <span style={{ color: "#555" }}>
                               {" · "}{email.company}
                             </span>
                           )}
@@ -1708,7 +1657,7 @@ export default function NewCampaignPage() {
                           <p
                             style={{
                               fontSize: 11,
-                              color: "rgba(255,255,255,0.25)",
+                              color: "#444",
                               fontFamily: "var(--font-outfit)",
                             }}
                           >
@@ -1717,15 +1666,12 @@ export default function NewCampaignPage() {
                         )}
                         {emailSignal && (
                           <span style={{
-                            display: "inline-flex", alignItems: "center", gap: 4,
-                            fontSize: 10, fontWeight: 700, marginTop: 4,
-                            color: "rgba(255,82,0,0.7)",
-                            backgroundColor: "rgba(255,82,0,0.07)",
-                            border: "1px solid rgba(255,82,0,0.15)",
-                            padding: "2px 7px", borderRadius: 999,
+                            fontSize: 10, fontWeight: 400, marginTop: 4,
+                            color: "rgba(255,82,0,0.5)",
                             fontFamily: "var(--font-outfit)",
+                            display: "inline-block",
                           }}>
-                            Signal data used
+                            Research data applied
                           </span>
                         )}
                       </div>

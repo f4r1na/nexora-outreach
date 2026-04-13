@@ -12,65 +12,61 @@ interface SidebarProps {
   pendingReplies?: number;
 }
 
-function NexoraLogo() {
-  return (
-    <svg width="36" height="36" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <rect width="48" height="48" rx="11" fill="#FF5200" />
-      <path d="M13 36V12h4.5l13 16.5V12H35v24h-4.5L17.5 19.5V36H13z" fill="white" />
-    </svg>
-  );
-}
+// ─── Icons (16px, stroke-width 1.5, Lucide-style) ────────────────────────────
 
 function IconDashboard() {
   return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <rect x="1" y="1" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
-      <rect x="9" y="1" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
-      <rect x="1" y="9" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
-      <rect x="9" y="9" width="6" height="6" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
     </svg>
   );
 }
 
 function IconCampaigns() {
   return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M2 4h12M2 8h8M2 12h10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="2" y="4" width="20" height="16" rx="2" />
+      <path d="M2 9h20" />
+      <path d="M7 4v5" />
+      <path d="M17 4v5" />
     </svg>
   );
 }
 
 function IconInbox() {
   return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M14 2H2a1 1 0 00-1 1v7a1 1 0 001 1h3v2.5L8.5 11H14a1 1 0 001-1V3a1 1 0 00-1-1z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
     </svg>
   );
 }
 
 function IconAnalytics() {
   return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <rect x="1" y="9" width="3" height="6" rx="1" stroke="currentColor" strokeWidth="1.4" />
-      <rect x="6" y="5" width="3" height="10" rx="1" stroke="currentColor" strokeWidth="1.4" />
-      <rect x="11" y="1" width="3" height="14" rx="1" stroke="currentColor" strokeWidth="1.4" />
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <line x1="18" y1="20" x2="18" y2="10" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="6" y1="20" x2="6" y2="14" />
     </svg>
   );
 }
 
 function IconSettings() {
   return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="8" cy="8" r="2.5" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M2.929 2.929l1.06 1.06M12.01 12.01l1.06 1.061M2.929 13.071l1.06-1.06M12.01 3.99l1.06-1.061" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
     </svg>
   );
 }
 
 function IconLogout() {
   return (
-    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" />
     </svg>
   );
 }
@@ -83,92 +79,96 @@ const navLinks = [
   { label: "Settings",   href: "/dashboard/settings",   icon: <IconSettings /> },
 ];
 
-const PLAN_BADGE: Record<string, { label: string; color: string; bg: string }> = {
-  free:    { label: "Free",    color: "#888",    bg: "rgba(255,255,255,0.06)" },
-  starter: { label: "Starter", color: "#60a5fa", bg: "rgba(96,165,250,0.1)" },
-  pro:     { label: "Pro",     color: "#ff5200", bg: "rgba(255,82,0,0.12)" },
-  agency:  { label: "Agency",  color: "#a78bfa", bg: "rgba(167,139,250,0.12)" },
-};
-
-export default function Sidebar({ email, plan, creditsUsed, creditsLimit, pendingReplies = 0 }: SidebarProps) {
+export default function Sidebar({ email, plan, creditsUsed, creditsLimit }: SidebarProps) {
   const pathname = usePathname();
+
+  const creditsDisplay = creditsLimit === 999999
+    ? "Unlimited credits"
+    : `${creditsLimit - creditsUsed} of ${creditsLimit} credits`;
+
+  const planLabel = plan.charAt(0).toUpperCase() + plan.slice(1);
 
   return (
     <aside style={{
-      width: 240, flexShrink: 0, position: "fixed",
-      top: 0, left: 0, bottom: 0,
-      backgroundColor: "var(--black-2)",
+      width: 220,
+      flexShrink: 0,
+      position: "fixed",
+      top: 0,
+      left: 0,
+      bottom: 0,
+      backgroundColor: "#0a0a0a",
       borderRight: "1px solid rgba(255,255,255,0.06)",
-      display: "flex", flexDirection: "column", zIndex: 40,
+      display: "flex",
+      flexDirection: "column",
+      zIndex: 40,
     }}>
-      {/* Brand */}
-      <div style={{ padding: "24px 20px 20px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-        <Link href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none" }}>
-          <NexoraLogo />
-          <div>
-            <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: "0.1em", color: "#fff", fontFamily: "var(--font-syne)", lineHeight: 1.2 }}>
-              NEXORA
-            </div>
-            <div style={{ fontSize: 11, color: "#FF5200", fontFamily: "var(--font-outfit)", letterSpacing: "0.04em", marginTop: 1 }}>
-              Outreach
-            </div>
+      {/* Logo */}
+      <div style={{ padding: "20px 16px 16px" }}>
+        <Link href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
+          <div style={{
+            width: 28,
+            height: 28,
+            backgroundColor: "#FF5200",
+            borderRadius: 6,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}>
+            <span style={{
+              fontSize: 14,
+              fontWeight: 700,
+              color: "#fff",
+              fontFamily: "var(--font-syne)",
+              lineHeight: 1,
+            }}>N</span>
           </div>
+          <span style={{
+            fontSize: 15,
+            fontWeight: 500,
+            color: "#fff",
+            fontFamily: "var(--font-syne)",
+            letterSpacing: "-0.01em",
+          }}>
+            Nexora
+          </span>
         </Link>
       </div>
 
+      {/* Divider */}
+      <div style={{ height: 1, backgroundColor: "rgba(255,255,255,0.06)", marginBottom: 8 }} />
+
       {/* Nav */}
-      <nav style={{ flex: 1, padding: "12px 10px" }}>
-        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+      <nav style={{ flex: 1, padding: "4px 8px" }}>
+        <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 1 }}>
           {navLinks.map((link) => {
             const active = link.href === "/dashboard"
               ? pathname === "/dashboard"
               : pathname.startsWith(link.href);
-            const isInbox = link.label === "Inbox";
-            const showInboxBadge = isInbox && pendingReplies > 0;
-            const isAnalytics = link.label === "Analytics";
-            const isProOrAgency = plan === "pro" || plan === "agency";
 
             return (
               <li key={link.label}>
                 <Link
                   href={link.href}
                   style={{
-                    display: "flex", alignItems: "center", gap: 10,
-                    padding: "9px 12px", borderRadius: 8,
-                    fontSize: 13.5, fontFamily: "var(--font-outfit)",
-                    fontWeight: active ? 600 : 400,
-                    backgroundColor: active ? "rgba(255,82,0,0.12)" : "transparent",
-                    color: active ? "#FF5200" : "rgba(255,255,255,0.45)",
-                    textDecoration: "none", transition: "background-color 0.15s, color 0.15s",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "7px 10px",
+                    borderRadius: 6,
+                    fontSize: 13,
+                    fontFamily: "var(--font-outfit)",
+                    fontWeight: 400,
+                    color: active ? "#fff" : "#666",
+                    textDecoration: "none",
+                    backgroundColor: active ? "rgba(255,82,0,0.06)" : "transparent",
+                    borderLeft: active ? "2px solid #FF5200" : "2px solid transparent",
+                    transition: "color 0.15s, background-color 0.15s",
+                    paddingLeft: active ? 8 : 10,
                   }}
                 >
-                  <span style={{ opacity: active ? 1 : 0.6, flexShrink: 0 }}>{link.icon}</span>
+                  <span style={{ flexShrink: 0, display: "flex" }}>{link.icon}</span>
                   {link.label}
-                  <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
-                    {showInboxBadge && (
-                      <span style={{
-                        fontSize: 10, fontWeight: 700, lineHeight: 1,
-                        padding: "2px 6px", borderRadius: 99,
-                        backgroundColor: "#FF5200", color: "#fff", fontFamily: "var(--font-outfit)",
-                      }}>
-                        {pendingReplies > 99 ? "99+" : pendingReplies}
-                      </span>
-                    )}
-                    {isAnalytics && !isProOrAgency && (
-                      <span style={{
-                        fontSize: 9, fontWeight: 700, lineHeight: 1,
-                        padding: "2px 6px", borderRadius: 99,
-                        backgroundColor: "rgba(255,82,0,0.1)", color: "#FF5200",
-                        border: "1px solid rgba(255,82,0,0.2)", fontFamily: "var(--font-outfit)",
-                        letterSpacing: "0.04em",
-                      }}>
-                        Pro
-                      </span>
-                    )}
-                    {active && !showInboxBadge && !(isAnalytics && !isProOrAgency) && (
-                      <span style={{ width: 5, height: 5, borderRadius: "50%", backgroundColor: "#FF5200" }} />
-                    )}
-                  </span>
                 </Link>
               </li>
             );
@@ -176,55 +176,43 @@ export default function Sidebar({ email, plan, creditsUsed, creditsLimit, pendin
         </ul>
       </nav>
 
-      {/* User footer */}
-      <div style={{ padding: "14px 14px 16px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-        {/* Credits bar */}
-        {(() => {
-          const pct = creditsLimit === 999999 ? 5 : Math.min(100, Math.round((creditsUsed / creditsLimit) * 100));
-          const exhausted = creditsUsed >= creditsLimit && creditsLimit !== 999999;
-          const badge = PLAN_BADGE[plan] ?? PLAN_BADGE.free;
-          return (
-            <div style={{ marginBottom: 12 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-outfit)" }}>
-                  {exhausted ? "Credits exhausted" : `${creditsUsed}/${creditsLimit === 999999 ? "∞" : creditsLimit} credits`}
-                </span>
-                <span style={{ fontSize: 10, fontWeight: 600, color: badge.color, background: badge.bg, padding: "1px 7px", borderRadius: 4, fontFamily: "var(--font-outfit)" }}>
-                  {badge.label}
-                </span>
-              </div>
-              <div style={{ height: 3, background: "rgba(255,255,255,0.07)", borderRadius: 2, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${pct}%`, borderRadius: 2, background: exhausted ? "#ef4444" : "#ff5200", transition: "width 0.5s" }} />
-              </div>
-            </div>
-          );
-        })()}
-
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+      {/* Bottom user section */}
+      <div style={{ padding: "12px 12px 16px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <div style={{ marginBottom: 10 }}>
           <div style={{
-            width: 30, height: 30, borderRadius: "50%",
-            backgroundColor: "rgba(255,82,0,0.15)", border: "1px solid rgba(255,82,0,0.3)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontSize: 11, fontWeight: 700, color: "#FF5200", fontFamily: "var(--font-syne)", flexShrink: 0,
-          }}>
-            {email[0].toUpperCase()}
-          </div>
-          <div style={{
-            fontSize: 12, color: "rgba(255,255,255,0.45)", fontFamily: "var(--font-outfit)",
-            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            fontSize: 11,
+            color: "#555",
+            fontFamily: "var(--font-outfit)",
+            marginBottom: 2,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
           }} title={email}>
             {email}
+          </div>
+          <div style={{ fontSize: 11, color: "#444", fontFamily: "var(--font-outfit)" }}>
+            {planLabel} · {creditsDisplay}
           </div>
         </div>
 
         <form action={logout}>
-          <button type="submit" style={{
-            width: "100%", padding: "7px 12px", borderRadius: 7,
-            border: "1px solid rgba(255,255,255,0.07)", backgroundColor: "transparent",
-            color: "rgba(255,255,255,0.35)", fontSize: 12, fontFamily: "var(--font-outfit)",
-            cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-            transition: "border-color 0.15s, color 0.15s",
-          }}>
+          <button
+            type="submit"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "6px 10px",
+              borderRadius: 6,
+              border: "1px solid rgba(255,255,255,0.08)",
+              backgroundColor: "transparent",
+              color: "#555",
+              fontSize: 12,
+              fontFamily: "var(--font-outfit)",
+              cursor: "pointer",
+              width: "100%",
+            }}
+          >
             <IconLogout />
             Sign out
           </button>

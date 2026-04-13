@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PLANS, PlanKey } from "@/lib/plans";
 
-// ─── Ghost Writer types ───────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type GhostStyle = {
   style_summary: string;
@@ -23,50 +23,55 @@ type GmailConnection = {
   gmail_email: string;
 } | null;
 
-// ─── Icons ────────────────────────────────────────────────────────────────────
+// ─── Shared input style ───────────────────────────────────────────────────────
 
-function IconLock() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="11" width="18" height="11" rx="2" />
-      <path d="M7 11V7a5 5 0 0110 0v4" />
-    </svg>
-  );
-}
-
-function IconCheck() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5 13l4 4L19 7" />
-    </svg>
-  );
-}
-
-function IconGmail() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-      <path d="M2 6.5L12 13.5L22 6.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-      <rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" strokeWidth="1.5" />
-    </svg>
-  );
-}
-
-function IconX() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 6L6 18M6 6l12 12" />
-    </svg>
-  );
-}
-
-// ─── Plan badge colours ───────────────────────────────────────────────────────
-
-const PLAN_ACCENT: Record<string, { color: string; bg: string; border: string }> = {
-  free:    { color: "rgba(255,255,255,0.4)",  bg: "rgba(255,255,255,0.04)",  border: "rgba(255,255,255,0.1)" },
-  starter: { color: "#60a5fa",               bg: "rgba(96,165,250,0.08)",   border: "rgba(96,165,250,0.2)" },
-  pro:     { color: "#FF5200",               bg: "rgba(255,82,0,0.08)",     border: "rgba(255,82,0,0.35)" },
-  agency:  { color: "#a78bfa",               bg: "rgba(167,139,250,0.08)",  border: "rgba(167,139,250,0.25)" },
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "8px 12px",
+  borderRadius: 6,
+  backgroundColor: "rgba(255,255,255,0.03)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  color: "#ccc",
+  fontFamily: "var(--font-outfit)",
+  fontSize: 13,
+  outline: "none",
+  boxSizing: "border-box",
 };
+
+// ─── Section label ────────────────────────────────────────────────────────────
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p style={{
+      fontSize: 10,
+      fontWeight: 500,
+      letterSpacing: "0.07em",
+      textTransform: "uppercase",
+      color: "#444",
+      fontFamily: "var(--font-outfit)",
+      marginBottom: 10,
+    }}>
+      {children}
+    </p>
+  );
+}
+
+// ─── Section card ─────────────────────────────────────────────────────────────
+
+function SectionCard({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return (
+    <div style={{
+      backgroundColor: "#0e0e0e",
+      border: "1px solid rgba(255,255,255,0.06)",
+      borderRadius: 8,
+      padding: "20px",
+      marginBottom: 24,
+      ...style,
+    }}>
+      {children}
+    </div>
+  );
+}
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -82,7 +87,7 @@ export default function SettingsPage() {
   const [gmailLoading, setGmailLoading] = useState(true);
   const [disconnecting, setDisconnecting] = useState(false);
 
-  // Writing Style (Ghost Writer)
+  // Writing Style
   const [ghostStyle, setGhostStyle] = useState<GhostStyle | undefined>(undefined);
   const [ghostLoading, setGhostLoading] = useState(true);
   const [sampleEmails, setSampleEmails] = useState(["", "", "", "", ""]);
@@ -92,7 +97,6 @@ export default function SettingsPage() {
 
   const gmailStatus = searchParams.get("gmail");
 
-  // Load subscription
   useEffect(() => {
     fetch("/api/subscription")
       .then((r) => r.json())
@@ -100,7 +104,6 @@ export default function SettingsPage() {
       .catch(() => setLoading(false));
   }, []);
 
-  // Load Gmail connection status (re-fetch when URL params change)
   useEffect(() => {
     fetch("/api/auth/gmail/status")
       .then((r) => r.json())
@@ -108,14 +111,12 @@ export default function SettingsPage() {
       .catch(() => setGmailLoading(false));
   }, [searchParams]);
 
-  // Load writing style
   useEffect(() => {
     fetch("/api/ghostwriter")
       .then((r) => r.json())
       .then((d) => { setGhostStyle(d.style ?? null); setGhostLoading(false); })
       .catch(() => { setGhostStyle(null); setGhostLoading(false); });
   }, []);
-
 
   async function handleUpgrade(plan: string) {
     setUpgrading(plan);
@@ -128,9 +129,8 @@ export default function SettingsPage() {
       const data = await res.json();
       if (data.url) window.location.href = data.url;
       else alert("Error: " + (data.error || "Unknown error"));
-    } catch (err) {
-      console.error("Checkout error:", err);
-      alert("Something went wrong. Check console.");
+    } catch {
+      alert("Something went wrong.");
     } finally {
       setUpgrading(null);
     }
@@ -150,14 +150,6 @@ export default function SettingsPage() {
       setDisconnecting(false);
     }
   }
-
-  const currentPlan = sub?.plan ?? "free";
-  const accent = PLAN_ACCENT[currentPlan] ?? PLAN_ACCENT.free;
-  const creditsUsed = sub?.credits_used ?? 0;
-  const creditsLimit = sub?.credits_limit ?? 10;
-  const pct = Math.min(100, Math.round((creditsUsed / creditsLimit) * 100));
-  const isProOrAgency = currentPlan === "pro" || currentPlan === "agency";
-  const isAgency = currentPlan === "agency";
 
   async function handleAnalyzeStyle() {
     const filled = sampleEmails.filter((s) => s.trim());
@@ -188,545 +180,416 @@ export default function SettingsPage() {
     } catch { /* silent */ }
   }
 
+  const currentPlan = sub?.plan ?? "free";
+  const creditsUsed = sub?.credits_used ?? 0;
+  const creditsLimit = sub?.credits_limit ?? 10;
+  const pct = Math.min(100, Math.round((creditsUsed / creditsLimit) * 100));
+  const isProOrAgency = currentPlan === "pro" || currentPlan === "agency";
+  const isAgency = currentPlan === "agency";
+
   return (
-    <div style={{ padding: "32px 32px 64px", maxWidth: 680, margin: "0 auto" }}>
-
-      {/* Page title */}
-      <h1 style={{
-        fontSize: 22, fontWeight: 800, color: "#fff",
-        fontFamily: "var(--font-syne)", marginBottom: 4,
+    <>
+      {/* Header */}
+      <header style={{
+        padding: "0 32px",
+        height: 60,
+        display: "flex",
+        alignItems: "center",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        backgroundColor: "rgba(6,6,6,0.9)",
+        backdropFilter: "blur(8px)",
+        position: "sticky",
+        top: 0,
+        zIndex: 30,
       }}>
-        Settings
-      </h1>
-      <p style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", fontFamily: "var(--font-outfit)", marginBottom: 32 }}>
-        Manage your plan and integrations
-      </p>
+        <h1 style={{ fontSize: 15, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)" }}>
+          Settings
+        </h1>
+      </header>
 
-      {/* Gmail status banner */}
-      {gmailStatus === "connected" && (
-        <div style={{
-          display: "flex", alignItems: "center", gap: 10,
-          backgroundColor: "rgba(34,197,94,0.08)",
-          border: "1px solid rgba(34,197,94,0.25)",
-          borderLeft: "3px solid #22c55e",
-          borderRadius: 10, padding: "12px 16px", marginBottom: 24,
-        }}>
-          <span style={{ color: "#22c55e", flexShrink: 0 }}><IconCheck /></span>
-          <p style={{ fontSize: 13, color: "#fff", fontFamily: "var(--font-outfit)", margin: 0 }}>
-            Gmail connected successfully.
-          </p>
-          <button
-            onClick={() => router.replace("/dashboard/settings")}
-            style={{ marginLeft: "auto", color: "rgba(255,255,255,0.3)", background: "none", border: "none", cursor: "pointer", padding: 2 }}
-          >
-            <IconX />
-          </button>
-        </div>
-      )}
-      {gmailStatus === "error" && (
-        <div style={{
-          display: "flex", alignItems: "center", gap: 10,
-          backgroundColor: "rgba(239,68,68,0.08)",
-          border: "1px solid rgba(239,68,68,0.25)",
-          borderLeft: "3px solid #ef4444",
-          borderRadius: 10, padding: "12px 16px", marginBottom: 24,
-        }}>
-          <span style={{ color: "#ef4444", flexShrink: 0 }}><IconX /></span>
-          <p style={{ fontSize: 13, color: "#fff", fontFamily: "var(--font-outfit)", margin: 0 }}>
-            Gmail connection failed. Please try again.
-          </p>
-          <button
-            onClick={() => router.replace("/dashboard/settings")}
-            style={{ marginLeft: "auto", color: "rgba(255,255,255,0.3)", background: "none", border: "none", cursor: "pointer", padding: 2 }}
-          >
-            <IconX />
-          </button>
-        </div>
-      )}
+      <div style={{ padding: "28px 32px 64px", maxWidth: 600 }}>
 
-      {/* ── Current Plan card ── */}
-      <p style={{
-        fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase",
-        color: "rgba(255,255,255,0.25)", fontFamily: "var(--font-outfit)", marginBottom: 12,
-      }}>
-        Current Plan
-      </p>
-      <div style={{
-        backgroundColor: "#0e0e0e",
-        border: `1px solid ${accent.border}`,
-        borderRadius: 14, padding: "24px 22px", marginBottom: 32,
-      }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 20 }}>
-          <div>
-            <p style={{
-              fontSize: 26, fontWeight: 800, color: accent.color,
-              fontFamily: "var(--font-syne)", textTransform: "capitalize", marginBottom: 2,
-            }}>
-              {loading ? "…" : currentPlan}
-            </p>
-            {sub?.current_period_end && (
-              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-outfit)" }}>
-                Renews {new Date(sub.current_period_end).toLocaleDateString()}
-              </p>
-            )}
-          </div>
-          <span style={{
-            fontSize: 10, fontWeight: 800, color: accent.color,
-            backgroundColor: accent.bg, border: `1px solid ${accent.border}`,
-            padding: "4px 10px", borderRadius: 999, letterSpacing: "0.06em",
-            textTransform: "uppercase", fontFamily: "var(--font-outfit)",
-          }}>
-            {loading ? "…" : currentPlan}
-          </span>
-        </div>
-
-        {/* Credits bar */}
-        <div>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: "var(--font-outfit)" }}>Credits used</span>
-            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", fontFamily: "var(--font-outfit)", fontWeight: 600 }}>
-              {loading ? "…" : `${creditsUsed} / ${creditsLimit === 999999 ? "∞" : creditsLimit}`}
-            </span>
-          </div>
-          <div style={{ height: 6, backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 99, overflow: "hidden" }}>
-            <div style={{
-              height: "100%", borderRadius: 99,
-              width: `${creditsLimit === 999999 ? 5 : pct}%`,
-              background: pct >= 90 ? "#ef4444" : "#FF5200",
-              transition: "width 0.5s",
-            }} />
-          </div>
-          {pct >= 90 && creditsLimit !== 999999 && (
-            <p style={{ fontSize: 11, color: "#ef4444", marginTop: 6, fontFamily: "var(--font-outfit)" }}>
-              Running low — upgrade to continue
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* ── Gmail Integration ── */}
-      <p style={{
-        fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase",
-        color: "rgba(255,255,255,0.25)", fontFamily: "var(--font-outfit)", marginBottom: 12,
-      }}>
-        Integrations
-      </p>
-      <div style={{
-        backgroundColor: "#0e0e0e",
-        border: "1px solid rgba(255,255,255,0.07)",
-        borderRadius: 14, padding: "24px 22px", marginBottom: 32,
-        position: "relative", overflow: "hidden",
-      }}>
-
-        {/* Locked overlay for free / starter */}
-        {!isProOrAgency && (
+        {/* Gmail banner */}
+        {gmailStatus === "connected" && (
           <div style={{
-            position: "absolute", inset: 0, borderRadius: 14,
-            background: "linear-gradient(160deg, rgba(14,14,14,0.5) 0%, rgba(14,14,14,0.88) 100%)",
-            backdropFilter: "blur(4px)",
-            display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center", gap: 10,
-            padding: 24, zIndex: 2,
+            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+            padding: "10px 14px", borderRadius: 6, marginBottom: 20,
+            backgroundColor: "rgba(74,222,128,0.05)", border: "1px solid rgba(74,222,128,0.15)",
           }}>
-            <div style={{
-              width: 40, height: 40, borderRadius: "50%",
-              backgroundColor: "rgba(255,82,0,0.1)",
-              border: "1px solid rgba(255,82,0,0.2)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: "#FF5200",
-            }}>
-              <IconLock />
-            </div>
-            <p style={{
-              fontSize: 13, fontWeight: 700, color: "#fff",
-              fontFamily: "var(--font-syne)", textAlign: "center",
-            }}>
-              Upgrade to Pro to unlock Gmail sending
-            </p>
-            <button
-              onClick={() => {
-                const el = document.getElementById("plans-section");
-                el?.scrollIntoView({ behavior: "smooth" });
-              }}
-              style={{
-                padding: "8px 20px", backgroundColor: "#FF5200", color: "#fff",
-                borderRadius: 8, border: "none", fontSize: 13, fontWeight: 700,
-                fontFamily: "var(--font-outfit)", cursor: "pointer",
-              }}
-            >
-              See Plans →
-            </button>
+            <span style={{ fontSize: 13, color: "#4ade80", fontFamily: "var(--font-outfit)" }}>
+              Gmail connected.
+            </span>
+            <button onClick={() => router.replace("/dashboard/settings")} style={{ background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: 16, lineHeight: 1 }}>×</button>
+          </div>
+        )}
+        {gmailStatus === "error" && (
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+            padding: "10px 14px", borderRadius: 6, marginBottom: 20,
+            backgroundColor: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.15)",
+          }}>
+            <span style={{ fontSize: 13, color: "#f87171", fontFamily: "var(--font-outfit)" }}>
+              Gmail connection failed. Please try again.
+            </span>
+            <button onClick={() => router.replace("/dashboard/settings")} style={{ background: "none", border: "none", color: "#555", cursor: "pointer", fontSize: 16, lineHeight: 1 }}>×</button>
           </div>
         )}
 
-        {/* Card content (always rendered, dimmed when locked) */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, opacity: isProOrAgency ? 1 : 0.25 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
-            <div style={{
-              width: 44, height: 44, borderRadius: 11, flexShrink: 0,
-              backgroundColor: "rgba(255,82,0,0.1)",
-              border: "1px solid rgba(255,82,0,0.2)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: "#FF5200",
-            }}>
-              <IconGmail />
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <p style={{ fontSize: 14, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 2 }}>
-                Gmail
+        {/* ── Subscription ── */}
+        <SectionLabel>Subscription</SectionLabel>
+        <SectionCard>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
+            <div>
+              <p style={{ fontSize: 14, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)", textTransform: "capitalize", marginBottom: 2 }}>
+                {loading ? "—" : currentPlan}
               </p>
-              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.38)", fontFamily: "var(--font-outfit)" }}>
-                Send campaigns directly from your inbox
-              </p>
+              {sub?.current_period_end && (
+                <p style={{ fontSize: 11, color: "#444", fontFamily: "var(--font-outfit)" }}>
+                  Renews {new Date(sub.current_period_end).toLocaleDateString()}
+                </p>
+              )}
             </div>
           </div>
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+              <span style={{ fontSize: 12, color: "#555", fontFamily: "var(--font-outfit)" }}>Credits used</span>
+              <span style={{ fontSize: 12, color: "#888", fontFamily: "var(--font-outfit)" }}>
+                {loading ? "—" : `${creditsUsed} / ${creditsLimit === 999999 ? "∞" : creditsLimit}`}
+              </span>
+            </div>
+            <div style={{ height: 3, backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden" }}>
+              <div style={{
+                height: "100%", borderRadius: 2,
+                width: `${creditsLimit === 999999 ? 5 : pct}%`,
+                backgroundColor: pct >= 90 ? "#ef4444" : "#FF5200",
+                transition: "width 0.5s",
+              }} />
+            </div>
+            {pct >= 90 && creditsLimit !== 999999 && (
+              <p style={{ fontSize: 11, color: "#ef4444", marginTop: 5, fontFamily: "var(--font-outfit)" }}>
+                Running low — upgrade to continue.
+              </p>
+            )}
+          </div>
+        </SectionCard>
 
-          {/* Right side: loading / connected / connect */}
-          {gmailLoading ? (
-            <div style={{ width: 100, height: 34, backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 8 }} />
-          ) : gmail ? (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-              <span style={{
-                display: "flex", alignItems: "center", gap: 5,
-                fontSize: 11, fontWeight: 700, color: "#22c55e",
-                backgroundColor: "rgba(34,197,94,0.1)",
-                border: "1px solid rgba(34,197,94,0.2)",
-                padding: "4px 10px", borderRadius: 999,
-                fontFamily: "var(--font-outfit)",
-              }}>
-                <IconCheck />
-                Connected
-              </span>
-              <span style={{
-                fontSize: 12, color: "rgba(255,255,255,0.5)",
-                fontFamily: "var(--font-outfit)", maxWidth: 180,
-                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-              }}>
-                {gmail.gmail_email}
-              </span>
+        {/* ── Email Accounts ── */}
+        <SectionLabel>Email Accounts</SectionLabel>
+        <SectionCard style={{ position: "relative", overflow: "hidden" }}>
+          {/* Lock overlay */}
+          {!isProOrAgency && (
+            <div style={{
+              position: "absolute", inset: 0, borderRadius: 8,
+              backgroundColor: "rgba(6,6,6,0.85)",
+              backdropFilter: "blur(4px)",
+              display: "flex", flexDirection: "column",
+              alignItems: "center", justifyContent: "center", gap: 10,
+              padding: 24, zIndex: 2,
+            }}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: "#ccc", fontFamily: "var(--font-syne)", textAlign: "center" }}>
+                Gmail sending requires Pro
+              </p>
               <button
-                onClick={handleDisconnect}
-                disabled={disconnecting}
+                onClick={() => {
+                  const el = document.getElementById("plans-section");
+                  el?.scrollIntoView({ behavior: "smooth" });
+                }}
                 style={{
-                  padding: "6px 12px", borderRadius: 7, fontSize: 12, fontWeight: 600,
+                  padding: "7px 16px", backgroundColor: "#FF5200", color: "#fff",
+                  borderRadius: 6, border: "none", fontSize: 13,
                   fontFamily: "var(--font-outfit)", cursor: "pointer",
-                  backgroundColor: "rgba(239,68,68,0.08)",
-                  color: "rgba(239,68,68,0.8)",
-                  border: "1px solid rgba(239,68,68,0.2)",
-                  opacity: disconnecting ? 0.6 : 1,
                 }}
               >
-                {disconnecting ? "Disconnecting…" : "Disconnect"}
+                View plans
               </button>
             </div>
-          ) : (
-            <a
-              href="/api/auth/gmail"
-              style={{
-                display: "flex", alignItems: "center", gap: 7,
-                padding: "9px 18px", backgroundColor: "#FF5200", color: "#fff",
-                borderRadius: 8, fontSize: 13, fontWeight: 700,
-                fontFamily: "var(--font-outfit)", textDecoration: "none",
-                flexShrink: 0,
-              }}
-            >
-              <IconGmail />
-              Connect Gmail
-            </a>
           )}
-        </div>
-      </div>
 
-      {/* ── Writing Style ── */}
-      <p style={{
-        fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase",
-        color: "rgba(255,255,255,0.25)", fontFamily: "var(--font-outfit)", marginBottom: 12,
-      }}>
-        Writing Style
-      </p>
-      <div style={{
-        backgroundColor: "#0e0e0e",
-        border: `1px solid ${isAgency ? "rgba(167,139,250,0.2)" : "rgba(255,255,255,0.07)"}`,
-        borderRadius: 14, padding: "24px 22px", marginBottom: 32,
-        position: "relative", overflow: "hidden",
-      }}>
-        {/* Locked overlay for non-agency */}
-        {!isAgency && (
-          <div style={{
-            position: "absolute", inset: 0, borderRadius: 14,
-            background: "linear-gradient(160deg, rgba(14,14,14,0.5) 0%, rgba(14,14,14,0.88) 100%)",
-            backdropFilter: "blur(4px)",
-            display: "flex", flexDirection: "column",
-            alignItems: "center", justifyContent: "center", gap: 10,
-            padding: 24, zIndex: 2,
-          }}>
-            <div style={{
-              width: 40, height: 40, borderRadius: "50%",
-              backgroundColor: "rgba(167,139,250,0.1)",
-              border: "1px solid rgba(167,139,250,0.25)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: "#a78bfa",
-            }}>
-              <IconLock />
-            </div>
-            <p style={{
-              fontSize: 13, fontWeight: 700, color: "#fff",
-              fontFamily: "var(--font-syne)", textAlign: "center",
-            }}>
-              Upgrade to Agency to unlock Writing Style
-            </p>
-            <p style={{
-              fontSize: 12, color: "rgba(255,255,255,0.4)",
-              fontFamily: "var(--font-outfit)", textAlign: "center", maxWidth: 340, lineHeight: 1.5,
-            }}>
-              Train AI to write in your exact voice — tone, vocabulary, and sentence structure.
-            </p>
-            <button
-              onClick={() => {
-                const el = document.getElementById("plans-section");
-                el?.scrollIntoView({ behavior: "smooth" });
-              }}
-              style={{
-                padding: "8px 20px", backgroundColor: "#a78bfa", color: "#fff",
-                borderRadius: 8, border: "none", fontSize: 13, fontWeight: 700,
-                fontFamily: "var(--font-outfit)", cursor: "pointer",
-              }}
-            >
-              See Plans
-            </button>
-          </div>
-        )}
-
-        {/* Content (always rendered, dimmed when locked) */}
-        <div style={{ opacity: isAgency ? 1 : 0.2 }}>
-          {/* Header row */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, opacity: isProOrAgency ? 1 : 0.2 }}>
             <div>
-              <p style={{ fontSize: 14, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 2 }}>
-                AI Writing Style
-              </p>
-              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.38)", fontFamily: "var(--font-outfit)" }}>
-                Train AI on your emails — all campaigns will sound like you
+              <p style={{ fontSize: 13, fontWeight: 500, color: "#ccc", fontFamily: "var(--font-outfit)", marginBottom: 2 }}>Gmail</p>
+              <p style={{ fontSize: 12, color: "#555", fontFamily: "var(--font-outfit)" }}>
+                Send campaigns from your inbox
               </p>
             </div>
-            {isAgency && (
-              <span style={{
-                fontSize: 10, fontWeight: 800, color: "#a78bfa",
-                backgroundColor: "rgba(167,139,250,0.1)",
-                border: "1px solid rgba(167,139,250,0.25)",
-                padding: "4px 10px", borderRadius: 999,
-                letterSpacing: "0.06em", textTransform: "uppercase",
-                fontFamily: "var(--font-outfit)",
-              }}>
-                Agency
-              </span>
+
+            {gmailLoading ? (
+              <div style={{ width: 80, height: 30, backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 6 }} />
+            ) : gmail ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#4ade80" }} />
+                  <span style={{ fontSize: 12, color: "#666", fontFamily: "var(--font-outfit)" }}>
+                    {gmail.gmail_email}
+                  </span>
+                </div>
+                <button
+                  onClick={handleDisconnect}
+                  disabled={disconnecting}
+                  style={{
+                    padding: "5px 10px", borderRadius: 6, fontSize: 12,
+                    fontFamily: "var(--font-outfit)", cursor: "pointer",
+                    backgroundColor: "transparent",
+                    color: "#f87171",
+                    border: "1px solid rgba(239,68,68,0.2)",
+                    opacity: disconnecting ? 0.6 : 1,
+                  }}
+                >
+                  {disconnecting ? "Disconnecting…" : "Disconnect"}
+                </button>
+              </div>
+            ) : (
+              <a
+                href="/api/auth/gmail"
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 6,
+                  padding: "7px 14px", backgroundColor: "#FF5200", color: "#fff",
+                  borderRadius: 6, fontSize: 13,
+                  fontFamily: "var(--font-outfit)", textDecoration: "none",
+                  flexShrink: 0,
+                }}
+              >
+                Connect Gmail
+              </a>
             )}
           </div>
+        </SectionCard>
 
-          {ghostLoading ? (
-            <div style={{ color: "rgba(255,255,255,0.25)", fontFamily: "var(--font-outfit)", fontSize: 13 }}>Loading…</div>
-          ) : ghostStyle && !isRetraining ? (
-            /* Active state */
-            <div>
-              <div style={{
-                padding: "16px", borderRadius: 10,
-                backgroundColor: "rgba(167,139,250,0.05)",
-                border: "1px solid rgba(167,139,250,0.15)",
-                marginBottom: 14,
-              }}>
-                <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(167,139,250,0.6)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8, fontFamily: "var(--font-outfit)" }}>
-                  Style Guide
-                </p>
-                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", fontFamily: "var(--font-outfit)", lineHeight: 1.7 }}>
-                  {ghostStyle.style_summary}
-                </p>
-              </div>
-              {ghostStyle.tone_keywords && (
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 18 }}>
-                  {ghostStyle.tone_keywords.split(",").map((kw) => kw.trim()).filter(Boolean).map((kw) => (
-                    <span key={kw} style={{
-                      fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 999,
-                      backgroundColor: "rgba(167,139,250,0.1)",
-                      border: "1px solid rgba(167,139,250,0.2)",
-                      color: "#a78bfa", fontFamily: "var(--font-outfit)",
-                    }}>
-                      {kw}
-                    </span>
-                  ))}
-                </div>
-              )}
-              <div style={{ display: "flex", gap: 10 }}>
-                <button
-                  onClick={() => setIsRetraining(true)}
-                  style={{
-                    padding: "8px 16px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
-                    fontFamily: "var(--font-outfit)", cursor: "pointer",
-                    backgroundColor: "rgba(167,139,250,0.1)",
-                    color: "#a78bfa",
-                    border: "1px solid rgba(167,139,250,0.25)",
-                  }}
-                >
-                  Retrain
-                </button>
-                <button
-                  onClick={handleRemoveStyle}
-                  style={{
-                    padding: "8px 16px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
-                    fontFamily: "var(--font-outfit)", cursor: "pointer",
-                    backgroundColor: "rgba(239,68,68,0.07)",
-                    color: "rgba(239,68,68,0.7)",
-                    border: "1px solid rgba(239,68,68,0.2)",
-                  }}
-                >
-                  Remove Style
-                </button>
-              </div>
-            </div>
-          ) : (
-            /* Training form */
-            <div>
-              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", fontFamily: "var(--font-outfit)", lineHeight: 1.6, marginBottom: 18 }}>
-                Paste 3–5 emails <strong style={{ color: "rgba(255,255,255,0.7)" }}>you have written</strong> so AI can learn your style.
+        {/* ── Writing Style ── */}
+        <SectionLabel>Writing Style</SectionLabel>
+        <SectionCard style={{ position: "relative", overflow: "hidden" }}>
+          {!isAgency && (
+            <div style={{
+              position: "absolute", inset: 0, borderRadius: 8,
+              backgroundColor: "rgba(6,6,6,0.85)",
+              backdropFilter: "blur(4px)",
+              display: "flex", flexDirection: "column",
+              alignItems: "center", justifyContent: "center", gap: 10,
+              padding: 24, zIndex: 2,
+            }}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: "#ccc", fontFamily: "var(--font-syne)", textAlign: "center" }}>
+                Writing Style requires Agency
               </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
-                {sampleEmails.map((val, i) => (
-                  <div key={i}>
-                    <label style={{
-                      fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.35)",
-                      textTransform: "uppercase", letterSpacing: "0.07em",
-                      display: "block", marginBottom: 5, fontFamily: "var(--font-outfit)",
-                    }}>
-                      Sample {i + 1}{i < 3 ? " *" : " (optional)"}
-                    </label>
-                    <textarea
-                      value={val}
-                      onChange={(e) => setSampleEmails((prev) => prev.map((v, j) => j === i ? e.target.value : v))}
-                      placeholder={`Paste an email you wrote${i === 0 ? " — subject + body works best" : ""}…`}
-                      rows={3}
-                      style={{
-                        width: "100%", padding: "10px 13px", borderRadius: 9,
-                        backgroundColor: "rgba(255,255,255,0.03)",
-                        border: "1px solid rgba(255,255,255,0.09)",
-                        color: "rgba(255,255,255,0.75)", fontFamily: "var(--font-outfit)",
-                        fontSize: 13, lineHeight: 1.6, resize: "vertical",
-                        outline: "none", boxSizing: "border-box",
-                      }}
-                    />
-                  </div>
-                ))}
-              </div>
-              {ghostError && (
-                <div style={{
-                  marginBottom: 14, padding: "9px 13px", borderRadius: 8,
-                  backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)",
-                }}>
-                  <p style={{ fontSize: 12.5, color: "#ef4444", fontFamily: "var(--font-outfit)" }}>{ghostError}</p>
-                </div>
-              )}
-              <div style={{ display: "flex", gap: 10 }}>
-                <button
-                  onClick={handleAnalyzeStyle}
-                  disabled={analyzing}
-                  style={{
-                    display: "flex", alignItems: "center", gap: 7,
-                    padding: "10px 20px", borderRadius: 9,
-                    backgroundColor: analyzing ? "rgba(167,139,250,0.4)" : "#a78bfa",
-                    color: "#fff", border: "none",
-                    fontSize: 13, fontWeight: 700, fontFamily: "var(--font-outfit)",
-                    cursor: analyzing ? "not-allowed" : "pointer",
-                    opacity: analyzing ? 0.8 : 1,
-                  }}
-                >
-                  {analyzing ? "Analyzing…" : "Analyze Writing Style"}
-                </button>
-                {isRetraining && (
-                  <button
-                    onClick={() => { setIsRetraining(false); setGhostError(null); }}
-                    style={{
-                      padding: "10px 16px", borderRadius: 9,
-                      backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.5)",
-                      border: "1px solid rgba(255,255,255,0.1)",
-                      fontSize: 13, fontWeight: 600, fontFamily: "var(--font-outfit)", cursor: "pointer",
-                    }}
-                  >
-                    Cancel
-                  </button>
-                )}
-              </div>
+              <p style={{ fontSize: 12, color: "#555", fontFamily: "var(--font-outfit)", textAlign: "center", maxWidth: 300, lineHeight: 1.5 }}>
+                Train AI on your emails — all campaigns will match your voice.
+              </p>
+              <button
+                onClick={() => {
+                  const el = document.getElementById("plans-section");
+                  el?.scrollIntoView({ behavior: "smooth" });
+                }}
+                style={{
+                  padding: "7px 16px", backgroundColor: "#FF5200", color: "#fff",
+                  borderRadius: 6, border: "none", fontSize: 13,
+                  fontFamily: "var(--font-outfit)", cursor: "pointer",
+                }}
+              >
+                View plans
+              </button>
             </div>
           )}
-        </div>
-      </div>
 
-      {/* ── Available Plans ── */}
-      <p id="plans-section" style={{
-        fontSize: 11, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase",
-        color: "rgba(255,255,255,0.25)", fontFamily: "var(--font-outfit)", marginBottom: 12,
-      }}>
-        Available Plans
-      </p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {(Object.entries(PLANS) as [PlanKey, typeof PLANS[keyof typeof PLANS]][]).map(([key, plan]) => {
-          const isCurrent = currentPlan === key;
-          const tier = ["starter", "pro", "agency"];
-          const isDowngrade = tier.indexOf(key) < tier.indexOf(currentPlan as string);
-          const a = PLAN_ACCENT[key] ?? PLAN_ACCENT.free;
-
-          return (
-            <div
-              key={key}
-              style={{
-                backgroundColor: "#0e0e0e",
-                border: `1px solid ${isCurrent ? a.border : "rgba(255,255,255,0.07)"}`,
-                borderRadius: 12, padding: "18px 20px",
-                display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16,
-              }}
-            >
+          <div style={{ opacity: isAgency ? 1 : 0.2 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
               <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-                  <span style={{ fontSize: 15, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)" }}>
-                    {plan.name}
-                  </span>
-                  {isCurrent && (
-                    <span style={{
-                      fontSize: 9, fontWeight: 800, color: a.color,
-                      backgroundColor: a.bg, border: `1px solid ${a.border}`,
-                      padding: "2px 8px", borderRadius: 999, letterSpacing: "0.06em",
-                      fontFamily: "var(--font-outfit)",
-                    }}>
-                      CURRENT
-                    </span>
-                  )}
-                </div>
-                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", fontFamily: "var(--font-outfit)" }}>
-                  {plan.credits === 999999 ? "Unlimited" : String(plan.credits)} credits/month
+                <p style={{ fontSize: 13, fontWeight: 500, color: "#ccc", fontFamily: "var(--font-outfit)", marginBottom: 2 }}>
+                  AI Writing Style
+                </p>
+                <p style={{ fontSize: 12, color: "#555", fontFamily: "var(--font-outfit)" }}>
+                  Agency only
                 </p>
               </div>
+            </div>
 
-              <div style={{ display: "flex", alignItems: "center", gap: 16, flexShrink: 0 }}>
-                <span style={{ fontSize: 18, fontWeight: 800, color: "#fff", fontFamily: "var(--font-syne)" }}>
-                  ${plan.price}
-                  <span style={{ fontSize: 12, fontWeight: 400, color: "rgba(255,255,255,0.3)" }}>/mo</span>
-                </span>
-                {!isCurrent && !isDowngrade && (
+            {ghostLoading ? (
+              <div style={{ color: "#444", fontFamily: "var(--font-outfit)", fontSize: 13 }}>Loading…</div>
+            ) : ghostStyle && !isRetraining ? (
+              <div>
+                <div style={{
+                  padding: "14px",
+                  borderRadius: 6,
+                  backgroundColor: "rgba(255,255,255,0.02)",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  marginBottom: 12,
+                }}>
+                  <p style={{ fontSize: 10, fontWeight: 500, color: "#444", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6, fontFamily: "var(--font-outfit)" }}>
+                    Style: Configured
+                  </p>
+                  <p style={{ fontSize: 13, color: "#888", fontFamily: "var(--font-outfit)", lineHeight: 1.6 }}>
+                    {ghostStyle.style_summary}
+                  </p>
+                </div>
+                {ghostStyle.tone_keywords && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 14 }}>
+                    {ghostStyle.tone_keywords.split(",").map((kw) => kw.trim()).filter(Boolean).map((kw) => (
+                      <span key={kw} style={{
+                        fontSize: 11, padding: "3px 8px", borderRadius: 4,
+                        backgroundColor: "rgba(255,255,255,0.04)",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        color: "#666", fontFamily: "var(--font-outfit)",
+                      }}>
+                        {kw}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: "flex", gap: 8 }}>
                   <button
-                    onClick={() => handleUpgrade(key)}
-                    disabled={upgrading === key}
+                    onClick={() => setIsRetraining(true)}
                     style={{
-                      padding: "8px 18px", backgroundColor: "#FF5200", color: "#fff",
-                      borderRadius: 8, border: "none", fontSize: 13, fontWeight: 700,
+                      padding: "7px 14px", borderRadius: 6, fontSize: 12,
                       fontFamily: "var(--font-outfit)", cursor: "pointer",
-                      opacity: upgrading === key ? 0.6 : 1,
+                      backgroundColor: "transparent", color: "#888",
+                      border: "1px solid rgba(255,255,255,0.08)",
                     }}
                   >
-                    {upgrading === key ? "Processing…" : "Upgrade"}
+                    Retrain
                   </button>
-                )}
+                  <button
+                    onClick={handleRemoveStyle}
+                    style={{
+                      padding: "7px 14px", borderRadius: 6, fontSize: 12,
+                      fontFamily: "var(--font-outfit)", cursor: "pointer",
+                      backgroundColor: "transparent", color: "#f87171",
+                      border: "1px solid rgba(239,68,68,0.15)",
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            ) : (
+              <div>
+                <p style={{ fontSize: 12, color: "#555", fontFamily: "var(--font-outfit)", lineHeight: 1.6, marginBottom: 14 }}>
+                  Paste 3–5 emails you have written. AI will learn your tone and vocabulary.
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
+                  {sampleEmails.map((val, i) => (
+                    <div key={i}>
+                      <label style={{
+                        fontSize: 10, fontWeight: 500, color: "#444",
+                        textTransform: "uppercase", letterSpacing: "0.06em",
+                        display: "block", marginBottom: 4, fontFamily: "var(--font-outfit)",
+                      }}>
+                        Sample {i + 1}{i < 3 ? " *" : " (optional)"}
+                      </label>
+                      <textarea
+                        value={val}
+                        onChange={(e) => setSampleEmails((prev) => prev.map((v, j) => j === i ? e.target.value : v))}
+                        placeholder={i === 0 ? "Paste an email you wrote — subject + body works best" : "Paste an email you wrote"}
+                        rows={3}
+                        style={{
+                          ...inputStyle,
+                          lineHeight: 1.6,
+                          resize: "vertical",
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+                {ghostError && (
+                  <p style={{ fontSize: 12, color: "#f87171", fontFamily: "var(--font-outfit)", marginBottom: 12 }}>
+                    {ghostError}
+                  </p>
+                )}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={handleAnalyzeStyle}
+                    disabled={analyzing}
+                    style={{
+                      padding: "8px 16px", borderRadius: 6,
+                      backgroundColor: analyzing ? "rgba(255,82,0,0.4)" : "#FF5200",
+                      color: "#fff", border: "none",
+                      fontSize: 13, fontFamily: "var(--font-outfit)",
+                      cursor: analyzing ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    {analyzing ? "Analyzing…" : "Analyze style"}
+                  </button>
+                  {isRetraining && (
+                    <button
+                      onClick={() => { setIsRetraining(false); setGhostError(null); }}
+                      style={{
+                        padding: "8px 14px", borderRadius: 6,
+                        backgroundColor: "transparent", color: "#666",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        fontSize: 13, fontFamily: "var(--font-outfit)", cursor: "pointer",
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </SectionCard>
+
+        {/* ── Plans ── */}
+        <SectionLabel>
+          <span id="plans-section">Available Plans</span>
+        </SectionLabel>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {(Object.entries(PLANS) as [PlanKey, typeof PLANS[keyof typeof PLANS]][]).map(([key, plan]) => {
+            const isCurrent = currentPlan === key;
+            const tier = ["starter", "pro", "agency"];
+            const isDowngrade = tier.indexOf(key) < tier.indexOf(currentPlan as string);
+
+            return (
+              <div
+                key={key}
+                style={{
+                  backgroundColor: "#0e0e0e",
+                  border: `1px solid ${isCurrent ? "rgba(255,82,0,0.25)" : "rgba(255,255,255,0.06)"}`,
+                  borderRadius: 8,
+                  padding: "16px 18px",
+                  display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16,
+                }}
+              >
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: "#ccc", fontFamily: "var(--font-outfit)" }}>
+                      {plan.name}
+                    </span>
+                    {isCurrent && (
+                      <span style={{
+                        fontSize: 10, color: "#FF5200",
+                        fontFamily: "var(--font-outfit)",
+                      }}>
+                        Current
+                      </span>
+                    )}
+                  </div>
+                  <p style={{ fontSize: 12, color: "#444", fontFamily: "var(--font-outfit)" }}>
+                    {plan.credits === 999999 ? "Unlimited" : String(plan.credits)} credits/month
+                  </p>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 14, flexShrink: 0 }}>
+                  <span style={{ fontSize: 16, fontWeight: 500, color: "#888", fontFamily: "var(--font-syne)" }}>
+                    ${plan.price}
+                    <span style={{ fontSize: 11, fontWeight: 400, color: "#444" }}>/mo</span>
+                  </span>
+                  {!isCurrent && !isDowngrade && (
+                    <button
+                      onClick={() => handleUpgrade(key)}
+                      disabled={upgrading === key}
+                      style={{
+                        padding: "7px 14px", backgroundColor: "#FF5200", color: "#fff",
+                        borderRadius: 6, border: "none", fontSize: 12,
+                        fontFamily: "var(--font-outfit)", cursor: "pointer",
+                        opacity: upgrading === key ? 0.6 : 1,
+                      }}
+                    >
+                      {upgrading === key ? "Processing…" : "Upgrade"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

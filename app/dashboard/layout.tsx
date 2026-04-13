@@ -45,7 +45,7 @@ export default async function DashboardLayout({
       <div
         className="dot-grid"
         style={{
-          marginLeft: 240,
+          marginLeft: 220,
           flex: 1,
           minHeight: "100vh",
           display: "flex",

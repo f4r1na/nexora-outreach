@@ -22,11 +22,11 @@ type ManualForm = {
   reply_body: string;
 };
 
-const STATUS_CONFIG: Record<ReplyStatus, { label: string; color: string; bg: string; border: string }> = {
-  pending:     { label: "Needs Response", color: "#fb923c", bg: "rgba(251,146,60,0.08)",  border: "rgba(251,146,60,0.2)" },
-  draft_ready: { label: "Draft Ready",   color: "#60a5fa", bg: "rgba(96,165,250,0.08)", border: "rgba(96,165,250,0.2)" },
-  sent:        { label: "Responded",     color: "#4ade80", bg: "rgba(74,222,128,0.08)", border: "rgba(74,222,128,0.2)" },
-  skipped:     { label: "Dismissed",     color: "#94a3b8", bg: "rgba(148,163,184,0.08)", border: "rgba(148,163,184,0.2)" },
+const STATUS_CONFIG: Record<ReplyStatus, { label: string; color: string }> = {
+  pending:     { label: "Needs response", color: "rgba(251,146,60,0.7)" },
+  draft_ready: { label: "Draft ready",   color: "rgba(96,165,250,0.7)" },
+  sent:        { label: "Responded",     color: "rgba(74,222,128,0.7)" },
+  skipped:     { label: "Dismissed",     color: "#555" },
 };
 
 const FILTER_TABS: { value: FilterTab; label: string }[] = [
@@ -147,13 +147,12 @@ function ReplyCard({
   const cfg = STATUS_CONFIG[reply.status];
   const isDone = reply.status === "sent" || reply.status === "skipped";
   const draft = editedDraft || reply.ai_draft || "";
-  const initials = (reply.lead_name ?? reply.lead_email).slice(0, 2).toUpperCase();
 
   return (
     <div style={{
       backgroundColor: "#0e0e0e",
       border: "1px solid rgba(255,255,255,0.06)",
-      borderRadius: 12, overflow: "hidden",
+      borderRadius: 8, overflow: "hidden",
       opacity: isDone ? 0.65 : 1,
     }}>
       {/* Card header */}
@@ -161,30 +160,20 @@ function ReplyCard({
         style={{ display: "flex", alignItems: "center", padding: "14px 20px", cursor: "pointer", gap: 14 }}
         onClick={() => setExpanded(!expanded)}
       >
-        {/* Avatar */}
-        <div style={{
-          width: 36, height: 36, borderRadius: 9, flexShrink: 0,
-          backgroundColor: "rgba(255,82,0,0.1)", border: "1px solid rgba(255,82,0,0.15)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: 12, fontWeight: 700, color: "#FF5200", fontFamily: "var(--font-syne)",
-        }}>
-          {initials}
-        </div>
-
         {/* Lead info */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
-            <span style={{ fontSize: 14, fontWeight: 600, color: "#fff", fontFamily: "var(--font-outfit)" }}>
+            <span style={{ fontSize: 13, fontWeight: 500, color: "#ccc", fontFamily: "var(--font-outfit)" }}>
               {reply.lead_name ?? reply.lead_email}
             </span>
             {reply.lead_name && (
-              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-outfit)" }}>
+              <span style={{ fontSize: 12, color: "#444", fontFamily: "var(--font-outfit)" }}>
                 {reply.lead_email}
               </span>
             )}
           </div>
           {reply.original_subject && (
-            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: "var(--font-outfit)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <p style={{ fontSize: 12, color: "#555", fontFamily: "var(--font-outfit)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {reply.original_subject}
             </p>
           )}
@@ -192,12 +181,12 @@ function ReplyCard({
 
         {/* Right: time + status + actions */}
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-          <span style={{ fontSize: 11, color: "rgba(255,255,255,0.25)", fontFamily: "var(--font-outfit)" }}>
+          <span style={{ fontSize: 11, color: "#444", fontFamily: "var(--font-outfit)" }}>
             {formatDate(reply.created_at)}
           </span>
           <span style={{
-            fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 5,
-            color: cfg.color, backgroundColor: cfg.bg, border: `1px solid ${cfg.border}`,
+            fontSize: 11, fontWeight: 400,
+            color: cfg.color,
             fontFamily: "var(--font-outfit)",
           }}>
             {cfg.label}
@@ -223,7 +212,7 @@ function ReplyCard({
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: "18px 20px" }}>
           {/* Their message */}
           <div style={{ marginBottom: 18 }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.25)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8, fontFamily: "var(--font-outfit)" }}>
+            <p style={{ fontSize: 10, fontWeight: 500, color: "#444", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8, fontFamily: "var(--font-outfit)" }}>
               Their Message
             </p>
             <div style={{
@@ -244,7 +233,7 @@ function ReplyCard({
                 disabled={draftLoading}
                 style={{
                   display: "flex", alignItems: "center", gap: 7,
-                  padding: "9px 16px", borderRadius: 8, fontSize: 13, fontWeight: 700,
+                  padding: "8px 14px", borderRadius: 6, fontSize: 13, fontWeight: 400,
                   fontFamily: "var(--font-outfit)", cursor: draftLoading ? "not-allowed" : "pointer",
                   backgroundColor: draftLoading ? "rgba(255,82,0,0.3)" : "rgba(255,82,0,0.1)",
                   color: draftLoading ? "rgba(255,255,255,0.4)" : "#FF5200",
@@ -257,7 +246,7 @@ function ReplyCard({
             ) : (
               <div style={{ marginBottom: 18 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                  <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.25)", textTransform: "uppercase", letterSpacing: "0.08em", margin: 0, fontFamily: "var(--font-outfit)" }}>
+                  <p style={{ fontSize: 10, fontWeight: 500, color: "#444", textTransform: "uppercase", letterSpacing: "0.08em", margin: 0, fontFamily: "var(--font-outfit)" }}>
                     AI Draft <span style={{ color: "rgba(255,82,0,0.55)", textTransform: "none", letterSpacing: 0, fontSize: 10 }}>(editable)</span>
                   </p>
                   <button
@@ -267,7 +256,7 @@ function ReplyCard({
                       display: "flex", alignItems: "center", gap: 5,
                       padding: "3px 10px", borderRadius: 6,
                       backgroundColor: "transparent", color: draftLoading ? "rgba(255,82,0,0.4)" : "#FF5200",
-                      border: "1px solid rgba(255,82,0,0.3)", fontSize: 11, fontWeight: 600,
+                      border: "1px solid rgba(255,82,0,0.3)", fontSize: 11, fontWeight: 400,
                       fontFamily: "var(--font-outfit)", cursor: draftLoading ? "not-allowed" : "pointer",
                     }}
                   >
@@ -295,7 +284,7 @@ function ReplyCard({
           {/* Done draft preview */}
           {isDone && reply.ai_draft && (
             <div style={{ marginBottom: 0 }}>
-              <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.25)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8, fontFamily: "var(--font-outfit)" }}>
+              <p style={{ fontSize: 10, fontWeight: 500, color: "#444", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8, fontFamily: "var(--font-outfit)" }}>
                 {reply.status === "sent" ? "Sent Reply" : "Draft (Dismissed)"}
               </p>
               <div style={{
@@ -323,10 +312,10 @@ function ReplyCard({
                 <button
                   onClick={(e) => { e.stopPropagation(); onDelete(); }}
                   style={{
-                    padding: "6px 14px", borderRadius: 7,
+                    padding: "6px 14px", borderRadius: 6,
                     backgroundColor: "rgba(239,68,68,0.12)", color: "#ef4444",
                     border: "1px solid rgba(239,68,68,0.3)",
-                    fontSize: 12, fontWeight: 700, fontFamily: "var(--font-outfit)", cursor: "pointer",
+                    fontSize: 12, fontWeight: 400, fontFamily: "var(--font-outfit)", cursor: "pointer",
                   }}
                 >
                   Delete
@@ -334,10 +323,10 @@ function ReplyCard({
                 <button
                   onClick={(e) => { e.stopPropagation(); onCancelDelete(); }}
                   style={{
-                    padding: "6px 14px", borderRadius: 7,
-                    backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.5)",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    fontSize: 12, fontWeight: 600, fontFamily: "var(--font-outfit)", cursor: "pointer",
+                    padding: "6px 14px", borderRadius: 6,
+                    backgroundColor: "transparent", color: "#555",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    fontSize: 12, fontWeight: 400, fontFamily: "var(--font-outfit)", cursor: "pointer",
                   }}
                 >
                   Cancel
@@ -354,24 +343,24 @@ function ReplyCard({
                   onClick={(e) => { e.stopPropagation(); onAction("send"); }}
                   disabled={actionLoading || !draft.trim()}
                   style={{
-                    flex: 1, padding: "10px 0", borderRadius: 8,
+                    flex: 1, padding: "9px 0", borderRadius: 6,
                     backgroundColor: actionLoading ? "rgba(255,82,0,0.4)" : "#FF5200",
                     color: "#fff", border: "none",
-                    fontSize: 13, fontWeight: 700, fontFamily: "var(--font-outfit)",
+                    fontSize: 13, fontWeight: 500, fontFamily: "var(--font-outfit)",
                     cursor: actionLoading || !draft.trim() ? "not-allowed" : "pointer",
                     opacity: !draft.trim() ? 0.5 : 1,
                   }}
                 >
-                  {actionLoading ? "Sending…" : "Send Reply"}
+                  {actionLoading ? "Sending…" : "Send reply"}
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); onAction("skip"); }}
                   disabled={actionLoading}
                   style={{
-                    flex: 1, padding: "10px 0", borderRadius: 8,
-                    backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.5)",
-                    border: "1px solid rgba(255,255,255,0.1)",
-                    fontSize: 13, fontWeight: 600, fontFamily: "var(--font-outfit)", cursor: actionLoading ? "not-allowed" : "pointer",
+                    flex: 1, padding: "9px 0", borderRadius: 6,
+                    backgroundColor: "transparent", color: "#555",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    fontSize: 13, fontWeight: 400, fontFamily: "var(--font-outfit)", cursor: actionLoading ? "not-allowed" : "pointer",
                   }}
                 >
                   Dismiss
@@ -563,17 +552,17 @@ export default function InboxPage() {
     <>
       {/* Header */}
       <header style={{
-        padding: "0 32px", height: 68,
+        padding: "0 32px", height: 60,
         display: "flex", alignItems: "center", justifyContent: "space-between",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
-        backgroundColor: "rgba(6,6,6,0.85)", backdropFilter: "blur(12px)",
+        backgroundColor: "rgba(6,6,6,0.9)", backdropFilter: "blur(8px)",
         position: "sticky", top: 0, zIndex: 30, gap: 16,
       }}>
         <div>
-          <h1 style={{ fontSize: 17, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", margin: 0, lineHeight: 1.2 }}>
+          <h1 style={{ fontSize: 15, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)", margin: 0, lineHeight: 1 }}>
             Inbox
           </h1>
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", fontFamily: "var(--font-outfit)", margin: 0, marginTop: 2 }}>
+          <p style={{ fontSize: 12, color: "#555", fontFamily: "var(--font-outfit)", margin: 0, marginTop: 2 }}>
             Responses from your campaigns
           </p>
         </div>
@@ -582,28 +571,28 @@ export default function InboxPage() {
             onClick={() => setShowManual(true)}
             style={{
               display: "flex", alignItems: "center", gap: 6,
-              padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+              padding: "6px 12px", borderRadius: 6, fontSize: 12, fontWeight: 400,
               fontFamily: "var(--font-outfit)", cursor: "pointer",
-              backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.55)",
-              border: "1px solid rgba(255,255,255,0.1)",
+              backgroundColor: "transparent", color: "#555",
+              border: "1px solid rgba(255,255,255,0.08)",
             }}
           >
             <PlusIcon />
-            Add Manually
+            Add manually
           </button>
           <button
             onClick={handleCheck}
             disabled={checking}
             style={{
               display: "flex", alignItems: "center", gap: 7,
-              padding: "7px 16px", borderRadius: 8, fontSize: 13, fontWeight: 700,
+              padding: "7px 14px", borderRadius: 6, fontSize: 13, fontWeight: 500,
               fontFamily: "var(--font-outfit)", cursor: checking ? "not-allowed" : "pointer",
               backgroundColor: checking ? "rgba(255,82,0,0.5)" : "#FF5200",
               color: "#fff", border: "none", opacity: checking ? 0.8 : 1,
             }}
           >
             {checking ? <SpinnerIcon /> : <SyncIcon />}
-            {checking ? "Syncing…" : "Sync Inbox"}
+            {checking ? "Syncing…" : "Sync inbox"}
           </button>
         </div>
       </header>
@@ -612,12 +601,12 @@ export default function InboxPage() {
         {/* Banners */}
         {checkResult && (
           <div style={{
-            marginBottom: 18, padding: "10px 16px", borderRadius: 9,
+            marginBottom: 18, padding: "10px 16px", borderRadius: 8,
             backgroundColor: checkResult.inserted > 0 ? "rgba(74,222,128,0.07)" : "rgba(255,255,255,0.03)",
             border: `1px solid ${checkResult.inserted > 0 ? "rgba(74,222,128,0.2)" : "rgba(255,255,255,0.07)"}`,
             display: "flex", alignItems: "center", justifyContent: "space-between",
           }}>
-            <p style={{ fontSize: 13, color: checkResult.inserted > 0 ? "#4ade80" : "rgba(255,255,255,0.4)", fontFamily: "var(--font-outfit)" }}>
+            <p style={{ fontSize: 13, color: checkResult.inserted > 0 ? "#4ade80" : "#555", fontFamily: "var(--font-outfit)" }}>
               {checkResult.inserted > 0
                 ? `Found ${checkResult.inserted} new response${checkResult.inserted !== 1 ? "s" : ""} from ${checkResult.found} unread message${checkResult.found !== 1 ? "s" : ""}`
                 : `Scanned ${checkResult.found} unread message${checkResult.found !== 1 ? "s" : ""} — no new responses from leads`}
@@ -627,7 +616,7 @@ export default function InboxPage() {
         )}
         {checkError && (
           <div style={{
-            marginBottom: 18, padding: "10px 16px", borderRadius: 9,
+            marginBottom: 18, padding: "10px 16px", borderRadius: 8,
             backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)",
             display: "flex", alignItems: "center", justifyContent: "space-between",
           }}>
@@ -637,38 +626,22 @@ export default function InboxPage() {
         )}
 
         {/* Filter tabs */}
-        <div style={{ display: "flex", gap: 4, marginBottom: 20, borderBottom: "1px solid rgba(255,255,255,0.06)", paddingBottom: 0 }}>
+        <div style={{ display: "flex", gap: 0, marginBottom: 20, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
           {FILTER_TABS.map((tab) => {
             const active = tab.value === activeFilter;
-            const count = tab.value === "all" ? replies.length
-              : tab.value === "pending" ? replies.filter((r) => r.status === "pending" || r.status === "draft_ready").length
-              : tab.value === "sent" ? replies.filter((r) => r.status === "sent").length
-              : replies.filter((r) => r.status === "skipped").length;
             return (
               <button
                 key={tab.value}
                 onClick={() => setActiveFilter(tab.value)}
                 style={{
-                  padding: "10px 16px", fontSize: 13, fontFamily: "var(--font-outfit)",
-                  fontWeight: active ? 600 : 400, background: "none", border: "none",
-                  color: active ? "#fff" : "rgba(255,255,255,0.4)",
-                  borderBottom: active ? "2px solid #FF5200" : "2px solid transparent",
-                  cursor: "pointer", transition: "all 0.15s", display: "flex", alignItems: "center", gap: 6,
-                  marginBottom: -1,
+                  padding: "9px 16px", fontSize: 13, fontFamily: "var(--font-outfit)",
+                  fontWeight: 400, background: "none", border: "none",
+                  color: active ? "#fff" : "#555",
+                  borderBottom: active ? "1px solid #FF5200" : "1px solid transparent",
+                  cursor: "pointer", marginBottom: -1,
                 }}
               >
                 {tab.label}
-                {count > 0 && (
-                  <span style={{
-                    fontSize: 10, fontWeight: 700, lineHeight: 1,
-                    padding: "2px 6px", borderRadius: 99,
-                    backgroundColor: active ? "rgba(255,82,0,0.15)" : "rgba(255,255,255,0.06)",
-                    color: active ? "#FF5200" : "rgba(255,255,255,0.35)",
-                    fontFamily: "var(--font-outfit)",
-                  }}>
-                    {count}
-                  </span>
-                )}
               </button>
             );
           })}
@@ -682,22 +655,18 @@ export default function InboxPage() {
         ) : filtered.length === 0 ? (
           <div style={{
             backgroundColor: "#0e0e0e", border: "1px solid rgba(255,255,255,0.06)",
-            borderRadius: 12, padding: "72px 24px",
-            display: "flex", flexDirection: "column", alignItems: "center", gap: 14,
+            borderRadius: 8, padding: "64px 24px",
+            display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
           }}>
-            <div style={{
-              width: 60, height: 60, borderRadius: 14,
-              backgroundColor: "rgba(255,82,0,0.07)", border: "1px solid rgba(255,82,0,0.12)",
-              display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,82,0,0.45)",
-            }}>
+            <div style={{ color: "#333" }}>
               <InboxEmptyIcon />
             </div>
-            <h3 style={{ fontSize: 15, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", margin: 0 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 500, color: "#ccc", fontFamily: "var(--font-syne)", margin: 0 }}>
               {activeFilter === "all" ? "No responses received" : "No responses in this category"}
             </h3>
-            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", fontFamily: "var(--font-outfit)", textAlign: "center", maxWidth: 340, lineHeight: 1.6, margin: 0 }}>
+            <p style={{ fontSize: 13, color: "#444", fontFamily: "var(--font-outfit)", textAlign: "center", maxWidth: 340, lineHeight: 1.6, margin: 0 }}>
               {activeFilter === "all"
-                ? "Click Sync Inbox to scan your Gmail for replies from leads, or add a response manually."
+                ? "Sync your inbox to scan Gmail for replies from leads, or add a response manually."
                 : "No responses match this filter."}
             </p>
           </div>
@@ -738,16 +707,16 @@ export default function InboxPage() {
           display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
         }}>
           <div style={{
-            backgroundColor: "#0e0e0e", border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: 14, padding: "28px 26px", maxWidth: 480, width: "100%",
+            backgroundColor: "#0e0e0e", border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 8, padding: "24px", maxWidth: 480, width: "100%",
           }}>
-            <h2 style={{ fontSize: 16, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 20 }}>
-              Add Response Manually
+            <h2 style={{ fontSize: 15, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 20 }}>
+              Add response manually
             </h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.07em", display: "block", marginBottom: 6, fontFamily: "var(--font-outfit)" }}>
-                  From Email *
+                <label style={{ fontSize: 10, fontWeight: 500, color: "#444", textTransform: "uppercase", letterSpacing: "0.07em", display: "block", marginBottom: 6, fontFamily: "var(--font-outfit)" }}>
+                  From email *
                 </label>
                 <input
                   type="email"
@@ -763,7 +732,7 @@ export default function InboxPage() {
                 />
               </div>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.07em", display: "block", marginBottom: 6, fontFamily: "var(--font-outfit)" }}>
+                <label style={{ fontSize: 10, fontWeight: 500, color: "#444", textTransform: "uppercase", letterSpacing: "0.07em", display: "block", marginBottom: 6, fontFamily: "var(--font-outfit)" }}>
                   Subject
                 </label>
                 <input
@@ -780,7 +749,7 @@ export default function InboxPage() {
                 />
               </div>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.07em", display: "block", marginBottom: 6, fontFamily: "var(--font-outfit)" }}>
+                <label style={{ fontSize: 10, fontWeight: 500, color: "#444", textTransform: "uppercase", letterSpacing: "0.07em", display: "block", marginBottom: 6, fontFamily: "var(--font-outfit)" }}>
                   Message *
                 </label>
                 <textarea
@@ -807,9 +776,9 @@ export default function InboxPage() {
                 onClick={handleManualSubmit}
                 disabled={manualLoading || !manualForm.email_from.trim() || !manualForm.reply_body.trim()}
                 style={{
-                  flex: 1, padding: "10px 0", borderRadius: 8,
+                  flex: 1, padding: "9px 0", borderRadius: 6,
                   backgroundColor: manualLoading ? "rgba(255,82,0,0.4)" : "#FF5200",
-                  color: "#fff", border: "none", fontSize: 13, fontWeight: 700,
+                  color: "#fff", border: "none", fontSize: 13, fontWeight: 500,
                   fontFamily: "var(--font-outfit)", cursor: manualLoading ? "not-allowed" : "pointer",
                   opacity: (!manualForm.email_from.trim() || !manualForm.reply_body.trim()) ? 0.5 : 1,
                 }}
@@ -819,10 +788,10 @@ export default function InboxPage() {
               <button
                 onClick={() => { setShowManual(false); setManualError(null); }}
                 style={{
-                  flex: 1, padding: "10px 0", borderRadius: 8,
-                  backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.6)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  fontSize: 13, fontWeight: 600, fontFamily: "var(--font-outfit)", cursor: "pointer",
+                  flex: 1, padding: "9px 0", borderRadius: 6,
+                  backgroundColor: "transparent", color: "#555",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  fontSize: 13, fontWeight: 400, fontFamily: "var(--font-outfit)", cursor: "pointer",
                 }}
               >
                 Cancel
