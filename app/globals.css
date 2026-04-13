@@ -16,6 +16,11 @@
   --black-3: #161616;
   --orange: #ff5200;
   --orange-h: #ff6a1f;
+
+  /* ── Custom easing curves ─────────────────────────────────────────────── */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 body {
@@ -24,17 +29,17 @@ body {
   font-family: var(--font-outfit), sans-serif;
 }
 
-/* Dot grid background pattern */
+/* ── Dot grid background pattern ─────────────────────────────────────────── */
 .dot-grid {
   background-image: radial-gradient(
     circle,
-    rgba(255, 255, 255, 0.07) 1px,
+    rgba(255, 255, 255, 0.05) 1px,
     transparent 1px
   );
   background-size: 28px 28px;
 }
 
-/* Form input */
+/* ── Form input ──────────────────────────────────────────────────────────── */
 .nx-input {
   width: 100%;
   padding: 0.75rem 1rem;
@@ -45,7 +50,7 @@ body {
   font-family: var(--font-outfit), sans-serif;
   font-size: 0.9375rem;
   outline: none;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.18s ease;
 }
 
 .nx-input::placeholder {
@@ -53,10 +58,10 @@ body {
 }
 
 .nx-input:focus {
-  border-color: rgba(255, 82, 0, 0.5);
+  border-color: rgba(255, 82, 0, 0.45);
 }
 
-/* Primary button */
+/* ── Primary button ──────────────────────────────────────────────────────── */
 .nx-btn {
   width: 100%;
   padding: 0.75rem 1.5rem;
@@ -68,11 +73,15 @@ body {
   border-radius: 0.5rem;
   border: none;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color 0.15s ease, transform 0.12s var(--ease-out);
 }
 
 .nx-btn:hover {
   background-color: var(--orange-h);
+}
+
+.nx-btn:active {
+  transform: scale(0.97);
 }
 
 .nx-btn:disabled {
@@ -80,7 +89,7 @@ body {
   cursor: not-allowed;
 }
 
-/* Error message */
+/* ── Error message ───────────────────────────────────────────────────────── */
 .nx-error {
   font-size: 0.875rem;
   color: #f87171;
@@ -90,18 +99,170 @@ body {
   padding: 0.625rem 1rem;
 }
 
-/* Fade-up entrance animation */
+/* ── Keyframes ───────────────────────────────────────────────────────────── */
 @keyframes fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.35; }
+  50%       { opacity: 0.6; }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes count-bar {
+  from { width: 0%; }
+}
+
+/* ── Utility classes ─────────────────────────────────────────────────────── */
+.fade-up {
+  animation: fade-up 0.4s var(--ease-out) both;
+}
+
+.fade-in {
+  animation: fade-in 0.35s ease both;
+}
+
+/* ── Skeleton loader ─────────────────────────────────────────────────────── */
+.skeleton {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+}
+
+/* ── Sidebar nav link ────────────────────────────────────────────────────── */
+.nav-link {
+  transition: color 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, opacity 0.18s ease !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .nav-link:not(.nav-link-active):hover {
+    color: #bbb !important;
+    background-color: rgba(255, 255, 255, 0.04) !important;
   }
 }
 
-.fade-up {
-  animation: fade-up 0.5s ease-out forwards;
+/* ── Stat card hover ─────────────────────────────────────────────────────── */
+.stat-card {
+  transition: border-color 0.2s ease, transform 0.2s var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .stat-card:hover {
+    border-color: rgba(255, 255, 255, 0.12) !important;
+    transform: translateY(-1px);
+  }
+}
+
+/* ── Action card hover ───────────────────────────────────────────────────── */
+.action-card {
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+  text-decoration: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .action-card:hover {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    background-color: #111 !important;
+  }
+}
+
+/* ── Table row hover ─────────────────────────────────────────────────────── */
+.table-row {
+  transition: background-color 0.15s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .table-row:hover {
+    background-color: rgba(255, 255, 255, 0.025) !important;
+  }
+}
+
+/* ── Generic button transitions ──────────────────────────────────────────── */
+.btn-primary {
+  transition: background-color 0.15s ease, transform 0.12s var(--ease-out), opacity 0.15s ease;
+}
+.btn-primary:active {
+  transform: scale(0.97);
+}
+
+.btn-ghost {
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, transform 0.12s var(--ease-out);
+}
+.btn-ghost:active {
+  transform: scale(0.97);
+}
+
+/* ── Filter tab indicator ────────────────────────────────────────────────── */
+.filter-tab {
+  transition: color 0.18s ease;
+  position: relative;
+}
+
+.filter-tab::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 1px;
+  background-color: #FF5200;
+  transition: width 0.2s var(--ease-out);
+}
+
+.filter-tab-active::after {
+  width: 70%;
+}
+
+/* ── Progress bar animation ──────────────────────────────────────────────── */
+.progress-bar {
+  transition: width 0.6s var(--ease-out);
+}
+
+/* ── Toast slide-in ──────────────────────────────────────────────────────── */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+@keyframes toast-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(-6px) scale(0.97); }
+}
+
+.toast-enter {
+  animation: toast-in 0.22s var(--ease-out) both;
+}
+
+.toast-exit {
+  animation: toast-out 0.18s ease-in both;
+}
+
+/* ── Modal animations ────────────────────────────────────────────────────── */
+@keyframes modal-backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes modal-content-in {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal-backdrop {
+  animation: modal-backdrop-in 0.2s ease both;
+}
+
+.modal-content {
+  animation: modal-content-in 0.25s var(--ease-out) both;
 }

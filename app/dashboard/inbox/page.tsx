@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
 type ReplyStatus = "pending" | "draft_ready" | "sent" | "skipped";
 type FilterTab = "all" | "pending" | "sent" | "skipped";
@@ -555,26 +556,27 @@ export default function InboxPage() {
         padding: "0 32px", height: 60,
         display: "flex", alignItems: "center", justifyContent: "space-between",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
-        backgroundColor: "rgba(6,6,6,0.9)", backdropFilter: "blur(8px)",
+        backgroundColor: "rgba(6,6,6,0.92)", backdropFilter: "blur(10px)",
         position: "sticky", top: 0, zIndex: 30, gap: 16,
       }}>
         <div>
-          <h1 style={{ fontSize: 15, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)", margin: 0, lineHeight: 1 }}>
+          <h1 style={{ fontSize: 14, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)", margin: 0, lineHeight: 1, letterSpacing: "-0.01em" }}>
             Inbox
           </h1>
-          <p style={{ fontSize: 12, color: "#555", fontFamily: "var(--font-outfit)", margin: 0, marginTop: 2 }}>
+          <p style={{ fontSize: 11, color: "#484848", fontFamily: "var(--font-outfit)", margin: 0, marginTop: 2 }}>
             Responses from your campaigns
           </p>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <button
             onClick={() => setShowManual(true)}
+            className="btn-ghost"
             style={{
               display: "flex", alignItems: "center", gap: 6,
               padding: "6px 12px", borderRadius: 6, fontSize: 12, fontWeight: 400,
               fontFamily: "var(--font-outfit)", cursor: "pointer",
               backgroundColor: "transparent", color: "#555",
-              border: "1px solid rgba(255,255,255,0.08)",
+              border: "1px solid rgba(255,255,255,0.07)",
             }}
           >
             <PlusIcon />
@@ -583,9 +585,10 @@ export default function InboxPage() {
           <button
             onClick={handleCheck}
             disabled={checking}
+            className="btn-primary"
             style={{
               display: "flex", alignItems: "center", gap: 7,
-              padding: "7px 14px", borderRadius: 6, fontSize: 13, fontWeight: 500,
+              padding: "7px 14px", borderRadius: 6, fontSize: 12, fontWeight: 500,
               fontFamily: "var(--font-outfit)", cursor: checking ? "not-allowed" : "pointer",
               backgroundColor: checking ? "rgba(255,82,0,0.5)" : "#FF5200",
               color: "#fff", border: "none", opacity: checking ? 0.8 : 1,
@@ -625,8 +628,8 @@ export default function InboxPage() {
           </div>
         )}
 
-        {/* Filter tabs */}
-        <div style={{ display: "flex", gap: 0, marginBottom: 20, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        {/* Filter tabs with animated underline */}
+        <div style={{ display: "flex", gap: 0, marginBottom: 20, borderBottom: "1px solid rgba(255,255,255,0.05)", position: "relative" }}>
           {FILTER_TABS.map((tab) => {
             const active = tab.value === activeFilter;
             return (
@@ -634,14 +637,25 @@ export default function InboxPage() {
                 key={tab.value}
                 onClick={() => setActiveFilter(tab.value)}
                 style={{
-                  padding: "9px 16px", fontSize: 13, fontFamily: "var(--font-outfit)",
+                  padding: "9px 16px", fontSize: 12, fontFamily: "var(--font-outfit)",
                   fontWeight: 400, background: "none", border: "none",
-                  color: active ? "#fff" : "#555",
-                  borderBottom: active ? "1px solid #FF5200" : "1px solid transparent",
+                  color: active ? "#ddd" : "#484848",
                   cursor: "pointer", marginBottom: -1,
+                  position: "relative",
+                  transition: "color 0.18s ease",
                 }}
               >
                 {tab.label}
+                {active && (
+                  <motion.div
+                    layoutId="inbox-tab-underline"
+                    style={{
+                      position: "absolute", bottom: 0, left: 0, right: 0,
+                      height: 1, backgroundColor: "#FF5200",
+                    }}
+                    transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
+                  />
+                )}
               </button>
             );
           })}
@@ -649,8 +663,10 @@ export default function InboxPage() {
 
         {/* Content */}
         {loading ? (
-          <div style={{ textAlign: "center", padding: "60px 0", color: "rgba(255,255,255,0.25)", fontFamily: "var(--font-outfit)", fontSize: 13 }}>
-            Loading…
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="skeleton" style={{ height: 64, borderRadius: 8, animationDelay: `${i * 0.08}s` }} />
+            ))}
           </div>
         ) : filtered.length === 0 ? (
           <div style={{
@@ -673,43 +689,66 @@ export default function InboxPage() {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {needsResponseCount > 0 && activeFilter === "all" && (
-              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-outfit)", marginBottom: 4 }}>
+              <p style={{ fontSize: 11, color: "#484848", fontFamily: "var(--font-outfit)", marginBottom: 4 }}>
                 {needsResponseCount} response{needsResponseCount !== 1 ? "s" : ""} need attention
               </p>
             )}
-            {filtered.map((reply) => (
-              <ReplyCard
-                key={reply.id}
-                reply={reply}
-                draftLoading={draftLoading[reply.id] ?? false}
-                editedDraft={editedDrafts[reply.id] ?? ""}
-                actionLoading={actionLoading[reply.id] ?? false}
-                replyActionError={actionError[reply.id] ?? null}
-                isDeleteLoading={deleteLoading[reply.id] ?? false}
-                confirmDelete={confirmDelete === reply.id}
-                onGenerateDraft={() => handleGenerateDraft(reply.id)}
-                onAction={(action) => handleAction(reply.id, action)}
-                onDelete={() => handleDelete(reply.id)}
-                onConfirmDelete={() => { setConfirmDelete(reply.id); }}
-                onCancelDelete={() => setConfirmDelete(null)}
-                onDraftChange={(v) => setEditedDrafts((prev) => ({ ...prev, [reply.id]: v }))}
-              />
-            ))}
+            <AnimatePresence initial={true}>
+              {filtered.map((reply, i) => (
+                <motion.div
+                  key={reply.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.28, ease: "easeOut", delay: i * 0.04 }}
+                >
+                  <ReplyCard
+                    reply={reply}
+                    draftLoading={draftLoading[reply.id] ?? false}
+                    editedDraft={editedDrafts[reply.id] ?? ""}
+                    actionLoading={actionLoading[reply.id] ?? false}
+                    replyActionError={actionError[reply.id] ?? null}
+                    isDeleteLoading={deleteLoading[reply.id] ?? false}
+                    confirmDelete={confirmDelete === reply.id}
+                    onGenerateDraft={() => handleGenerateDraft(reply.id)}
+                    onAction={(action) => handleAction(reply.id, action)}
+                    onDelete={() => handleDelete(reply.id)}
+                    onConfirmDelete={() => { setConfirmDelete(reply.id); }}
+                    onCancelDelete={() => setConfirmDelete(null)}
+                    onDraftChange={(v) => setEditedDrafts((prev) => ({ ...prev, [reply.id]: v }))}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         )}
       </main>
 
       {/* Manual add modal */}
-      {showManual && (
-        <div style={{
-          position: "fixed", inset: 0, zIndex: 100,
-          backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)",
-          display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
-        }}>
-          <div style={{
-            backgroundColor: "#0e0e0e", border: "1px solid rgba(255,255,255,0.08)",
-            borderRadius: 8, padding: "24px", maxWidth: 480, width: "100%",
-          }}>
+      <AnimatePresence>
+        {showManual && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18 }}
+          style={{
+            position: "fixed", inset: 0, zIndex: 100,
+            backgroundColor: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)",
+            display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+          }}
+          onClick={(e) => { if (e.target === e.currentTarget) { setShowManual(false); setManualError(null); } }}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.97, y: 4 }}
+            transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
+            style={{
+              backgroundColor: "#0e0e0e", border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 8, padding: "24px", maxWidth: 480, width: "100%",
+            }}
+          >
             <h2 style={{ fontSize: 15, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 20 }}>
               Add response manually
             </h2>
@@ -797,11 +836,10 @@ export default function InboxPage() {
                 Cancel
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          </motion.div>
+        </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

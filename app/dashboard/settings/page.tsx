@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PLANS, PlanKey } from "@/lib/plans";
+import { ScrollReveal, StaggerList, StaggerItem } from "../_components/motion";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -196,13 +197,13 @@ export default function SettingsPage() {
         display: "flex",
         alignItems: "center",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
-        backgroundColor: "rgba(6,6,6,0.9)",
-        backdropFilter: "blur(8px)",
+        backgroundColor: "rgba(6,6,6,0.92)",
+        backdropFilter: "blur(10px)",
         position: "sticky",
         top: 0,
         zIndex: 30,
       }}>
-        <h1 style={{ fontSize: 15, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)" }}>
+        <h1 style={{ fontSize: 14, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)", letterSpacing: "-0.01em" }}>
           Settings
         </h1>
       </header>
@@ -236,6 +237,7 @@ export default function SettingsPage() {
         )}
 
         {/* ── Subscription ── */}
+        <ScrollReveal>
         <SectionLabel>Subscription</SectionLabel>
         <SectionCard>
           <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
@@ -258,11 +260,10 @@ export default function SettingsPage() {
               </span>
             </div>
             <div style={{ height: 3, backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 2, overflow: "hidden" }}>
-              <div style={{
+              <div className="progress-bar" style={{
                 height: "100%", borderRadius: 2,
                 width: `${creditsLimit === 999999 ? 5 : pct}%`,
                 backgroundColor: pct >= 90 ? "#ef4444" : "#FF5200",
-                transition: "width 0.5s",
               }} />
             </div>
             {pct >= 90 && creditsLimit !== 999999 && (
@@ -273,7 +274,10 @@ export default function SettingsPage() {
           </div>
         </SectionCard>
 
+        </ScrollReveal>
+
         {/* ── Email Accounts ── */}
+        <ScrollReveal delay={0.06}>
         <SectionLabel>Email Accounts</SectionLabel>
         <SectionCard style={{ position: "relative", overflow: "hidden" }}>
           {/* Lock overlay */}
@@ -355,7 +359,10 @@ export default function SettingsPage() {
           </div>
         </SectionCard>
 
+        </ScrollReveal>
+
         {/* ── Writing Style ── */}
+        <ScrollReveal delay={0.1}>
         <SectionLabel>Writing Style</SectionLabel>
         <SectionCard style={{ position: "relative", overflow: "hidden" }}>
           {!isAgency && (
@@ -525,7 +532,10 @@ export default function SettingsPage() {
           </div>
         </SectionCard>
 
+        </ScrollReveal>
+
         {/* ── Plans ── */}
+        <ScrollReveal delay={0.14}>
         <SectionLabel>
           <span id="plans-section">Available Plans</span>
         </SectionLabel>
@@ -574,6 +584,7 @@ export default function SettingsPage() {
                     <button
                       onClick={() => handleUpgrade(key)}
                       disabled={upgrading === key}
+                      className="btn-primary"
                       style={{
                         padding: "7px 14px", backgroundColor: "#FF5200", color: "#fff",
                         borderRadius: 6, border: "none", fontSize: 12,
@@ -589,6 +600,7 @@ export default function SettingsPage() {
             );
           })}
         </div>
+        </ScrollReveal>
       </div>
     </>
   );

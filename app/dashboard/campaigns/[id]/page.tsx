@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import SendCampaignButton from "./send-button";
 import FollowUpsTab from "./follow-ups-tab";
 import AnalyticsTab from "./analytics-tab";
+import { StaggerList, StaggerItem } from "../../_components/motion";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -72,8 +73,8 @@ export default async function CampaignDetailPage({ params, searchParams }: Props
         alignItems: "center",
         justifyContent: "space-between",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
-        backgroundColor: "rgba(6,6,6,0.9)",
-        backdropFilter: "blur(8px)",
+        backgroundColor: "rgba(6,6,6,0.92)",
+        backdropFilter: "blur(10px)",
         position: "sticky",
         top: 0,
         zIndex: 30,
@@ -135,7 +136,7 @@ export default async function CampaignDetailPage({ params, searchParams }: Props
           display: "flex",
           gap: 0,
           marginBottom: 24,
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          borderBottom: "1px solid rgba(255,255,255,0.05)",
         }}>
           {TABS.map((tab) => {
             const isActive = activeTab === tab.key;
@@ -145,13 +146,15 @@ export default async function CampaignDetailPage({ params, searchParams }: Props
                 href={`/dashboard/campaigns/${id}?tab=${tab.key}`}
                 style={{
                   padding: "9px 16px",
-                  fontSize: 13,
+                  fontSize: 12,
                   fontWeight: 400,
                   fontFamily: "var(--font-outfit)",
-                  color: isActive ? "#fff" : "#555",
+                  color: isActive ? "#ddd" : "#484848",
                   textDecoration: "none",
-                  borderBottom: isActive ? "1px solid #FF5200" : "1px solid transparent",
                   marginBottom: -1,
+                  position: "relative",
+                  transition: "color 0.18s ease",
+                  borderBottom: isActive ? "1px solid #FF5200" : "1px solid transparent",
                 }}
               >
                 {tab.label}
@@ -210,9 +213,10 @@ export default async function CampaignDetailPage({ params, searchParams }: Props
                 No emails generated yet.
               </div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <StaggerList style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {allLeads.map((lead, i) => (
-                  <div key={lead.id} style={{
+                  <StaggerItem key={lead.id}>
+                  <div style={{
                     backgroundColor: "#0e0e0e",
                     border: "1px solid rgba(255,255,255,0.06)",
                     borderRadius: 8,
@@ -277,8 +281,9 @@ export default async function CampaignDetailPage({ params, searchParams }: Props
                       </p>
                     </div>
                   </div>
+                  </StaggerItem>
                 ))}
-              </div>
+              </StaggerList>
             )}
           </>
         )}

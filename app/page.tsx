@@ -221,12 +221,12 @@ export default async function Home() {
               <div style={{ padding: "16px 22px", fontSize: 11, fontWeight: 700, color: "#FF5200", letterSpacing: "0.1em", textTransform: "uppercase", borderLeft: "1px solid rgba(255,255,255,0.06)", backgroundColor: "rgba(255,82,0,0.06)" }}>Nexora</div>
             </div>
             {[
-              ["CSV lead import", "❌  Manual copy-paste", "✅  Native support"],
-              ["Bulk generation", "❌  One at a time", "✅  100+ in 60 seconds"],
-              ["Per-lead personalization", "⚠️  With effort", "✅  Fully automatic"],
-              ["Export to CSV", "❌  Not available", "✅  One-click CSV export"],
-              ["Campaign history", "❌  None", "✅  Full dashboard"],
-              ["Credit tracking", "❌  None", "✅  Built-in"],
+              ["CSV lead import",         "Manual copy-paste",  "Native support"],
+              ["Bulk generation",         "One at a time",      "100+ in 60 seconds"],
+              ["Per-lead personalization","With effort",        "Fully automatic"],
+              ["Export to CSV",           "Not available",      "One-click export"],
+              ["Campaign history",        "None",               "Full dashboard"],
+              ["Credit tracking",         "None",               "Built-in"],
             ].map(([feat, chatgpt, nexora], i) => (
               <div key={feat} style={{
                 display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr",
@@ -234,8 +234,8 @@ export default async function Home() {
                 backgroundColor: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.012)",
               }}>
                 <div style={{ padding: "14px 22px", fontSize: 13.5, color: "rgba(255,255,255,0.7)" }}>{feat}</div>
-                <div style={{ padding: "14px 22px", fontSize: 13.5, color: "rgba(255,255,255,0.35)", borderLeft: "1px solid rgba(255,255,255,0.055)" }}>{chatgpt}</div>
-                <div style={{ padding: "14px 22px", fontSize: 13.5, color: "#fff", borderLeft: "1px solid rgba(255,255,255,0.055)", backgroundColor: "rgba(255,82,0,0.025)" }}>{nexora}</div>
+                <div style={{ padding: "14px 22px", fontSize: 13, color: "rgba(255,255,255,0.3)", borderLeft: "1px solid rgba(255,255,255,0.055)" }}>{chatgpt}</div>
+                <div style={{ padding: "14px 22px", fontSize: 13, color: "#FF5200", borderLeft: "1px solid rgba(255,255,255,0.055)", backgroundColor: "rgba(255,82,0,0.025)" }}>{nexora}</div>
               </div>
             ))}
           </div>
@@ -251,22 +251,25 @@ export default async function Home() {
           </h2>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 18 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
           {[
-            { emoji: "📁", title: "Smart CSV Import", desc: "Upload any lead list. We auto-detect name, company, role, email, and custom note columns — no formatting required." },
-            { emoji: "🎯", title: "Hyper-Personalization", desc: "Every email references the lead's specific situation in the opening sentence. Not just their name — their context." },
-            { emoji: "🎙️", title: "4 Writing Tones", desc: "Professional, Friendly, Bold, or Minimal. Each generates a distinctly different email that matches your brand voice." },
-            { emoji: "✏️", title: "Inline Review & Edit", desc: "See every generated email before exporting. Click to edit any subject line or body copy directly in the interface." },
-            { emoji: "📤", title: "Instant CSV Export", desc: "Download your campaign as a spreadsheet-ready CSV with all leads, subjects, and email bodies in one file." },
-            { emoji: "📊", title: "Campaign History", desc: "Every campaign is saved automatically. Return anytime to review, re-export, or use past emails as inspiration." },
+            { title: "Smart CSV Import",        desc: "Upload any lead list. We auto-detect name, company, role, email, and custom note columns — no formatting required." },
+            { title: "Hyper-Personalization",   desc: "Every email references the lead's specific situation in the opening sentence. Not just their name — their context." },
+            { title: "4 Writing Tones",         desc: "Professional, Friendly, Bold, or Minimal. Each generates a distinctly different email that matches your brand voice." },
+            { title: "Inline Review & Edit",    desc: "See every generated email before exporting. Click to edit any subject line or body copy directly in the interface." },
+            { title: "Instant CSV Export",      desc: "Download your campaign as a spreadsheet-ready CSV with all leads, subjects, and email bodies in one file." },
+            { title: "Campaign History",        desc: "Every campaign is saved automatically. Return anytime to review, re-export, or use past emails as inspiration." },
           ].map((f) => (
             <div key={f.title} style={{
               backgroundColor: "#0d0d0d", border: "1px solid rgba(255,255,255,0.07)",
-              borderRadius: 16, padding: "30px 28px",
+              borderRadius: 12, padding: "28px 26px",
             }}>
-              <div style={{ fontSize: 30, marginBottom: 16, lineHeight: 1 }}>{f.emoji}</div>
-              <h3 style={{ fontSize: 16, fontWeight: 800, fontFamily: "var(--font-syne)", marginBottom: 10, letterSpacing: "-0.01em" }}>{f.title}</h3>
-              <p style={{ fontSize: 13.5, color: "rgba(255,255,255,0.42)", lineHeight: 1.75, margin: 0 }}>{f.desc}</p>
+              <div style={{
+                width: 6, height: 6, borderRadius: "50%",
+                backgroundColor: "#FF5200", marginBottom: 20,
+              }} />
+              <h3 style={{ fontSize: 15, fontWeight: 700, fontFamily: "var(--font-syne)", marginBottom: 10, letterSpacing: "-0.01em" }}>{f.title}</h3>
+              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.42)", lineHeight: 1.75, margin: 0 }}>{f.desc}</p>
             </div>
           ))}
         </div>

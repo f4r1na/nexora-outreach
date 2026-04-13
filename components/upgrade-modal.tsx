@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { PLANS, PlanKey } from "@/lib/plans";
 
 type Props = {
@@ -33,46 +34,94 @@ export function UpgradeModal({ requiredPlan, onClose }: Props) {
   );
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.18 }}
+      style={{
+        position: "fixed", inset: 0, zIndex: 50,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        backgroundColor: "rgba(0,0,0,0.72)", backdropFilter: "blur(6px)",
+        padding: 16,
+      }}
       onClick={onClose}
     >
-      <div
-        className="bg-[#0e0e0e] border border-white/10 rounded-2xl p-8 w-full max-w-md mx-4 shadow-2xl"
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.97, y: 4 }}
+        transition={{ duration: 0.22, ease: [0.23, 1, 0.32, 1] }}
+        style={{
+          backgroundColor: "#0e0e0e",
+          border: "1px solid rgba(255,255,255,0.08)",
+          borderRadius: 10,
+          padding: 28,
+          width: "100%",
+          maxWidth: 420,
+        }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between mb-6">
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 22 }}>
           <div>
-            <h2 className="text-xl font-bold text-white mb-1" style={{ fontFamily: "var(--font-syne)" }}>
-              Upgrade Required
+            <h2 style={{
+              fontSize: 15, fontWeight: 500, color: "#fff",
+              fontFamily: "var(--font-syne)", marginBottom: 4,
+            }}>
+              Upgrade required
             </h2>
-            <p className="text-gray-400 text-sm">
+            <p style={{ fontSize: 12, color: "#555", fontFamily: "var(--font-outfit)" }}>
               This feature requires the{" "}
-              <span className="text-[#ff5200] font-semibold capitalize">{requiredPlan}</span> plan or higher.
+              <span style={{ color: "#FF5200" }}>{requiredPlan}</span> plan or higher.
             </p>
           </div>
-          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors ml-4 mt-0.5">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <button
+            onClick={onClose}
+            className="btn-ghost"
+            style={{
+              background: "none", border: "none", color: "#444",
+              cursor: "pointer", padding: 4, marginLeft: 12, flexShrink: 0,
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M18 6 6 18M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        <div className="space-y-3">
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {eligiblePlans.map(([key, plan]) => (
-            <div key={key} className="flex items-center justify-between bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3">
+            <div key={key} style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              backgroundColor: "rgba(255,255,255,0.02)",
+              border: "1px solid rgba(255,255,255,0.07)",
+              borderRadius: 8, padding: "12px 14px",
+            }}>
               <div>
-                <p className="text-white font-semibold">{plan.name}</p>
-                <p className="text-gray-500 text-xs">
+                <p style={{ fontSize: 13, fontWeight: 500, color: "#ccc", fontFamily: "var(--font-outfit)", marginBottom: 1 }}>
+                  {plan.name}
+                </p>
+                <p style={{ fontSize: 11, color: "#484848", fontFamily: "var(--font-outfit)" }}>
                   {plan.credits === 999999 ? "Unlimited" : plan.credits.toLocaleString()} credits/month
                 </p>
               </div>
-              <div className="flex items-center gap-3">
-                <span className="text-white font-bold">${plan.price}<span className="text-gray-500 font-normal text-sm">/mo</span></span>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
+                <span style={{ fontSize: 14, fontWeight: 500, color: "#888", fontFamily: "var(--font-syne)" }}>
+                  ${plan.price}
+                  <span style={{ fontSize: 11, fontWeight: 400, color: "#484848" }}>/mo</span>
+                </span>
                 <button
                   onClick={() => handleUpgrade(key)}
                   disabled={loading === key}
-                  className="nx-btn px-4 py-1.5 text-sm disabled:opacity-50"
+                  className="btn-primary"
+                  style={{
+                    padding: "6px 14px",
+                    backgroundColor: "#FF5200", color: "#fff",
+                    borderRadius: 6, border: "none",
+                    fontSize: 12, fontFamily: "var(--font-outfit)",
+                    cursor: loading === key ? "not-allowed" : "pointer",
+                    opacity: loading === key ? 0.5 : 1,
+                  }}
                 >
                   {loading === key ? "…" : "Select"}
                 </button>
@@ -80,7 +129,7 @@ export function UpgradeModal({ requiredPlan, onClose }: Props) {
             </div>
           ))}
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
