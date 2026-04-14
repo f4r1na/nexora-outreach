@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import CampaignsTable from "./_components/campaigns-table";
 import { StaggerList, StaggerItem, CountUp } from "../_components/motion";
+import { Plus, Mail } from "lucide-react";
 
 export default async function CampaignsPage() {
   const supabase = await createClient();
@@ -76,9 +77,7 @@ export default async function CampaignsPage() {
           fontFamily: "var(--font-outfit)",
           textDecoration: "none",
         }}>
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
-            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
+          <Plus size={11} strokeWidth={2.5} aria-hidden="true" />
           New Campaign
         </Link>
       </header>
@@ -129,10 +128,7 @@ export default async function CampaignsPage() {
               border: "1px solid rgba(255,255,255,0.07)",
               display: "flex", alignItems: "center", justifyContent: "center", color: "#383838",
             }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <rect x="2" y="4" width="20" height="16" rx="2" />
-                <path d="M2 9h20M7 4v5M17 4v5" />
-              </svg>
+              <Mail size={20} strokeWidth={1.5} aria-hidden="true" />
             </div>
             <div>
               <p style={{ fontSize: 14, fontWeight: 500, color: "#666", fontFamily: "var(--font-outfit)", marginBottom: 4 }}>

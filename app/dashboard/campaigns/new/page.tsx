@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { UpgradeModal } from "@/components/upgrade-modal";
 import type { PlanKey } from "@/lib/plans";
+import { Upload, Pencil, Download, ArrowLeft, Check, Loader2 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -199,9 +200,7 @@ function StepIndicator({ current }: { current: 1 | 2 | 3 }) {
                 }}
               >
                 {done ? (
-                  <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  <Check size={10} strokeWidth={2} aria-hidden="true" />
                 ) : (
                   step.n
                 )}
@@ -263,37 +262,19 @@ function ProgressBar({ progress }: { progress: number }) {
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
 function IconUpload() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M12 15V3M8 7l4-4 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M3 17v1a3 3 0 003 3h12a3 3 0 003-3v-1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
+  return <Upload size={28} strokeWidth={1.5} aria-hidden="true" />;
 }
 
 function IconEdit() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M11.5 2.5a1.414 1.414 0 112 2L5 13H3v-2L11.5 2.5z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+  return <Pencil size={13} strokeWidth={1.3} aria-hidden="true" />;
 }
 
 function IconExport() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+  return <Download size={14} strokeWidth={1.4} aria-hidden="true" />;
 }
 
 function IconArrowLeft() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+  return <ArrowLeft size={14} strokeWidth={1.5} aria-hidden="true" />;
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -771,9 +752,7 @@ export default function NewCampaignPage() {
                 opacity: downloading === "csv" ? 0.7 : 1,
               }}
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <Download size={12} strokeWidth={2.2} aria-hidden="true" />
               {downloading === "csv" ? "Downloading…" : "Export CSV"}
             </button>
           </div>
@@ -1261,9 +1240,7 @@ export default function NewCampaignPage() {
                         >
                           {signalResearching ? (
                             <>
-                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" style={{ animation: "spin 1s linear infinite", flexShrink: 0 }}>
-                                <path d="M12 2C6.477 2 2 6.477 2 12" />
-                              </svg>
+                              <Loader2 size={13} strokeWidth={2.2} style={{ animation: "spin 0.8s linear infinite", flexShrink: 0 }} aria-hidden="true" />
                               Researching {leads.length} lead{leads.length !== 1 ? "s" : ""}…
                             </>
                           ) : (
@@ -1402,15 +1379,7 @@ export default function NewCampaignPage() {
             }}
           >
             <div style={{ color: "#FF5200" }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  style={{ animation: "spin 1s linear infinite" }}
-                />
-              </svg>
+              <Loader2 size={24} strokeWidth={2} style={{ animation: "spin 0.8s linear infinite" }} aria-hidden="true" />
             </div>
 
             <div style={{ textAlign: "center" }}>
@@ -1451,7 +1420,6 @@ export default function NewCampaignPage() {
               </p>
             </div>
 
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           </div>
         )}
 

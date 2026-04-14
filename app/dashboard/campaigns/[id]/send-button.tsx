@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { Mail, Lock, Check, Loader2 } from "lucide-react";
 
 type Props = {
   campaignId: string;
@@ -50,7 +51,7 @@ export default function SendCampaignButton({
         color: "rgba(255,255,255,0.35)",
         border: "1px solid rgba(255,255,255,0.08)",
       }}>
-        <LockIcon />
+        <Lock size={13} strokeWidth={1.75} aria-hidden="true" />
         Upgrade to Send
       </Link>
     );
@@ -67,7 +68,7 @@ export default function SendCampaignButton({
         color: "rgba(255,255,255,0.35)",
         border: "1px solid rgba(255,255,255,0.08)",
       }}>
-        <MailIcon />
+        <Mail size={13} strokeWidth={1.75} aria-hidden="true" />
         Connect Gmail to Send
       </Link>
     );
@@ -84,7 +85,7 @@ export default function SendCampaignButton({
         color: "#4ade80",
         border: "1px solid rgba(74,222,128,0.2)",
       }}>
-        <CheckIcon />
+        <Check size={13} strokeWidth={2} aria-hidden="true" />
         Emails Sent
       </span>
     );
@@ -233,7 +234,7 @@ export default function SendCampaignButton({
           color: "#4ade80",
           border: "1px solid rgba(74,222,128,0.2)",
         }}>
-          <CheckIcon />
+          <Check size={13} strokeWidth={2} aria-hidden="true" />
           {state.sent} email{state.sent !== 1 ? "s" : ""} sent
         </span>
 
@@ -268,10 +269,8 @@ export default function SendCampaignButton({
           borderRadius: 16, padding: "36px 32px",
           maxWidth: 420, width: "100%", textAlign: "center",
         }}>
-          <div style={{ marginBottom: 24 }}>
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#FF5200" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{ animation: "spin 1.5s linear infinite" }}>
-              <path d="M21 12a9 9 0 11-6.219-8.56" />
-            </svg>
+          <div style={{ marginBottom: 24, color: "#FF5200" }}>
+            <Loader2 size={36} strokeWidth={1.8} style={{ animation: "spin 1s linear infinite" }} aria-hidden="true" />
           </div>
           <h3 style={{ fontSize: 17, fontWeight: 800, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 8 }}>
             Generating Follow-up #{state.followupNum}
@@ -306,7 +305,7 @@ export default function SendCampaignButton({
           color: "#4ade80",
           border: "1px solid rgba(74,222,128,0.2)",
         }}>
-          <CheckIcon />
+          <Check size={13} strokeWidth={2} aria-hidden="true" />
           Emails Sent
         </span>
 
@@ -327,9 +326,7 @@ export default function SendCampaignButton({
               display: "flex", alignItems: "center", justifyContent: "center",
               color: "#4ade80", margin: "0 auto 20px",
             }}>
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M5 13l4 4L19 7" />
-              </svg>
+              <Check size={26} strokeWidth={2.2} aria-hidden="true" />
             </div>
             <h3 style={{ fontSize: 18, fontWeight: 800, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 8 }}>
               Follow-ups Scheduled!
@@ -347,7 +344,7 @@ export default function SendCampaignButton({
                   textDecoration: "none", display: "block",
                 }}
               >
-                View Follow-ups →
+                View Follow-ups
               </Link>
               <button
                 onClick={() => setState({ phase: "idle" })}
@@ -408,7 +405,7 @@ export default function SendCampaignButton({
           backgroundColor: "#FF5200", color: "#fff", border: "none",
         }}
       >
-        <MailIcon />
+        <Mail size={13} strokeWidth={1.75} aria-hidden="true" />
         Send via Gmail
       </button>
 
@@ -432,7 +429,7 @@ export default function SendCampaignButton({
               display: "flex", alignItems: "center", justifyContent: "center",
               color: "#FF5200", marginBottom: 20,
             }}>
-              <MailIcon size={22} />
+              <Mail size={22} strokeWidth={1.75} aria-hidden="true" />
             </div>
             <h2 style={{ fontSize: 18, fontWeight: 800, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 8 }}>
               Send {totalLeads} email{totalLeads !== 1 ? "s" : ""}?
@@ -511,9 +508,7 @@ function FollowupSetupModal({
             backgroundColor: "rgba(255,82,0,0.1)", border: "1px solid rgba(255,82,0,0.2)",
             display: "flex", alignItems: "center", justifyContent: "center", color: "#FF5200", flexShrink: 0,
           }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
-            </svg>
+            <Mail size={18} strokeWidth={2} aria-hidden="true" />
           </div>
           <h2 style={{ fontSize: 17, fontWeight: 800, color: "#fff", fontFamily: "var(--font-syne)", margin: 0 }}>
             Set up auto follow-ups?
@@ -592,33 +587,5 @@ function FollowupSetupModal({
         </button>
       </div>
     </div>
-  );
-}
-
-// ─── Icons ────────────────────────────────────────────────────────────────────
-
-function MailIcon({ size = 14 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-      <polyline points="22,6 12,13 2,6" />
-    </svg>
-  );
-}
-
-function LockIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="11" width="18" height="11" rx="2" />
-      <path d="M7 11V7a5 5 0 0110 0v4" />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M5 13l4 4L19 7" />
-    </svg>
   );
 }

@@ -5,6 +5,7 @@ import SendCampaignButton from "./send-button";
 import FollowUpsTab from "./follow-ups-tab";
 import AnalyticsTab from "./analytics-tab";
 import { StaggerList, StaggerItem } from "../../_components/motion";
+import { ArrowLeft } from "lucide-react";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -85,9 +86,7 @@ export default async function CampaignDetailPage({ params, searchParams }: Props
             display: "flex", alignItems: "center", gap: 5,
             fontSize: 12, color: "#555", textDecoration: "none", flexShrink: 0,
           }}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 12H5M12 19l-7-7 7-7" />
-            </svg>
+            <ArrowLeft size={13} strokeWidth={1.5} aria-hidden="true" />
             Campaigns
           </Link>
           <span style={{ color: "#333", fontSize: 14 }}>/</span>

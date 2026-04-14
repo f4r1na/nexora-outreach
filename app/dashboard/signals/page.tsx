@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Lock, Radio, Trash2, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -32,16 +33,6 @@ type Campaign = {
   created_at: string;
 };
 
-// ─── Icons ────────────────────────────────────────────────────────────────────
-
-function IconLock() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="11" width="18" height="11" rx="2" />
-      <path d="M7 11V7a5 5 0 0110 0v4" />
-    </svg>
-  );
-}
 
 // ─── Signal Card ──────────────────────────────────────────────────────────────
 
@@ -81,7 +72,7 @@ function SignalCard({ lead }: { lead: SignalLead }) {
             {lead.campaign_name && <span style={{ color: "rgba(255,82,0,0.5)" }}>{lead.campaign_name}</span>}
           </p>
         </div>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,82,0,0.5)" strokeWidth="1.6" strokeLinecap="round" style={{ flexShrink: 0 }}><circle cx="12" cy="12" r="3" /><path d="M6.3 6.3a8 8 0 000 11.4M17.7 6.3a8 8 0 010 11.4" /><path d="M3.5 3.5a13 13 0 000 17M20.5 3.5a13 13 0 010 17" /></svg>
+        <Radio size={16} strokeWidth={1.6} color="rgba(255,82,0,0.5)" style={{ flexShrink: 0 }} aria-hidden="true" />
       </div>
 
       {/* Company insights */}
@@ -311,9 +302,9 @@ export default function SignalsPage() {
                 onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLButtonElement).style.borderColor = deleting ? "rgba(239,68,68,0.15)" : "rgba(239,68,68,0.25)"; }}
               >
                 {deleting ? (
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation: "spin 1s linear infinite" }}><path d="M21 12a9 9 0 11-6.219-8.56" strokeLinecap="round" /></svg>
+                  <Loader2 size={11} strokeWidth={2.5} style={{ animation: "spin 0.8s linear infinite" }} aria-hidden="true" />
                 ) : (
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  <Trash2 size={11} strokeWidth={2.2} aria-hidden="true" />
                 )}
                 {filterCampaign === "all" ? "Delete All" : "Delete Campaign Signals"}
               </button>
@@ -352,7 +343,7 @@ export default function SignalsPage() {
               display: "flex", alignItems: "center", justifyContent: "center",
               color: "#FF5200",
             }}>
-              <IconLock />
+              <Lock size={22} strokeWidth={1.8} aria-hidden="true" />
             </div>
             <div>
               <h2 style={{
@@ -400,7 +391,7 @@ export default function SignalsPage() {
             minHeight: 420, textAlign: "center", gap: 16,
           }}>
             <div style={{ width: 56, height: 56, borderRadius: 14, backgroundColor: "rgba(255,82,0,0.08)", border: "1px solid rgba(255,82,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,82,0,0.5)" }}>
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="12" cy="12" r="3" /><path d="M6.3 6.3a8 8 0 000 11.4M17.7 6.3a8 8 0 010 11.4" /><path d="M3.5 3.5a13 13 0 000 17M20.5 3.5a13 13 0 010 17" /></svg>
+              <Radio size={26} strokeWidth={1.6} aria-hidden="true" />
             </div>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", margin: 0 }}>
               {filterCampaign === "all" ? "No signals yet" : "No signals for this campaign"}
@@ -448,7 +439,6 @@ export default function SignalsPage() {
           </div>
         )}
       </main>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

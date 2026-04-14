@@ -11,374 +11,259 @@
 }
 
 :root {
-  --black: #060606;
-  --black-2: #0e0e0e;
-  --black-3: #161616;
-  --orange: #ff5200;
-  --orange-h: #ff6a1f;
+  --black:    #060606;
+  --black-2:  #0e0e0e;
+  --black-3:  #111111;
+  --black-4:  #161616;
+  --orange:   #FF5200;
+  --orange-h: #FF6B1A;
+  --sidebar-width: 240px;
 
-  /* ── Custom easing curves ─────────────────────────────────────────────── */
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  /* Easing */
+  --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Border */
+  --border: rgba(255,255,255,0.06);
+  --border-strong: rgba(255,255,255,0.10);
 }
+
+/* ── Base ────────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
 
 body {
   background-color: var(--black);
   color: #fff;
   font-family: var(--font-outfit), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* ── Dot grid background pattern ─────────────────────────────────────────── */
+/* ── Dot grid ────────────────────────────────────────────────────────────────── */
 .dot-grid {
-  background-image: radial-gradient(
-    circle,
-    rgba(255, 255, 255, 0.05) 1px,
-    transparent 1px
-  );
-  background-size: 28px 28px;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.045) 1px, transparent 1px);
+  background-size: 26px 26px;
 }
 
-/* ── Form input ──────────────────────────────────────────────────────────── */
+/* ── Form input ──────────────────────────────────────────────────────────────── */
 .nx-input {
   width: 100%;
-  padding: 0.75rem 1rem;
-  background-color: var(--black-3);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.6875rem 0.875rem;
+  background-color: var(--black-2);
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: 0.5rem;
   color: #fff;
   font-family: var(--font-outfit), sans-serif;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   outline: none;
   transition: border-color 0.18s ease;
 }
+.nx-input::placeholder { color: rgba(255,255,255,0.22); }
+.nx-input:focus { border-color: rgba(255,82,0,0.4); }
 
-.nx-input::placeholder {
-  color: rgba(255, 255, 255, 0.25);
-}
-
-.nx-input:focus {
-  border-color: rgba(255, 82, 0, 0.45);
-}
-
-/* ── Primary button ──────────────────────────────────────────────────────── */
+/* ── Primary button ──────────────────────────────────────────────────────────── */
 .nx-btn {
   width: 100%;
-  padding: 0.75rem 1.5rem;
+  padding: 0.6875rem 1.25rem;
   background-color: var(--orange);
   color: #fff;
   font-family: var(--font-outfit), sans-serif;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.4375rem;
   border: none;
   cursor: pointer;
   transition: background-color 0.15s ease, transform 0.12s var(--ease-out);
 }
+.nx-btn:hover { background-color: var(--orange-h); }
+.nx-btn:active { transform: scale(0.97); }
+.nx-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
-.nx-btn:hover {
-  background-color: var(--orange-h);
-}
-
-.nx-btn:active {
-  transform: scale(0.97);
-}
-
-.nx-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* ── Error message ───────────────────────────────────────────────────────── */
+/* ── Error ───────────────────────────────────────────────────────────────────── */
 .nx-error {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: #f87171;
-  background-color: rgba(127, 29, 29, 0.25);
-  border: 1px solid rgba(153, 27, 27, 0.4);
+  background-color: rgba(239,68,68,0.07);
+  border: 1px solid rgba(239,68,68,0.18);
   border-radius: 0.5rem;
-  padding: 0.625rem 1rem;
+  padding: 0.625rem 0.875rem;
 }
 
-/* ── Keyframes ───────────────────────────────────────────────────────────── */
+/* ── Keyframes ───────────────────────────────────────────────────────────────── */
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-
 @keyframes fade-in {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
-
 @keyframes skeleton-pulse {
-  0%, 100% { opacity: 0.35; }
-  50%       { opacity: 0.6; }
+  0%, 100% { opacity: 0.3; }
+  50%       { opacity: 0.55; }
 }
-
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
-
 @keyframes count-bar {
   from { width: 0%; }
 }
 
-/* ── Utility classes ─────────────────────────────────────────────────────── */
-.fade-up {
-  animation: fade-up 0.4s var(--ease-out) both;
-}
+/* ── Utilities ───────────────────────────────────────────────────────────────── */
+.fade-up  { animation: fade-up  0.36s var(--ease-out) both; }
+.fade-in  { animation: fade-in  0.3s ease both; }
 
-.fade-in {
-  animation: fade-in 0.35s ease both;
-}
-
-/* ── Skeleton loader ─────────────────────────────────────────────────────── */
+/* ── Skeleton ────────────────────────────────────────────────────────────────── */
 .skeleton {
-  background-color: rgba(255, 255, 255, 0.05);
-  border-radius: 4px;
-  animation: skeleton-pulse 1.6s ease-in-out infinite;
+  background-color: rgba(255,255,255,0.045);
+  border-radius: 6px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
 }
 
-/* ── Sidebar nav link ────────────────────────────────────────────────────── */
+/* ── Nav link ────────────────────────────────────────────────────────────────── */
 .nav-link {
-  transition: color 0.18s ease, background-color 0.18s ease, border-color 0.18s ease, opacity 0.18s ease !important;
+  transition: color 0.15s ease, background-color 0.15s ease !important;
 }
-
 @media (hover: hover) and (pointer: fine) {
   .nav-link:not(.nav-link-active):hover {
-    color: #bbb !important;
-    background-color: rgba(255, 255, 255, 0.04) !important;
+    color: #aaa !important;
+    background-color: rgba(255,255,255,0.035) !important;
   }
 }
 
-/* ── Stat card hover ─────────────────────────────────────────────────────── */
+/* ── Stat card ───────────────────────────────────────────────────────────────── */
 .stat-card {
   transition: border-color 0.2s ease, transform 0.2s var(--ease-out);
 }
-
 @media (hover: hover) and (pointer: fine) {
   .stat-card:hover {
-    border-color: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255,255,255,0.11) !important;
     transform: translateY(-1px);
   }
 }
 
-/* ── Action card hover ───────────────────────────────────────────────────── */
+/* ── Action card ─────────────────────────────────────────────────────────────── */
 .action-card {
-  transition: border-color 0.2s ease, background-color 0.2s ease;
+  transition: border-color 0.18s ease, background-color 0.18s ease;
   text-decoration: none;
 }
-
 @media (hover: hover) and (pointer: fine) {
   .action-card:hover {
-    border-color: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255,255,255,0.10) !important;
     background-color: #111 !important;
   }
 }
 
-/* ── Table row hover ─────────────────────────────────────────────────────── */
+/* ── Table row ───────────────────────────────────────────────────────────────── */
 .table-row {
-  transition: background-color 0.15s ease;
+  transition: background-color 0.13s ease;
 }
-
 @media (hover: hover) and (pointer: fine) {
   .table-row:hover {
-    background-color: rgba(255, 255, 255, 0.025) !important;
+    background-color: rgba(255,255,255,0.022) !important;
   }
 }
 
-/* ── Generic button transitions ──────────────────────────────────────────── */
+/* ── Buttons ─────────────────────────────────────────────────────────────────── */
 .btn-primary {
   transition: background-color 0.15s ease, transform 0.12s var(--ease-out), opacity 0.15s ease;
 }
-.btn-primary:active {
-  transform: scale(0.97);
-}
+.btn-primary:active { transform: scale(0.97); }
 
 .btn-ghost {
   transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, transform 0.12s var(--ease-out);
 }
-.btn-ghost:active {
-  transform: scale(0.97);
-}
+.btn-ghost:active { transform: scale(0.97); }
 
-/* ── Filter tab indicator ────────────────────────────────────────────────── */
-.filter-tab {
-  transition: color 0.18s ease;
-  position: relative;
-}
-
+/* ── Filter tab ──────────────────────────────────────────────────────────────── */
+.filter-tab { transition: color 0.15s ease; position: relative; }
 .filter-tab::after {
   content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 50%;
+  position: absolute; bottom: -1px; left: 50%;
   transform: translateX(-50%);
-  width: 0;
-  height: 1px;
+  width: 0; height: 1px;
   background-color: #FF5200;
-  transition: width 0.2s var(--ease-out);
+  transition: width 0.18s var(--ease-out);
 }
+.filter-tab-active::after { width: 70%; }
 
-.filter-tab-active::after {
-  width: 70%;
-}
+/* ── Progress bar ────────────────────────────────────────────────────────────── */
+.progress-bar { transition: width 0.55s var(--ease-out); }
 
-/* ── Progress bar animation ──────────────────────────────────────────────── */
-.progress-bar {
-  transition: width 0.6s var(--ease-out);
-}
+/* ── Toast ───────────────────────────────────────────────────────────────────── */
+@keyframes toast-in  { from { opacity:0; transform:translateY(-8px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+@keyframes toast-out { from { opacity:1; transform:translateY(0) scale(1); } to { opacity:0; transform:translateY(-6px) scale(0.97); } }
+.toast-enter { animation: toast-in  0.2s var(--ease-out) both; }
+.toast-exit  { animation: toast-out 0.16s ease-in both; }
 
-/* ── Toast slide-in ──────────────────────────────────────────────────────── */
-@keyframes toast-in {
-  from { opacity: 0; transform: translateY(-8px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0)    scale(1); }
-}
+/* ── Modal ───────────────────────────────────────────────────────────────────── */
+@keyframes modal-backdrop-in  { from { opacity:0; } to { opacity:1; } }
+@keyframes modal-content-in   { from { opacity:0; transform:scale(0.96) translateY(5px); } to { opacity:1; transform:scale(1) translateY(0); } }
+.modal-backdrop { animation: modal-backdrop-in 0.18s ease both; }
+.modal-content  { animation: modal-content-in  0.22s var(--ease-out) both; }
 
-@keyframes toast-out {
-  from { opacity: 1; transform: translateY(0) scale(1); }
-  to   { opacity: 0; transform: translateY(-6px) scale(0.97); }
-}
-
-.toast-enter {
-  animation: toast-in 0.22s var(--ease-out) both;
-}
-
-.toast-exit {
-  animation: toast-out 0.18s ease-in both;
-}
-
-/* ── Modal animations ────────────────────────────────────────────────────── */
-@keyframes modal-backdrop-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-@keyframes modal-content-in {
-  from { opacity: 0; transform: scale(0.96) translateY(6px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-.modal-backdrop {
-  animation: modal-backdrop-in 0.2s ease both;
-}
-
-.modal-content {
-  animation: modal-content-in 0.25s var(--ease-out) both;
-}
-
-/* ── Status badges ───────────────────────────────────────────────────────── */
+/* ── Status badges ───────────────────────────────────────────────────────────── */
 .nx-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 10px;
-  font-weight: 500;
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 10px; font-weight: 500;
   font-family: var(--font-outfit);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  line-height: 1.6;
-  white-space: nowrap;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  line-height: 1.6; white-space: nowrap;
 }
+.nx-badge-green  { color:#4ade80; background:rgba(74,222,128,0.08);  border:1px solid rgba(74,222,128,0.18); }
+.nx-badge-orange { color:#fb923c; background:rgba(251,146,60,0.08);  border:1px solid rgba(251,146,60,0.18); }
+.nx-badge-blue   { color:#60a5fa; background:rgba(96,165,250,0.08);  border:1px solid rgba(96,165,250,0.18); }
+.nx-badge-gray   { color:#555;    background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); }
+.nx-badge-red    { color:#f87171; background:rgba(248,113,113,0.08); border:1px solid rgba(248,113,113,0.18); }
 
-.nx-badge-green {
-  color: #4ade80;
-  background-color: rgba(74, 222, 128, 0.08);
-  border: 1px solid rgba(74, 222, 128, 0.18);
-}
-
-.nx-badge-orange {
-  color: #fb923c;
-  background-color: rgba(251, 146, 60, 0.08);
-  border: 1px solid rgba(251, 146, 60, 0.18);
-}
-
-.nx-badge-blue {
-  color: #60a5fa;
-  background-color: rgba(96, 165, 250, 0.08);
-  border: 1px solid rgba(96, 165, 250, 0.18);
-}
-
-.nx-badge-gray {
-  color: #555;
-  background-color: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-}
-
-/* ── Section label ───────────────────────────────────────────────────────── */
+/* ── Section label ───────────────────────────────────────────────────────────── */
 .nx-section-label {
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: #444;
-  font-family: var(--font-outfit);
+  font-size: 10px; font-weight: 500;
+  letter-spacing: 0.07em; text-transform: uppercase;
+  color: #444; font-family: var(--font-outfit);
 }
 
-/* ── Table row left accent on hover ──────────────────────────────────────── */
-@media (hover: hover) and (pointer: fine) {
-  .table-row:hover {
-    background-color: rgba(255, 255, 255, 0.025) !important;
-  }
+/* ── Field label ─────────────────────────────────────────────────────────────── */
+.nx-field-label {
+  font-size: 12px; font-weight: 500;
+  color: rgba(255,255,255,0.5); font-family: var(--font-outfit);
+  display: block; margin-bottom: 6px;
 }
 
-/* ── Credit usage bar ────────────────────────────────────────────────────── */
+/* ── Credit bar ──────────────────────────────────────────────────────────────── */
 .credit-bar-track {
-  height: 3px;
-  background-color: rgba(255, 255, 255, 0.06);
-  border-radius: 999px;
-  overflow: hidden;
+  height: 2px; background:rgba(255,255,255,0.06);
+  border-radius:999px; overflow:hidden;
 }
-
 .credit-bar-fill {
-  height: 100%;
-  border-radius: 999px;
-  background-color: #FF5200;
-  transition: width 0.6s var(--ease-out);
+  height:100%; border-radius:999px;
+  background:#FF5200; transition:width 0.55s var(--ease-out);
 }
 
-/* ── Step indicator ──────────────────────────────────────────────────────── */
+/* ── Step indicator ──────────────────────────────────────────────────────────── */
 .step-circle {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 10px;
-  font-weight: 600;
-  font-family: var(--font-outfit);
-  flex-shrink: 0;
+  width:22px; height:22px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:10px; font-weight:600; font-family:var(--font-outfit);
+  flex-shrink:0;
   transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
+.step-circle-done   { background:rgba(74,222,128,0.1);  border:1px solid rgba(74,222,128,0.22); color:#4ade80; }
+.step-circle-active { background:rgba(255,82,0,0.1);    border:1px solid rgba(255,82,0,0.28);   color:#FF5200; }
+.step-circle-pending{ background:transparent;             border:1px solid rgba(255,255,255,0.09); color:#444; }
 
-.step-circle-done {
-  background-color: rgba(74, 222, 128, 0.12);
-  border: 1px solid rgba(74, 222, 128, 0.25);
-  color: #4ade80;
-}
+.step-connector      { flex:1; height:1px; background:rgba(255,255,255,0.06); margin:0 10px; transition:background-color 0.3s ease; }
+.step-connector-done { background:rgba(74,222,128,0.18); }
 
-.step-circle-active {
-  background-color: rgba(255, 82, 0, 0.12);
-  border: 1px solid rgba(255, 82, 0, 0.3);
-  color: #FF5200;
+/* ── Landing page nav link hover ─────────────────────────────────────────────── */
+.landing-nav-link {
+  transition: color 0.15s ease;
 }
+.landing-nav-link:hover { color: rgba(255,255,255,0.75) !important; }
 
-.step-circle-pending {
-  background-color: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #444;
-}
-
-.step-connector {
-  flex: 1;
-  height: 1px;
-  background-color: rgba(255, 255, 255, 0.06);
-  margin: 0 12px;
-  transition: background-color 0.3s ease;
-}
-
-.step-connector-done {
-  background-color: rgba(74, 222, 128, 0.2);
-}
+/* ── Prose spacing fix ────────────────────────────────────────────────────────── */
+p { margin: 0; }
+h1, h2, h3, h4, h5, h6 { margin: 0; }
+ul, ol { margin: 0; padding: 0; }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Lock } from "lucide-react";
 
 type CampaignStats = {
   sent: number;
@@ -96,10 +97,7 @@ export default function AnalyticsTab({
         justifyContent: "center", padding: "80px 0", textAlign: "center", gap: 14,
       }}>
         <div style={{ color: "#444" }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="11" width="18" height="11" rx="2" />
-            <path d="M7 11V7a5 5 0 0110 0v4" />
-          </svg>
+          <Lock size={20} strokeWidth={1.5} aria-hidden="true" />
         </div>
         <h3 style={{ fontSize: 15, fontWeight: 500, color: "#ccc", fontFamily: "var(--font-syne)", margin: 0 }}>
           Analytics requires Pro

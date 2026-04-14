@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { Lock, Send, Loader2, ChevronDown } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -25,16 +26,6 @@ type CampaignWithSeqs = {
   sequences: Sequence[];
 };
 
-// ─── Icons ────────────────────────────────────────────────────────────────────
-
-function IconLock() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="11" width="18" height="11" rx="2" />
-      <path d="M7 11V7a5 5 0 0110 0v4" />
-    </svg>
-  );
-}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -224,12 +215,13 @@ function CampaignCard({
             {campaign.lead_count} lead{campaign.lead_count !== 1 ? "s" : ""} · {totalSent} sent · {totalScheduled} remaining
           </p>
         </div>
-        <svg
-          width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2"
+        <ChevronDown
+          size={14}
+          strokeWidth={2}
+          color="rgba(255,255,255,0.3)"
           style={{ transform: expanded ? "rotate(180deg)" : "none", transition: "transform 0.2s", flexShrink: 0 }}
-        >
-          <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
+          aria-hidden="true"
+        />
       </button>
 
       {expanded && (
@@ -347,13 +339,9 @@ export default function FollowupsPage() {
             }}
           >
             {sending ? (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation: "spin 1s linear infinite" }}>
-                <path d="M21 12a9 9 0 11-6.219-8.56" strokeLinecap="round" />
-              </svg>
+              <Loader2 size={13} strokeWidth={2.5} style={{ animation: "spin 0.8s linear infinite" }} aria-hidden="true" />
             ) : (
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
-              </svg>
+              <Send size={13} strokeWidth={2} aria-hidden="true" />
             )}
             {sending ? "Sending…" : "Send Due Now"}
           </button>
@@ -400,7 +388,7 @@ export default function FollowupsPage() {
               backgroundColor: "rgba(255,82,0,0.1)", border: "1px solid rgba(255,82,0,0.25)",
               display: "flex", alignItems: "center", justifyContent: "center", color: "#FF5200",
             }}>
-              <IconLock />
+              <Lock size={22} strokeWidth={1.8} aria-hidden="true" />
             </div>
             <div>
               <h2 style={{ fontSize: 20, fontWeight: 800, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 8 }}>
@@ -439,7 +427,7 @@ export default function FollowupsPage() {
             minHeight: 420, textAlign: "center", gap: 16,
           }}>
             <div style={{ width: 56, height: 56, borderRadius: 14, backgroundColor: "rgba(255,82,0,0.08)", border: "1px solid rgba(255,82,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,82,0,0.5)" }}>
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M21 12a9 9 0 11-6 -8.5" /><polyline points="21 3 21 9 15 9" /></svg>
+              <Send size={24} strokeWidth={1.6} aria-hidden="true" />
             </div>
             <h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", margin: 0 }}>
               No follow-up sequences yet
@@ -480,7 +468,6 @@ export default function FollowupsPage() {
           </div>
         )}
       </main>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

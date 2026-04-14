@@ -11,6 +11,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { StaggerList, StaggerItem, CountUp, ScrollReveal } from "../_components/motion";
+import { Lock } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -144,10 +145,7 @@ export default function AnalyticsPage() {
               border: "1px solid rgba(255,255,255,0.07)",
               display: "flex", alignItems: "center", justifyContent: "center", color: "#484848",
             }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="11" width="18" height="11" rx="2" />
-                <path d="M7 11V7a5 5 0 0110 0v4" />
-              </svg>
+              <Lock size={16} strokeWidth={1.5} aria-hidden="true" />
             </div>
             <div>
               <h2 style={{ fontSize: 15, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 6 }}>

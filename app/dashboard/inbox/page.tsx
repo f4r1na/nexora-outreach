@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Loader2, ChevronDown, Trash2, RefreshCw, Sparkles, Plus, Inbox } from "lucide-react";
 
 type ReplyStatus = "pending" | "draft_ready" | "sent" | "skipped";
 type FilterTab = "all" | "pending" | "sent" | "skipped";
@@ -50,67 +51,37 @@ function formatDate(iso: string) {
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
 function SpinnerIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ animation: "spin 1s linear infinite" }}>
-      <path d="M21 12a9 9 0 11-6.219-8.56" strokeLinecap="round" />
-    </svg>
-  );
+  return <Loader2 size={13} strokeWidth={2.5} style={{ animation: "spin 0.8s linear infinite" }} aria-hidden="true" />;
 }
 
 function ChevronIcon({ direction }: { direction: "up" | "down" }) {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ transform: direction === "up" ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}>
-      <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+  return <ChevronDown size={14} strokeWidth={2} style={{ transform: direction === "up" ? "rotate(180deg)" : "none", transition: "transform 0.2s" }} aria-hidden="true" />;
 }
 
 function TrashIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-      <polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6M10 11v6M14 11v6M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+  return <Trash2 size={12} strokeWidth={2.2} aria-hidden="true" />;
 }
 
 function RegenerateIcon() {
   return (
-    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-      <path d="M21 12a9 9 0 11-6-8.5" strokeLinecap="round" /><polyline points="21 3 21 9 15 9" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+    <RefreshCw size={11} strokeWidth={2.2} aria-hidden="true" />
   );
 }
 
 function SparkleIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M12 2l2 7h7l-5.5 4 2 7L12 16l-5.5 4 2-7L3 9h7z" strokeLinejoin="round" />
-    </svg>
-  );
+  return <Sparkles size={13} strokeWidth={2} aria-hidden="true" />;
 }
 
 function SyncIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 12a9 9 0 11-6-8.5" /><polyline points="21 3 21 9 15 9" />
-    </svg>
-  );
+  return <RefreshCw size={13} strokeWidth={2.2} aria-hidden="true" />;
 }
 
 function PlusIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
-      <path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-  );
+  return <Plus size={13} strokeWidth={1.8} aria-hidden="true" />;
 }
 
 function InboxEmptyIcon() {
-  return (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 12h-6l-2 3H10l-2-3H2" /><path d="M5.45 5.11L2 12v6a2 2 0 002 2h16a2 2 0 002-2v-6l-3.45-6.89A2 2 0 0016.76 4H7.24a2 2 0 00-1.79 1.11z" />
-    </svg>
-  );
+  return <Inbox size={32} strokeWidth={1.3} aria-hidden="true" />;
 }
 
 // ─── Reply Card ───────────────────────────────────────────────────────────────

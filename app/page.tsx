@@ -9,121 +9,182 @@ export const metadata = {
   description: "Generate 100 hyper-personalized cold emails in 60 seconds. Upload your leads, pick a tone, export instantly.",
 };
 
+// ─── Icon helpers (inline SVG — no client bundle cost) ────────────────────────
+
+function CheckIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M3 8l3.5 3.5L13 4.5" stroke="#FF5200" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ArrowRight() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export default async function Home() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (user) redirect("/dashboard");
 
   return (
-    <div style={{ backgroundColor: "#060606", minHeight: "100vh", color: "#fff", fontFamily: "var(--font-outfit)", overflowX: "hidden" }}>
+    <div style={{ backgroundColor: "#060606", minHeight: "100dvh", color: "#fff", fontFamily: "var(--font-outfit)", overflowX: "hidden" }}>
 
-      {/* ─────────────────────────── NAVBAR ─────────────────────────── */}
+      {/* ─── NAVBAR ─────────────────────────────────────────────────────────── */}
       <nav style={{
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
-        height: 66, display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "0 clamp(20px, 5vw, 60px)",
-        backgroundColor: "rgba(6,6,6,0.88)", backdropFilter: "blur(16px)",
-        borderBottom: "1px solid rgba(255,255,255,0.05)",
+        height: 64,
+        display: "flex", alignItems: "center", justifyContent: "space-between",
+        padding: "0 clamp(20px, 4vw, 56px)",
+        backgroundColor: "rgba(6,6,6,0.9)",
+        backdropFilter: "blur(20px)",
+        borderBottom: "1px solid rgba(255,255,255,0.055)",
       }}>
         {/* Logo */}
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-          <svg width="34" height="34" viewBox="0 0 48 48" fill="none">
-            <rect width="48" height="48" rx="10" fill="#FF5200" />
-            <path d="M13 36V12h4.5l13 16.5V12H35v24h-4.5L17.5 19.5V36H13z" fill="white" />
-          </svg>
-          <span style={{ fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", color: "#fff", fontFamily: "var(--font-syne)" }}>NEXORA</span>
+          <div style={{
+            width: 30, height: 30, borderRadius: 8,
+            backgroundColor: "#FF5200",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+            <svg width="15" height="15" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M2 12V2h2.5l5.5 7V2H12v10h-2.5L4 5v7H2z" fill="white" />
+            </svg>
+          </div>
+          <span style={{ fontSize: 14, fontWeight: 600, color: "#fff", fontFamily: "var(--font-syne)", letterSpacing: "-0.02em" }}>
+            Nexora
+          </span>
         </Link>
 
-        {/* Nav links */}
-        <div style={{ display: "flex", alignItems: "center", gap: 36 }}>
+        {/* Center links */}
+        <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
           {[["How it works", "#how"], ["Features", "#features"], ["Pricing", "#pricing"]].map(([label, href]) => (
-            <a key={label} href={href} style={{ fontSize: 13, color: "rgba(255,255,255,0.48)", textDecoration: "none" }}>
+            <a
+              key={label}
+              href={href as string}
+              className="landing-nav-link"
+              style={{ fontSize: 13, color: "rgba(255,255,255,0.42)", textDecoration: "none" }}
+            >
               {label}
             </a>
           ))}
         </div>
 
-        {/* Auth CTA */}
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <Link href="/login" style={{ fontSize: 13, color: "rgba(255,255,255,0.42)", textDecoration: "none" }}>Sign in</Link>
+        {/* Auth */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <Link href="/login" style={{ fontSize: 13, color: "rgba(255,255,255,0.38)", textDecoration: "none" }}>
+            Sign in
+          </Link>
           <Link href="/signup" style={{
-            fontSize: 13, fontWeight: 700, padding: "8px 20px",
-            backgroundColor: "#FF5200", color: "#fff", borderRadius: 8,
-            textDecoration: "none", letterSpacing: "0.01em",
+            display: "inline-flex", alignItems: "center", gap: 6,
+            fontSize: 13, fontWeight: 500,
+            padding: "7px 18px",
+            backgroundColor: "#FF5200", color: "#fff",
+            borderRadius: 7, textDecoration: "none",
+            transition: "background-color 0.15s ease",
           }}>
-            Get Early Access
+            Get started
           </Link>
         </div>
       </nav>
 
-      {/* ─────────────────────────── HERO ─────────────────────────── */}
+      {/* ─── HERO ───────────────────────────────────────────────────────────── */}
       <section style={{
-        paddingTop: "clamp(120px, 16vw, 160px)",
-        paddingBottom: "clamp(60px, 8vw, 100px)",
-        paddingLeft: "clamp(20px, 5vw, 60px)",
-        paddingRight: "clamp(20px, 5vw, 60px)",
+        paddingTop: "clamp(130px, 18vw, 180px)",
+        paddingBottom: "clamp(64px, 8vw, 100px)",
+        paddingLeft: "clamp(20px, 4vw, 56px)",
+        paddingRight: "clamp(20px, 4vw, 56px)",
         textAlign: "center",
-        background: "radial-gradient(ellipse 80% 50% at 50% -10%, rgba(255,82,0,0.18) 0%, transparent 65%)",
         position: "relative",
+        overflow: "hidden",
       }}>
+        {/* Ambient glow */}
+        <div style={{
+          position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)",
+          width: "60vw", height: "40vw", maxWidth: 900, maxHeight: 600,
+          background: "radial-gradient(ellipse at center, rgba(255,82,0,0.12) 0%, transparent 70%)",
+          pointerEvents: "none",
+        }} />
+
         {/* Eyebrow */}
         <div style={{
-          display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 28,
-          padding: "5px 16px", borderRadius: 999,
-          backgroundColor: "rgba(255,82,0,0.1)", border: "1px solid rgba(255,82,0,0.22)",
+          display: "inline-flex", alignItems: "center", gap: 7,
+          padding: "4px 14px", borderRadius: 999,
+          backgroundColor: "rgba(255,82,0,0.08)",
+          border: "1px solid rgba(255,82,0,0.2)",
+          marginBottom: 28, position: "relative",
         }}>
-          <span style={{ width: 7, height: 7, borderRadius: "50%", backgroundColor: "#FF5200", display: "inline-block", flexShrink: 0 }} />
-          <span style={{ fontSize: 12, fontWeight: 700, color: "#FF5200", letterSpacing: "0.05em" }}>AI-POWERED COLD OUTREACH</span>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#FF5200", flexShrink: 0, display: "block" }} />
+          <span style={{ fontSize: 11, fontWeight: 600, color: "#FF5200", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            AI-Powered Cold Outreach
+          </span>
         </div>
 
         {/* Headline */}
         <h1 style={{
-          fontSize: "clamp(38px, 7vw, 80px)", fontWeight: 900, lineHeight: 1.05,
-          fontFamily: "var(--font-syne)", maxWidth: 860, margin: "0 auto 22px",
+          fontSize: "clamp(40px, 7.5vw, 88px)",
+          fontWeight: 700,
+          lineHeight: 1.04,
+          fontFamily: "var(--font-syne)",
+          maxWidth: 900, margin: "0 auto 20px",
           letterSpacing: "-0.03em",
+          position: "relative",
         }}>
-          100 Personalized Cold Emails.{" "}
-          <span style={{ color: "#FF5200", display: "inline" }}>60 Seconds.</span>
+          100 personalized emails.{" "}
+          <span style={{ color: "#FF5200" }}>60 seconds.</span>
         </h1>
 
-        {/* Sub */}
+        {/* Subheading */}
         <p style={{
-          fontSize: "clamp(15px, 2.2vw, 19px)", color: "rgba(255,255,255,0.48)",
-          maxWidth: 540, margin: "0 auto 44px", lineHeight: 1.75,
+          fontSize: "clamp(15px, 2vw, 18px)",
+          color: "rgba(255,255,255,0.45)",
+          maxWidth: 520, margin: "0 auto 40px",
+          lineHeight: 1.75,
+          position: "relative",
         }}>
-          Upload your lead list, pick a tone, and watch Nexora write hyper-personalized
-          cold emails for every prospect — instantly.
+          Upload a lead list, choose your tone, and Nexora writes a hyper-personalized cold email for every prospect — automatically.
         </p>
 
-        {/* Buttons */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12, flexWrap: "wrap" }}>
+        {/* CTAs */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap", position: "relative" }}>
           <Link href="/signup" style={{
-            display: "inline-flex", alignItems: "center", gap: 9,
-            padding: "14px 32px", backgroundColor: "#FF5200", color: "#fff",
-            borderRadius: 10, fontSize: 15, fontWeight: 800, textDecoration: "none",
-            fontFamily: "var(--font-syne)", letterSpacing: "0.01em",
+            display: "inline-flex", alignItems: "center", gap: 8,
+            padding: "13px 28px",
+            backgroundColor: "#FF5200", color: "#fff",
+            borderRadius: 8, fontSize: 14, fontWeight: 600,
+            textDecoration: "none", fontFamily: "var(--font-syne)",
+            letterSpacing: "-0.01em",
+            transition: "background-color 0.15s ease",
           }}>
-            Start Free — No Credit Card
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-              <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
+            Start free — no credit card
+            <ArrowRight />
           </Link>
           <a href="#how" style={{
-            display: "inline-flex", alignItems: "center", gap: 8,
-            padding: "14px 24px", color: "rgba(255,255,255,0.5)", fontSize: 14,
-            textDecoration: "none", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10,
+            display: "inline-flex", alignItems: "center",
+            padding: "13px 24px",
+            color: "rgba(255,255,255,0.45)", fontSize: 14,
+            textDecoration: "none",
+            border: "1px solid rgba(255,255,255,0.09)",
+            borderRadius: 8,
+            transition: "border-color 0.15s ease, color 0.15s ease",
           }}>
             See how it works
           </a>
         </div>
 
-        {/* Demo panel */}
-        <div style={{ marginTop: 72, maxWidth: 860, marginInline: "auto", position: "relative" }}>
-          {/* Glow */}
+        {/* Hero demo */}
+        <div style={{ marginTop: 64, maxWidth: 900, marginInline: "auto", position: "relative" }}>
           <div style={{
-            position: "absolute", inset: -1, borderRadius: 20,
-            background: "linear-gradient(135deg, rgba(255,82,0,0.3) 0%, transparent 60%)",
-            filter: "blur(40px)", zIndex: 0,
+            position: "absolute", inset: -1, borderRadius: 18,
+            background: "linear-gradient(135deg, rgba(255,82,0,0.2) 0%, transparent 55%)",
+            filter: "blur(32px)", zIndex: 0, pointerEvents: "none",
           }} />
           <div style={{ position: "relative", zIndex: 1 }}>
             <LandingDemo />
@@ -131,222 +192,306 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ─────────────────────────── STATS ─────────────────────────── */}
+      {/* ─── SOCIAL PROOF BAR ───────────────────────────────────────────────── */}
       <section style={{
-        borderTop: "1px solid rgba(255,255,255,0.055)", borderBottom: "1px solid rgba(255,255,255,0.055)",
-        backgroundColor: "#0b0b0b", padding: "48px clamp(20px, 5vw, 60px)",
+        borderTop: "1px solid rgba(255,255,255,0.05)",
+        borderBottom: "1px solid rgba(255,255,255,0.05)",
+        backgroundColor: "#0a0a0a",
+        padding: "44px clamp(20px, 4vw, 56px)",
       }}>
-        <div style={{ maxWidth: 960, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 24, textAlign: "center" }}>
+        <div style={{
+          maxWidth: 900, margin: "0 auto",
+          display: "grid", gridTemplateColumns: "repeat(4, 1fr)",
+          gap: 24, textAlign: "center",
+        }}>
           {[
-            { value: "500+", label: "Campaigns Created" },
-            { value: "10×", label: "Faster Than Manual" },
-            { value: "85%", label: "Open Rate Lift" },
-            { value: "60s", label: "Per 100 Emails" },
+            { value: "500+", label: "Campaigns created" },
+            { value: "10×",  label: "Faster than manual" },
+            { value: "85%",  label: "Higher open rates" },
+            { value: "60s",  label: "Per 100 emails" },
           ].map((s) => (
             <div key={s.label}>
-              <div style={{ fontSize: "clamp(32px, 5vw, 48px)", fontWeight: 900, color: "#FF5200", fontFamily: "var(--font-syne)", lineHeight: 1 }}>{s.value}</div>
-              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.38)", marginTop: 8 }}>{s.label}</div>
+              <div style={{
+                fontSize: "clamp(28px, 4.5vw, 44px)", fontWeight: 700,
+                color: "#FF5200", fontFamily: "var(--font-syne)", lineHeight: 1,
+              }}>
+                {s.value}
+              </div>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.32)", marginTop: 7, fontFamily: "var(--font-outfit)" }}>
+                {s.label}
+              </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ─────────────────────────── HOW IT WORKS ─────────────────────────── */}
-      <section id="how" style={{ padding: "110px clamp(20px, 5vw, 60px)", maxWidth: 1060, margin: "0 auto" }}>
-        <div style={{ textAlign: "center", marginBottom: 70 }}>
-          <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.15em", color: "#FF5200", textTransform: "uppercase", marginBottom: 14 }}>How It Works</p>
-          <h2 style={{ fontSize: "clamp(28px, 4.5vw, 48px)", fontWeight: 900, fontFamily: "var(--font-syne)", margin: "0 auto", maxWidth: 600, lineHeight: 1.1, letterSpacing: "-0.02em" }}>
-            From spreadsheet to sent — in three steps
+      {/* ─── HOW IT WORKS ───────────────────────────────────────────────────── */}
+      <section id="how" style={{ padding: "100px clamp(20px, 4vw, 56px)", maxWidth: 1040, margin: "0 auto" }}>
+        <div style={{ textAlign: "center", marginBottom: 60 }}>
+          <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", color: "#FF5200", textTransform: "uppercase", marginBottom: 12 }}>
+            How it works
+          </p>
+          <h2 style={{
+            fontSize: "clamp(26px, 4.5vw, 46px)", fontWeight: 700,
+            fontFamily: "var(--font-syne)", maxWidth: 560, margin: "0 auto",
+            lineHeight: 1.1, letterSpacing: "-0.025em",
+          }}>
+            From spreadsheet to inbox in three steps
           </h2>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
           {[
             {
               n: "01",
-              title: "Upload Your Leads",
-              desc: "Drop in a CSV with name, company, role, email, and an optional custom note. Any column format works — we auto-detect everything.",
-              icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" strokeLinecap="round" strokeLinejoin="round" /></svg>,
+              title: "Upload your leads",
+              desc: "Drop in a CSV with name, company, role, email, and an optional note. Auto-detects any column format — no reformatting needed.",
+              icon: (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+                </svg>
+              ),
             },
             {
               n: "02",
-              title: "Choose Your Tone",
-              desc: "Professional, Friendly, Bold, or Minimal. Nexora matches your voice exactly — no prompt engineering needed.",
-              icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" strokeLinecap="round" strokeLinejoin="round" /></svg>,
+              title: "Choose your tone",
+              desc: "Professional, Friendly, Bold, or Minimal. Nexora matches your brand voice exactly — no prompt engineering required.",
+              icon: (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </svg>
+              ),
             },
             {
               n: "03",
-              title: "Generate & Export",
-              desc: "Watch AI write every email in seconds. Review inline, edit anything, then export to CSV with one click.",
-              icon: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M16 12l-4 4-4-4M12 16V4" strokeLinecap="round" strokeLinejoin="round" /></svg>,
+              title: "Review and export",
+              desc: "Every email is generated in seconds. Review inline, edit anything, then export to CSV or send directly via Gmail.",
+              icon: (
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1M16 12l-4 4-4-4M12 16V4" />
+                </svg>
+              ),
             },
           ].map((item) => (
             <div key={item.n} style={{
-              background: "linear-gradient(135deg, #111 0%, #0d0d0d 100%)",
-              border: "1px solid rgba(255,255,255,0.07)", borderRadius: 18,
-              padding: "36px 32px", position: "relative", overflow: "hidden",
+              backgroundColor: "#0e0e0e",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: 12,
+              padding: "32px 28px",
+              position: "relative", overflow: "hidden",
             }}>
+              {/* Step number watermark */}
               <div style={{
-                position: "absolute", top: 16, right: 20,
-                fontSize: 64, fontWeight: 900, color: "rgba(255,82,0,0.05)",
+                position: "absolute", top: 12, right: 18,
+                fontSize: 56, fontWeight: 700, color: "rgba(255,82,0,0.04)",
                 fontFamily: "var(--font-syne)", lineHeight: 1, userSelect: "none",
-              }}>{item.n}</div>
+                pointerEvents: "none",
+              }}>
+                {item.n}
+              </div>
+
               <div style={{
-                width: 50, height: 50, borderRadius: 14,
-                backgroundColor: "rgba(255,82,0,0.1)", color: "#FF5200",
-                display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 22,
-              }}>{item.icon}</div>
-              <h3 style={{ fontSize: 18, fontWeight: 800, fontFamily: "var(--font-syne)", marginBottom: 12, letterSpacing: "-0.01em" }}>{item.title}</h3>
-              <p style={{ fontSize: 14, color: "rgba(255,255,255,0.42)", lineHeight: 1.75, margin: 0 }}>{item.desc}</p>
+                width: 44, height: 44, borderRadius: 10,
+                backgroundColor: "rgba(255,82,0,0.08)", color: "#FF5200",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                marginBottom: 20,
+              }}>
+                {item.icon}
+              </div>
+              <h3 style={{
+                fontSize: 16, fontWeight: 600,
+                fontFamily: "var(--font-syne)", marginBottom: 10,
+                letterSpacing: "-0.015em",
+              }}>
+                {item.title}
+              </h3>
+              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", lineHeight: 1.75 }}>
+                {item.desc}
+              </p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ─────────────────────────── COMPARISON ─────────────────────────── */}
-      <section style={{ padding: "80px clamp(20px, 5vw, 60px)", backgroundColor: "#080808" }}>
-        <div style={{ maxWidth: 780, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 52 }}>
-            <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.15em", color: "#FF5200", textTransform: "uppercase", marginBottom: 14 }}>Why Not ChatGPT?</p>
-            <h2 style={{ fontSize: "clamp(26px, 4vw, 42px)", fontWeight: 900, fontFamily: "var(--font-syne)", margin: 0, letterSpacing: "-0.02em" }}>
+      {/* ─── COMPARISON TABLE ───────────────────────────────────────────────── */}
+      <section style={{ padding: "72px clamp(20px, 4vw, 56px)", backgroundColor: "#080808" }}>
+        <div style={{ maxWidth: 760, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 48 }}>
+            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", color: "#FF5200", textTransform: "uppercase", marginBottom: 12 }}>
+              Why not ChatGPT?
+            </p>
+            <h2 style={{
+              fontSize: "clamp(24px, 4vw, 40px)", fontWeight: 700,
+              fontFamily: "var(--font-syne)", letterSpacing: "-0.025em",
+            }}>
               Built for outreach, not prompts
             </h2>
           </div>
 
-          <div style={{ border: "1px solid rgba(255,255,255,0.08)", borderRadius: 18, overflow: "hidden" }}>
-            {/* Header */}
+          <div style={{ border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, overflow: "hidden" }}>
             <div style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr", backgroundColor: "#0f0f0f" }}>
-              <div style={{ padding: "16px 22px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.25)", letterSpacing: "0.1em", textTransform: "uppercase" }}>Feature</div>
-              <div style={{ padding: "16px 22px", fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.25)", letterSpacing: "0.1em", textTransform: "uppercase", borderLeft: "1px solid rgba(255,255,255,0.06)" }}>ChatGPT</div>
-              <div style={{ padding: "16px 22px", fontSize: 11, fontWeight: 700, color: "#FF5200", letterSpacing: "0.1em", textTransform: "uppercase", borderLeft: "1px solid rgba(255,255,255,0.06)", backgroundColor: "rgba(255,82,0,0.06)" }}>Nexora</div>
+              {[
+                { label: "Feature", style: {} },
+                { label: "ChatGPT", style: { borderLeft: "1px solid rgba(255,255,255,0.06)", color: "rgba(255,255,255,0.22)" } },
+                { label: "Nexora", style: { borderLeft: "1px solid rgba(255,255,255,0.06)", color: "#FF5200", backgroundColor: "rgba(255,82,0,0.05)" } },
+              ].map((h) => (
+                <div key={h.label} style={{ padding: "14px 20px", fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.22)", ...h.style }}>
+                  {h.label}
+                </div>
+              ))}
             </div>
             {[
-              ["CSV lead import",         "Manual copy-paste",  "Native support"],
-              ["Bulk generation",         "One at a time",      "100+ in 60 seconds"],
-              ["Per-lead personalization","With effort",        "Fully automatic"],
-              ["Export to CSV",           "Not available",      "One-click export"],
-              ["Campaign history",        "None",               "Full dashboard"],
-              ["Credit tracking",         "None",               "Built-in"],
+              ["CSV lead import",          "Manual copy-paste",      "Native support"],
+              ["Bulk generation",          "One at a time",          "100+ in 60 seconds"],
+              ["Per-lead personalization", "With effort",            "Fully automatic"],
+              ["Export to CSV",            "Not available",          "One-click export"],
+              ["Campaign history",         "None",                   "Full dashboard"],
+              ["Credit tracking",          "None",                   "Built-in"],
             ].map(([feat, chatgpt, nexora], i) => (
               <div key={feat} style={{
                 display: "grid", gridTemplateColumns: "1.4fr 1fr 1fr",
-                borderTop: "1px solid rgba(255,255,255,0.055)",
-                backgroundColor: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.012)",
+                borderTop: "1px solid rgba(255,255,255,0.05)",
+                backgroundColor: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.01)",
               }}>
-                <div style={{ padding: "14px 22px", fontSize: 13.5, color: "rgba(255,255,255,0.7)" }}>{feat}</div>
-                <div style={{ padding: "14px 22px", fontSize: 13, color: "rgba(255,255,255,0.3)", borderLeft: "1px solid rgba(255,255,255,0.055)" }}>{chatgpt}</div>
-                <div style={{ padding: "14px 22px", fontSize: 13, color: "#FF5200", borderLeft: "1px solid rgba(255,255,255,0.055)", backgroundColor: "rgba(255,82,0,0.025)" }}>{nexora}</div>
+                <div style={{ padding: "13px 20px", fontSize: 13, color: "rgba(255,255,255,0.65)" }}>{feat}</div>
+                <div style={{ padding: "13px 20px", fontSize: 13, color: "rgba(255,255,255,0.28)", borderLeft: "1px solid rgba(255,255,255,0.05)" }}>{chatgpt}</div>
+                <div style={{ padding: "13px 20px", fontSize: 13, color: "#FF5200", borderLeft: "1px solid rgba(255,255,255,0.05)", backgroundColor: "rgba(255,82,0,0.02)" }}>{nexora}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ─────────────────────────── FEATURES ─────────────────────────── */}
-      <section id="features" style={{ padding: "110px clamp(20px, 5vw, 60px)", maxWidth: 1060, margin: "0 auto" }}>
-        <div style={{ textAlign: "center", marginBottom: 64 }}>
-          <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.15em", color: "#FF5200", textTransform: "uppercase", marginBottom: 14 }}>Features</p>
-          <h2 style={{ fontSize: "clamp(28px, 4.5vw, 48px)", fontWeight: 900, fontFamily: "var(--font-syne)", margin: "0 auto", maxWidth: 640, lineHeight: 1.1, letterSpacing: "-0.02em" }}>
+      {/* ─── FEATURES ───────────────────────────────────────────────────────── */}
+      <section id="features" style={{ padding: "100px clamp(20px, 4vw, 56px)", maxWidth: 1040, margin: "0 auto" }}>
+        <div style={{ textAlign: "center", marginBottom: 56 }}>
+          <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", color: "#FF5200", textTransform: "uppercase", marginBottom: 12 }}>
+            Features
+          </p>
+          <h2 style={{
+            fontSize: "clamp(26px, 4.5vw, 46px)", fontWeight: 700,
+            fontFamily: "var(--font-syne)", maxWidth: 580, margin: "0 auto",
+            lineHeight: 1.1, letterSpacing: "-0.025em",
+          }}>
             Everything you need to close more deals
           </h2>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(290px, 1fr))", gap: 14 }}>
           {[
-            { title: "Smart CSV Import",        desc: "Upload any lead list. We auto-detect name, company, role, email, and custom note columns — no formatting required." },
-            { title: "Hyper-Personalization",   desc: "Every email references the lead's specific situation in the opening sentence. Not just their name — their context." },
-            { title: "4 Writing Tones",         desc: "Professional, Friendly, Bold, or Minimal. Each generates a distinctly different email that matches your brand voice." },
-            { title: "Inline Review & Edit",    desc: "See every generated email before exporting. Click to edit any subject line or body copy directly in the interface." },
-            { title: "Instant CSV Export",      desc: "Download your campaign as a spreadsheet-ready CSV with all leads, subjects, and email bodies in one file." },
-            { title: "Campaign History",        desc: "Every campaign is saved automatically. Return anytime to review, re-export, or use past emails as inspiration." },
+            { title: "Smart CSV import",         desc: "Upload any lead list. Auto-detects name, company, role, email, and custom note columns — no formatting required." },
+            { title: "Hyper-personalization",    desc: "Every email opens with a sentence specific to that lead's situation — not just their name, but their full context." },
+            { title: "Four writing tones",       desc: "Professional, Friendly, Bold, or Minimal. Each generates a distinctly different email that matches your brand voice." },
+            { title: "Inline review and edit",   desc: "See every generated email before exporting. Click to edit any subject line or body copy directly in the interface." },
+            { title: "Instant CSV export",       desc: "Download your campaign as a spreadsheet-ready CSV with all leads, subjects, and email bodies in one file." },
+            { title: "Campaign history",         desc: "Every campaign is saved automatically. Return anytime to review, re-export, or draw on past campaigns for inspiration." },
           ].map((f) => (
             <div key={f.title} style={{
-              backgroundColor: "#0d0d0d", border: "1px solid rgba(255,255,255,0.07)",
-              borderRadius: 12, padding: "28px 26px",
+              backgroundColor: "#0e0e0e",
+              border: "1px solid rgba(255,255,255,0.06)",
+              borderRadius: 10, padding: "24px 22px",
+              transition: "border-color 0.18s ease",
             }}>
-              <div style={{
-                width: 6, height: 6, borderRadius: "50%",
-                backgroundColor: "#FF5200", marginBottom: 20,
-              }} />
-              <h3 style={{ fontSize: 15, fontWeight: 700, fontFamily: "var(--font-syne)", marginBottom: 10, letterSpacing: "-0.01em" }}>{f.title}</h3>
-              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.42)", lineHeight: 1.75, margin: 0 }}>{f.desc}</p>
+              <div style={{ width: 5, height: 5, borderRadius: "50%", backgroundColor: "#FF5200", marginBottom: 18 }} />
+              <h3 style={{ fontSize: 14, fontWeight: 600, fontFamily: "var(--font-syne)", marginBottom: 8, letterSpacing: "-0.01em" }}>
+                {f.title}
+              </h3>
+              <p style={{ fontSize: 13, color: "rgba(255,255,255,0.38)", lineHeight: 1.75 }}>
+                {f.desc}
+              </p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ─────────────────────────── PRICING ─────────────────────────── */}
-      <section id="pricing" style={{ padding: "110px clamp(20px, 5vw, 60px)", backgroundColor: "#080808" }}>
-        <div style={{ maxWidth: 1040, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 64 }}>
-            <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.15em", color: "#FF5200", textTransform: "uppercase", marginBottom: 14 }}>Pricing</p>
-            <h2 style={{ fontSize: "clamp(28px, 4.5vw, 48px)", fontWeight: 900, fontFamily: "var(--font-syne)", margin: "0 auto", maxWidth: 560, lineHeight: 1.1, letterSpacing: "-0.02em" }}>
-              Simple, honest pricing
+      {/* ─── PRICING ────────────────────────────────────────────────────────── */}
+      <section id="pricing" style={{ padding: "100px clamp(20px, 4vw, 56px)", backgroundColor: "#080808" }}>
+        <div style={{ maxWidth: 1000, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 56 }}>
+            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.12em", color: "#FF5200", textTransform: "uppercase", marginBottom: 12 }}>
+              Pricing
+            </p>
+            <h2 style={{
+              fontSize: "clamp(26px, 4.5vw, 46px)", fontWeight: 700,
+              fontFamily: "var(--font-syne)", maxWidth: 520, margin: "0 auto",
+              lineHeight: 1.1, letterSpacing: "-0.025em",
+            }}>
+              Simple, transparent pricing
             </h2>
-            <p style={{ fontSize: 15, color: "rgba(255,255,255,0.38)", marginTop: 14 }}>Start free. Scale when you&apos;re ready.</p>
+            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", marginTop: 12 }}>
+              Start free. Scale when you&apos;re ready.
+            </p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 18, alignItems: "start" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))", gap: 14, alignItems: "start" }}>
             {[
               {
-                name: "Free", price: "$0", period: "/month", tag: null,
+                name: "Free", price: "$0", period: "/mo", tag: null, highlight: false,
                 desc: "Try the core product",
-                credits: "10 emails",
-                features: ["10 email credits/month", "CSV import", "3 writing tones", "CSV export", "Campaign history"],
-                cta: "Get Started", highlight: false,
+                credits: "10 emails / month",
+                features: ["10 email credits", "CSV import", "3 writing tones", "CSV export", "Campaign history"],
+                cta: "Get started",
               },
               {
-                name: "Starter", price: "$19", period: "/month", tag: null,
+                name: "Starter", price: "$19", period: "/mo", tag: null, highlight: false,
                 desc: "For individual sellers",
-                credits: "300 emails",
-                features: ["300 email credits/month", "All 4 writing tones", "CSV export", "Full campaign history"],
-                cta: "Get Started", highlight: false,
+                credits: "300 emails / month",
+                features: ["300 email credits", "All 4 writing tones", "CSV export", "Full campaign history"],
+                cta: "Get started",
               },
               {
-                name: "Pro", price: "$49", period: "/month", tag: "Most Popular",
+                name: "Pro", price: "$49", period: "/mo", tag: "Most popular", highlight: true,
                 desc: "For serious SDR teams",
-                credits: "1,000 emails",
-                features: ["1,000 email credits/month", "All 4 writing tones", "CSV export", "Priority generation", "Early feature access"],
-                cta: "Get Started", highlight: true,
+                credits: "1,000 emails / month",
+                features: ["1,000 email credits", "All 4 writing tones", "CSV export", "Priority generation", "Early feature access"],
+                cta: "Get started",
               },
               {
-                name: "Agency", price: "$99", period: "/month", tag: null,
-                desc: "For agencies & scale",
-                credits: "Unlimited",
-                features: ["Unlimited email credits", "All export formats", "White-label ready", "Early feature access"],
-                cta: "Get Started", highlight: false,
+                name: "Agency", price: "$99", period: "/mo", tag: null, highlight: false,
+                desc: "For agencies at scale",
+                credits: "Unlimited emails",
+                features: ["Unlimited credits", "All export formats", "White-label ready", "Early feature access"],
+                cta: "Get started",
               },
             ].map((plan) => (
               <div key={plan.name} style={{
-                backgroundColor: plan.highlight ? "#0f0f0f" : "#0d0d0d",
-                border: `1px solid ${plan.highlight ? "rgba(255,82,0,0.55)" : "rgba(255,255,255,0.07)"}`,
-                borderRadius: 18, padding: "30px 26px",
+                backgroundColor: "#0e0e0e",
+                border: `1px solid ${plan.highlight ? "rgba(255,82,0,0.45)" : "rgba(255,255,255,0.07)"}`,
+                borderRadius: 12, padding: "28px 22px",
                 position: "relative",
-                boxShadow: plan.highlight ? "0 0 60px rgba(255,82,0,0.1)" : "none",
               }}>
                 {plan.tag && (
                   <div style={{
-                    position: "absolute", top: -13, left: "50%", transform: "translateX(-50%)",
-                    backgroundColor: "#FF5200", color: "#fff", fontSize: 11, fontWeight: 800,
-                    padding: "3px 16px", borderRadius: 999, whiteSpace: "nowrap", letterSpacing: "0.05em",
-                  }}>{plan.tag}</div>
+                    position: "absolute", top: -11, left: "50%", transform: "translateX(-50%)",
+                    backgroundColor: "#FF5200", color: "#fff",
+                    fontSize: 10, fontWeight: 700,
+                    padding: "3px 14px", borderRadius: 999,
+                    whiteSpace: "nowrap", letterSpacing: "0.06em",
+                    textTransform: "uppercase",
+                  }}>
+                    {plan.tag}
+                  </div>
                 )}
 
-                <p style={{ fontSize: 12, fontWeight: 700, color: plan.highlight ? "#FF5200" : "rgba(255,255,255,0.4)", marginBottom: 6, letterSpacing: "0.06em", textTransform: "uppercase" }}>{plan.name}</p>
-                <p style={{ fontSize: 12.5, color: "rgba(255,255,255,0.35)", marginBottom: 14 }}>{plan.desc}</p>
+                <p style={{ fontSize: 11, fontWeight: 700, color: plan.highlight ? "#FF5200" : "rgba(255,255,255,0.35)", marginBottom: 5, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                  {plan.name}
+                </p>
+                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginBottom: 16 }}>
+                  {plan.desc}
+                </p>
 
-                <div style={{ display: "flex", alignItems: "baseline", gap: 3, marginBottom: 4 }}>
-                  <span style={{ fontSize: 40, fontWeight: 900, fontFamily: "var(--font-syne)", color: "#fff", lineHeight: 1 }}>{plan.price}</span>
-                  <span style={{ fontSize: 13, color: "rgba(255,255,255,0.35)" }}>{plan.period}</span>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 3, marginBottom: 3 }}>
+                  <span style={{ fontSize: 36, fontWeight: 700, fontFamily: "var(--font-syne)", color: "#fff", lineHeight: 1 }}>
+                    {plan.price}
+                  </span>
+                  <span style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>{plan.period}</span>
                 </div>
-                <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", marginBottom: 24 }}>{plan.credits}/month</p>
+                <p style={{ fontSize: 11, color: "rgba(255,255,255,0.22)", marginBottom: 22 }}>{plan.credits}</p>
 
-                <ul style={{ listStyle: "none", padding: 0, margin: "0 0 26px", display: "flex", flexDirection: "column", gap: 10 }}>
+                <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 9, marginBottom: 24 }}>
                   {plan.features.map((f) => (
-                    <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: 13, color: "rgba(255,255,255,0.6)", lineHeight: 1.4 }}>
-                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginTop: 1 }}>
-                        <path d="M3 8l3.5 3.5L13 4.5" stroke="#FF5200" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
+                    <li key={f} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12.5, color: "rgba(255,255,255,0.55)", lineHeight: 1.4 }}>
+                      <span style={{ flexShrink: 0, marginTop: 1 }}><CheckIcon /></span>
                       {f}
                     </li>
                   ))}
@@ -354,11 +499,14 @@ export default async function Home() {
 
                 <Link href="/signup" style={{
                   display: "block", textAlign: "center",
-                  padding: "11px 0", borderRadius: 10, fontSize: 14, fontWeight: 700,
-                  textDecoration: "none", fontFamily: "var(--font-syne)",
-                  backgroundColor: plan.highlight ? "#FF5200" : "rgba(255,255,255,0.06)",
-                  color: plan.highlight ? "#fff" : "rgba(255,255,255,0.65)",
-                  border: plan.highlight ? "none" : "1px solid rgba(255,255,255,0.09)",
+                  padding: "10px 0", borderRadius: 7,
+                  fontSize: 13, fontWeight: 600,
+                  fontFamily: "var(--font-syne)",
+                  textDecoration: "none",
+                  backgroundColor: plan.highlight ? "#FF5200" : "rgba(255,255,255,0.05)",
+                  color: plan.highlight ? "#fff" : "rgba(255,255,255,0.55)",
+                  border: plan.highlight ? "none" : "1px solid rgba(255,255,255,0.08)",
+                  transition: "background-color 0.15s ease",
                 }}>
                   {plan.cta}
                 </Link>
@@ -368,56 +516,65 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ─────────────────────────── FINAL CTA ─────────────────────────── */}
+      {/* ─── FINAL CTA ──────────────────────────────────────────────────────── */}
       <section style={{
-        padding: "120px clamp(20px, 5vw, 60px)",
+        padding: "110px clamp(20px, 4vw, 56px)",
         textAlign: "center",
-        background: "radial-gradient(ellipse 70% 80% at 50% 100%, rgba(255,82,0,0.12) 0%, transparent 70%)",
+        position: "relative", overflow: "hidden",
       }}>
-        <div style={{ maxWidth: 580, margin: "0 auto" }}>
+        <div style={{
+          position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)",
+          width: "60vw", height: "50vw", maxWidth: 900, maxHeight: 600,
+          background: "radial-gradient(ellipse at center bottom, rgba(255,82,0,0.10) 0%, transparent 65%)",
+          pointerEvents: "none",
+        }} />
+        <div style={{ maxWidth: 560, margin: "0 auto", position: "relative" }}>
           <h2 style={{
-            fontSize: "clamp(32px, 5.5vw, 58px)", fontWeight: 900, fontFamily: "var(--font-syne)",
-            marginBottom: 18, lineHeight: 1.08, letterSpacing: "-0.03em",
+            fontSize: "clamp(30px, 5.5vw, 56px)", fontWeight: 700,
+            fontFamily: "var(--font-syne)",
+            marginBottom: 16, lineHeight: 1.08, letterSpacing: "-0.03em",
           }}>
             Ready to fill your pipeline?
           </h2>
-          <p style={{ fontSize: 16, color: "rgba(255,255,255,0.42)", marginBottom: 44, lineHeight: 1.75 }}>
+          <p style={{ fontSize: 15, color: "rgba(255,255,255,0.4)", marginBottom: 40, lineHeight: 1.75 }}>
             Join sales teams generating hundreds of personalized cold emails every day — in minutes, not hours.
           </p>
           <LandingCTA />
-          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.2)", marginTop: 18 }}>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.18)", marginTop: 16 }}>
             No credit card required &nbsp;·&nbsp; 10 free emails on signup
           </p>
         </div>
       </section>
 
-      {/* ─────────────────────────── FOOTER ─────────────────────────── */}
+      {/* ─── FOOTER ─────────────────────────────────────────────────────────── */}
       <footer style={{
-        borderTop: "1px solid rgba(255,255,255,0.055)",
-        padding: "28px clamp(20px, 5vw, 60px)",
+        borderTop: "1px solid rgba(255,255,255,0.05)",
+        padding: "24px clamp(20px, 4vw, 56px)",
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        flexWrap: "wrap", gap: 20,
+        flexWrap: "wrap", gap: 16,
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <svg width="22" height="22" viewBox="0 0 48 48" fill="none">
-            <rect width="48" height="48" rx="10" fill="#FF5200" />
-            <path d="M13 36V12h4.5l13 16.5V12H35v24h-4.5L17.5 19.5V36H13z" fill="white" />
-          </svg>
-          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.28)", fontFamily: "var(--font-outfit)" }}>
-            Nexora Outreach — by Nexora Studios
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{ width: 22, height: 22, borderRadius: 5, backgroundColor: "#FF5200", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="11" height="11" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M2 12V2h2.5l5.5 7V2H12v10h-2.5L4 5v7H2z" fill="white" />
+            </svg>
+          </div>
+          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.22)", fontFamily: "var(--font-outfit)" }}>
+            © {new Date().getFullYear()} Nexora Studios
           </span>
         </div>
 
-        <div style={{ display: "flex", gap: 28 }}>
+        <div style={{ display: "flex", gap: 24 }}>
           {[["How it works", "#how"], ["Features", "#features"], ["Pricing", "#pricing"]].map(([l, h]) => (
-            <a key={l} href={h} style={{ fontSize: 12, color: "rgba(255,255,255,0.28)", textDecoration: "none" }}>{l}</a>
+            <a key={l} href={h as string} style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", textDecoration: "none" }}>
+              {l}
+            </a>
           ))}
         </div>
 
         <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
-          <Link href="/login" style={{ fontSize: 12, color: "rgba(255,255,255,0.28)", textDecoration: "none" }}>Sign in</Link>
-          <Link href="/signup" style={{ fontSize: 12, color: "rgba(255,255,255,0.28)", textDecoration: "none" }}>Sign up</Link>
-          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.16)" }}>© {new Date().getFullYear()} Nexora Studios</span>
+          <Link href="/login"  style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", textDecoration: "none" }}>Sign in</Link>
+          <Link href="/signup" style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", textDecoration: "none" }}>Sign up</Link>
         </div>
       </footer>
 
