@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Lock, Radio, Trash2, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { PageWrapper } from "../_components/motion";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -242,7 +243,7 @@ export default function SignalsPage() {
     : signals.filter((s) => s.campaign_id === filterCampaign);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    <PageWrapper style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       {/* Header */}
       <header style={{
         padding: "0 32px", height: 68,
@@ -439,6 +440,6 @@ export default function SignalsPage() {
           </div>
         )}
       </main>
-    </div>
+    </PageWrapper>
   );
 }

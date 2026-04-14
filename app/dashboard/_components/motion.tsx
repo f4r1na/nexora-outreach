@@ -23,9 +23,19 @@ const EASE_IN_OUT = [0.77, 0, 0.175, 1] as const;
 
 // ─── PageWrapper ──────────────────────────────────────────────────────────────
 // Wraps page content with a smooth fade-in on mount.
-export function PageWrapper({ children }: { children: React.ReactNode }) {
+export function PageWrapper({
+  children,
+  style,
+  className,
+}: {
+  children: React.ReactNode;
+  style?: React.CSSProperties;
+  className?: string;
+}) {
   return (
     <motion.div
+      className={className}
+      style={style}
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.32, ease: EASE_OUT }}

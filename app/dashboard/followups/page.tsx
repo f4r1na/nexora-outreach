@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Lock, Send, Loader2, ChevronDown } from "lucide-react";
+import { PageWrapper } from "../_components/motion";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -309,7 +310,7 @@ export default function FollowupsPage() {
   }
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    <PageWrapper style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       {/* Header */}
       <header style={{
         padding: "0 32px", height: 68,
@@ -468,6 +469,6 @@ export default function FollowupsPage() {
           </div>
         )}
       </main>
-    </div>
+    </PageWrapper>
   );
 }

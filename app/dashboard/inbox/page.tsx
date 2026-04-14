@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { PageWrapper } from "../_components/motion";
 import { Loader2, ChevronDown, Trash2, RefreshCw, Sparkles, Plus, Inbox } from "lucide-react";
 
 type ReplyStatus = "pending" | "draft_ready" | "sent" | "skipped";
@@ -522,7 +523,7 @@ export default function InboxPage() {
   const needsResponseCount = replies.filter((r) => r.status === "pending" || r.status === "draft_ready").length;
 
   return (
-    <>
+    <PageWrapper>
       {/* Header */}
       <header style={{
         padding: "0 32px", height: 68,
@@ -812,6 +813,6 @@ export default function InboxPage() {
         </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </PageWrapper>
   );
 }

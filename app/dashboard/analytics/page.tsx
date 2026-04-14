@@ -10,7 +10,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { StaggerList, StaggerItem, CountUp, ScrollReveal } from "../_components/motion";
+import { PageWrapper, StaggerList, StaggerItem, CountUp, ScrollReveal } from "../_components/motion";
 import { Lock } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -102,7 +102,7 @@ export default function AnalyticsPage() {
   const hasData = (stats?.sent ?? 0) > 0 || campaigns.length > 0;
 
   return (
-    <>
+    <PageWrapper>
       {/* Header */}
       <header style={{
         padding: "0 32px",
@@ -334,6 +334,6 @@ export default function AnalyticsPage() {
           </>
         )}
       </main>
-    </>
+    </PageWrapper>
   );
 }
