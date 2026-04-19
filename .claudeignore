@@ -1,0 +1,25 @@
+node_modules/
+.next/
+.git/
+dist/
+build/
+package-lock.json
+*.log
+.env*
+public/
+*.svg
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.ico
+
+# Token optimizer: never auto-load these
+.claude/completions/
+.claude/sessions/
+docs/learnings/
+docs/archive/
+supabase-schema.sql
+README.md
+AGENTS.md
+skills-lock.json

@@ -2,11 +2,12 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { PLANS, PlanKey } from "@/lib/plans";
 import { ScrollReveal, StaggerList, StaggerItem } from "../_components/motion";
 import {
   Mail, CreditCard, Pen, Package, Check, Loader2, X,
-  Sparkles, Zap, Building2, ChevronRight,
+  Sparkles, Zap, Building2, ChevronRight, BarChart3, Repeat, Search,
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -694,6 +695,47 @@ function SettingsInner() {
             })}
           </StaggerList>
         </ScrollReveal>
+
+        {/* ── Quick Access ── */}
+        <ScrollReveal delay={0.12}>
+          <SectionLabel>Quick Access</SectionLabel>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {[
+              { label: "Analytics", desc: "View open rates, clicks, and campaign performance", href: "/dashboard/analytics", icon: <BarChart3 size={14} strokeWidth={1.75} /> },
+              { label: "Follow-ups", desc: "Manage automated follow-up sequences", href: "/dashboard/followups", icon: <Repeat size={14} strokeWidth={1.75} /> },
+              { label: "Lead Research", desc: "AI-powered signals for smarter outreach", href: "/dashboard/signals", icon: <Search size={14} strokeWidth={1.75} /> },
+            ].map(({ label, desc, href, icon }) => (
+              <Link key={href} href={href} style={{ textDecoration: "none" }}>
+                <div style={{
+                  backgroundColor: "#0e0e0e",
+                  border: "1px solid rgba(255,255,255,0.06)",
+                  borderRadius: 8,
+                  padding: "14px 16px",
+                  display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+                  cursor: "pointer",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{
+                      width: 32, height: 32, borderRadius: 7, flexShrink: 0,
+                      backgroundColor: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.06)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      color: "#555",
+                    }}>
+                      {icon}
+                    </div>
+                    <div>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: "#ccc", fontFamily: "var(--font-outfit)", marginBottom: 2 }}>{label}</p>
+                      <p style={{ fontSize: 12, color: "#555", fontFamily: "var(--font-outfit)" }}>{desc}</p>
+                    </div>
+                  </div>
+                  <ChevronRight size={14} color="#333" strokeWidth={1.75} />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </ScrollReveal>
+
       </div>
     </>
   );

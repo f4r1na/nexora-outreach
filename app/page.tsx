@@ -122,57 +122,56 @@ export default async function Home() {
           marginBottom: 28, position: "relative",
         }}>
           <span style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#FF5200", flexShrink: 0, display: "block" }} />
-          <span style={{ fontSize: 11, fontWeight: 600, color: "#FF5200", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-            AI-Powered Cold Outreach
+          <span style={{ fontSize: 11, fontWeight: 500, color: "#FF5200", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            Your AI Outreach Agent
           </span>
         </div>
 
         {/* Headline */}
         <h1 style={{
-          fontSize: "clamp(40px, 7.5vw, 88px)",
-          fontWeight: 700,
-          lineHeight: 1.04,
+          fontSize: "clamp(38px, 7vw, 80px)",
+          fontWeight: 500,
+          lineHeight: 1.06,
           fontFamily: "var(--font-syne)",
-          maxWidth: 900, margin: "0 auto 20px",
+          maxWidth: 860, margin: "0 auto 20px",
           letterSpacing: "-0.03em",
           position: "relative",
         }}>
-          100 personalized emails.{" "}
-          <span style={{ color: "#FF5200" }}>60 seconds.</span>
+          Tell Nexora what you need.{" "}
+          <span style={{ color: "#FF5200" }}>It handles the rest.</span>
         </h1>
 
         {/* Subheading */}
         <p style={{
-          fontSize: "clamp(15px, 2vw, 18px)",
-          color: "rgba(255,255,255,0.45)",
-          maxWidth: 520, margin: "0 auto 40px",
-          lineHeight: 1.75,
+          fontSize: "clamp(14px, 1.8vw, 17px)",
+          color: "rgba(255,255,255,0.38)",
+          maxWidth: 500, margin: "0 auto 40px",
+          lineHeight: 1.8,
           position: "relative",
         }}>
-          Upload a lead list, choose your tone, and Nexora writes a hyper-personalized cold email for every prospect — automatically.
+          Nexora researches your leads, drafts hyper-personalized emails, sends follow-ups, and tracks results — all from a single agent prompt.
         </p>
 
         {/* CTAs */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap", position: "relative" }}>
           <Link href="/signup" style={{
             display: "inline-flex", alignItems: "center", gap: 8,
-            padding: "13px 28px",
+            padding: "12px 26px",
             backgroundColor: "#FF5200", color: "#fff",
-            borderRadius: 8, fontSize: 14, fontWeight: 600,
-            textDecoration: "none", fontFamily: "var(--font-syne)",
-            letterSpacing: "-0.01em",
+            borderRadius: 7, fontSize: 13, fontWeight: 500,
+            textDecoration: "none", fontFamily: "var(--font-outfit)",
             transition: "background-color 0.15s ease",
           }}>
-            Start free — no credit card
+            Try the agent free
             <ArrowRight />
           </Link>
           <a href="#how" style={{
             display: "inline-flex", alignItems: "center",
-            padding: "13px 24px",
-            color: "rgba(255,255,255,0.45)", fontSize: 14,
+            padding: "12px 22px",
+            color: "rgba(255,255,255,0.38)", fontSize: 13,
             textDecoration: "none",
-            border: "1px solid rgba(255,255,255,0.09)",
-            borderRadius: 8,
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 7,
             transition: "border-color 0.15s ease, color 0.15s ease",
           }}>
             See how it works
