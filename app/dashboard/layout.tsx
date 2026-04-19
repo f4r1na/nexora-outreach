@@ -20,9 +20,23 @@ export default async function DashboardLayout({
   const plan = sub?.plan ?? "free";
 
   return (
-    <div style={{ backgroundColor: "#060606", minHeight: "100vh" }}>
+    <div style={{ backgroundColor: "#080810", minHeight: "100vh", position: "relative", overflow: "hidden" }}>
+      {/* Ambient gradient meshes */}
+      <div style={{
+        position: "fixed", top: -200, left: -200,
+        width: 600, height: 600,
+        background: "radial-gradient(circle, rgba(255,82,0,0.08) 0%, transparent 65%)",
+        pointerEvents: "none", zIndex: 0,
+      }} />
+      <div style={{
+        position: "fixed", bottom: -300, right: -200,
+        width: 700, height: 700,
+        background: "radial-gradient(circle, rgba(245,158,11,0.055) 0%, transparent 65%)",
+        pointerEvents: "none", zIndex: 0,
+      }} />
+
       <Navbar email={user.email!} plan={plan} />
-      <div className="dot-grid" style={{ paddingTop: 60, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      <div style={{ paddingTop: 60, minHeight: "100vh", display: "flex", flexDirection: "column", position: "relative", zIndex: 1 }}>
         {children}
       </div>
     </div>

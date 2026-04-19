@@ -37,9 +37,9 @@ export default function Navbar({ email, plan }: NavbarProps) {
         alignItems: "center",
         justifyContent: "space-between",
         padding: "0 28px",
-        backgroundColor: "rgba(6,6,6,0.9)",
-        backdropFilter: "blur(12px)",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        backgroundColor: "rgba(8,8,16,0.72)",
+        backdropFilter: "blur(16px)",
+        borderBottom: "1px solid rgba(255,255,255,0.08)",
         zIndex: 50,
       }}
     >
@@ -48,14 +48,14 @@ export default function Navbar({ email, plan }: NavbarProps) {
         <div style={{
           width: 28, height: 28,
           backgroundColor: "#FF5200",
-          borderRadius: 6,
+          borderRadius: 8,
           display: "flex", alignItems: "center", justifyContent: "center",
         }}>
           <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
             <path d="M2 12V2h2.5l5.5 7V2H12v10h-2.5L4 5v7H2z" fill="white" />
           </svg>
         </div>
-        <span style={{ fontSize: 14, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)", letterSpacing: "-0.02em" }}>
+        <span style={{ fontSize: 15, fontWeight: 600, color: "#fff", fontFamily: "var(--font-space-grotesk)", letterSpacing: "-0.02em" }}>
           Nexora
         </span>
       </Link>
@@ -70,12 +70,12 @@ export default function Navbar({ email, plan }: NavbarProps) {
               href={href}
               style={{
                 position: "relative",
-                padding: "5px 12px",
-                borderRadius: 6,
+                padding: "6px 14px",
+                borderRadius: 999,
                 fontSize: 13,
                 fontFamily: "var(--font-outfit)",
                 fontWeight: active ? 500 : 400,
-                color: active ? "#fff" : "#555",
+                color: active ? "#fff" : "rgba(255,255,255,0.45)",
                 textDecoration: "none",
                 transition: "color 150ms ease",
               }}
@@ -86,8 +86,8 @@ export default function Navbar({ email, plan }: NavbarProps) {
                   style={{
                     position: "absolute",
                     inset: 0,
-                    borderRadius: 6,
-                    backgroundColor: "rgba(255,255,255,0.06)",
+                    borderRadius: 999,
+                    backgroundColor: "rgba(255,255,255,0.08)",
                   }}
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
