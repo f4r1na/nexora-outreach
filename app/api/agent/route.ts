@@ -39,6 +39,17 @@ export async function POST(req: Request) {
 
   const userId = user.id;
 
+  // Fetch company profile for context
+  const { data: companyProfile } = await supabase
+    .from("company_profiles")
+    .select("company_name, company_description, ideal_customer, value_proposition, differentiators, tone")
+    .eq("user_id", userId)
+    .single();
+
+  const companyContext = companyProfile?.company_name
+    ? `Company context: ${companyProfile.company_name} — ${companyProfile.company_description ?? ""}. Target customer: ${companyProfile.ideal_customer ?? ""}. Value prop: ${companyProfile.value_proposition ?? ""}. Differentiators: ${companyProfile.differentiators ?? ""}. Tone: ${companyProfile.tone ?? "Professional"}.`
+    : "";
+
   const stream = new ReadableStream({
     async start(controller) {
       const send = (event: SSEEvent) =>
@@ -47,12 +58,17 @@ export async function POST(req: Request) {
       try {
         send({ type: "step", message: "Parsing your request...", icon: "brain" });
 
+        const systemPrompt = [
+          "You are an intent classifier for Nexora, an AI cold email outreach tool.",
+          "Classify the user's request into exactly one of: campaigns, analytics, inbox, followups, signals, draft, unknown.",
+          "Respond with ONLY the intent word.",
+          companyContext ? `\n${companyContext}` : "",
+        ].filter(Boolean).join("\n");
+
         const intentResp = await anthropic.messages.create({
           model: "claude-opus-4-7",
           max_tokens: 64,
-          system: `You are an intent classifier for Nexora, an AI cold email outreach tool.
-Classify the user's request into exactly one of: campaigns, analytics, inbox, followups, signals, draft, unknown.
-Respond with ONLY the intent word.`,
+          system: systemPrompt,
           messages: [{ role: "user", content: prompt }],
         });
 

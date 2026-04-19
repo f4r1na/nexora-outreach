@@ -116,6 +116,18 @@ function SettingsInner() {
   const [isRetraining, setIsRetraining] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
+  // Company Profile
+  const [cpLoading, setCpLoading]   = useState(true);
+  const [cpSaving, setCpSaving]     = useState(false);
+  const [cpSaved, setCpSaved]       = useState(false);
+  const [cpName, setCpName]         = useState("");
+  const [cpDesc, setCpDesc]         = useState("");
+  const [cpCustomer, setCpCustomer] = useState("");
+  const [cpValue, setCpValue]       = useState("");
+  const [cpTone, setCpTone]         = useState("Professional");
+  const [cpUrl, setCpUrl]           = useState("");
+  const [cpDiff, setCpDiff]         = useState("");
+
   const gmailStatus = searchParams.get("gmail");
 
   useEffect(() => {
@@ -138,6 +150,51 @@ function SettingsInner() {
       .then((d) => { setGhostStyle(d.style ?? null); setGhostLoading(false); })
       .catch(() => { setGhostStyle(null); setGhostLoading(false); });
   }, []);
+
+  useEffect(() => {
+    fetch("/api/company-profile")
+      .then((r) => r.json())
+      .then((d) => {
+        const p = d.profile;
+        if (p) {
+          setCpName(p.company_name ?? "");
+          setCpDesc(p.company_description ?? "");
+          setCpCustomer(p.ideal_customer ?? "");
+          setCpValue(p.value_proposition ?? "");
+          setCpTone(p.tone ?? "Professional");
+          setCpUrl(p.website_url ?? "");
+          setCpDiff(p.differentiators ?? "");
+        }
+        setCpLoading(false);
+      })
+      .catch(() => setCpLoading(false));
+  }, []);
+
+  async function handleSaveCompanyProfile() {
+    setCpSaving(true);
+    setCpSaved(false);
+    try {
+      const res = await fetch("/api/company-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          company_name:        cpName,
+          company_description: cpDesc,
+          ideal_customer:      cpCustomer,
+          value_proposition:   cpValue,
+          tone:                cpTone,
+          website_url:         cpUrl,
+          differentiators:     cpDiff,
+        }),
+      });
+      if (res.ok) {
+        setCpSaved(true);
+        setTimeout(() => setCpSaved(false), 3000);
+      }
+    } finally {
+      setCpSaving(false);
+    }
+  }
 
   async function handleUpgrade(plan: string) {
     setUpgrading(plan);
@@ -275,6 +332,151 @@ function SettingsInner() {
             </button>
           </div>
         )}
+
+        {/* ── Company Profile ── */}
+        <ScrollReveal>
+          <SectionLabel icon={<Building2 size={12} strokeWidth={1.75} />}>Company Profile</SectionLabel>
+          <SectionCard>
+            {cpSaved && (
+              <div style={{
+                display: "flex", alignItems: "center", gap: 8,
+                padding: "9px 12px", borderRadius: 7, marginBottom: 16,
+                backgroundColor: "rgba(74,222,128,0.06)",
+                border: "1px solid rgba(74,222,128,0.15)",
+              }}>
+                <Check size={12} color="#4ade80" strokeWidth={2} />
+                <span style={{ fontSize: 12, color: "#4ade80", fontFamily: "var(--font-outfit)" }}>
+                  Company profile saved.
+                </span>
+              </div>
+            )}
+
+            {cpLoading ? (
+              <div style={{ display: "flex", justifyContent: "center", padding: "20px 0" }}>
+                <Loader2 size={16} color="#333" style={{ animation: "spin 0.8s linear infinite" }} />
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {/* Company name + website */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: 11, color: "#555", fontFamily: "var(--font-outfit)", marginBottom: 5 }}>
+                      Company name
+                    </label>
+                    <input
+                      value={cpName}
+                      onChange={(e) => setCpName(e.target.value)}
+                      placeholder="Acme Inc."
+                      style={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 11, color: "#555", fontFamily: "var(--font-outfit)", marginBottom: 5 }}>
+                      Website URL
+                    </label>
+                    <input
+                      value={cpUrl}
+                      onChange={(e) => setCpUrl(e.target.value)}
+                      placeholder="https://acme.com"
+                      style={inputStyle}
+                    />
+                  </div>
+                </div>
+
+                {/* What you do */}
+                <div>
+                  <label style={{ display: "block", fontSize: 11, color: "#555", fontFamily: "var(--font-outfit)", marginBottom: 5 }}>
+                    What your company does
+                  </label>
+                  <textarea
+                    value={cpDesc}
+                    onChange={(e) => setCpDesc(e.target.value)}
+                    placeholder="2-3 sentences describing your product or service..."
+                    rows={2}
+                    style={{ ...inputStyle, resize: "vertical", lineHeight: 1.6 }}
+                  />
+                </div>
+
+                {/* Ideal customer */}
+                <div>
+                  <label style={{ display: "block", fontSize: 11, color: "#555", fontFamily: "var(--font-outfit)", marginBottom: 5 }}>
+                    Your ideal customer
+                  </label>
+                  <textarea
+                    value={cpCustomer}
+                    onChange={(e) => setCpCustomer(e.target.value)}
+                    placeholder="Who are you trying to reach? e.g. SaaS founders at seed-stage startups..."
+                    rows={2}
+                    style={{ ...inputStyle, resize: "vertical", lineHeight: 1.6 }}
+                  />
+                </div>
+
+                {/* Value proposition */}
+                <div>
+                  <label style={{ display: "block", fontSize: 11, color: "#555", fontFamily: "var(--font-outfit)", marginBottom: 5 }}>
+                    Your value proposition
+                  </label>
+                  <textarea
+                    value={cpValue}
+                    onChange={(e) => setCpValue(e.target.value)}
+                    placeholder="What problem do you solve? What outcome do customers get?"
+                    rows={2}
+                    style={{ ...inputStyle, resize: "vertical", lineHeight: 1.6 }}
+                  />
+                </div>
+
+                {/* Key differentiators */}
+                <div>
+                  <label style={{ display: "block", fontSize: 11, color: "#555", fontFamily: "var(--font-outfit)", marginBottom: 5 }}>
+                    Key differentiators
+                  </label>
+                  <textarea
+                    value={cpDiff}
+                    onChange={(e) => setCpDiff(e.target.value)}
+                    placeholder="What makes you different from competitors?"
+                    rows={2}
+                    style={{ ...inputStyle, resize: "vertical", lineHeight: 1.6 }}
+                  />
+                </div>
+
+                {/* Tone + save */}
+                <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: "block", fontSize: 11, color: "#555", fontFamily: "var(--font-outfit)", marginBottom: 5 }}>
+                      Tone of voice
+                    </label>
+                    <select
+                      value={cpTone}
+                      onChange={(e) => setCpTone(e.target.value)}
+                      style={{ ...inputStyle, cursor: "pointer" }}
+                    >
+                      {["Professional", "Friendly", "Direct", "Consultative", "Bold"].map((t) => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    onClick={handleSaveCompanyProfile}
+                    disabled={cpSaving}
+                    style={{
+                      display: "inline-flex", alignItems: "center", gap: 6,
+                      padding: "8px 18px",
+                      backgroundColor: "#FF5200", color: "#fff",
+                      borderRadius: 6, border: "none", fontSize: 12,
+                      fontFamily: "var(--font-outfit)", fontWeight: 500,
+                      cursor: cpSaving ? "not-allowed" : "pointer",
+                      opacity: cpSaving ? 0.6 : 1,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {cpSaving && <Loader2 size={11} style={{ animation: "spin 0.8s linear infinite" }} />}
+                    {cpSaving ? "Saving..." : "Save profile"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </SectionCard>
+        </ScrollReveal>
 
         {/* ── Subscription ── */}
         <ScrollReveal>

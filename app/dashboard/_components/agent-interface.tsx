@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import {
@@ -9,6 +9,17 @@ import {
 } from "lucide-react";
 
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+
+// ─── Rotating example prompts ─────────────────────────────────────────────────
+
+const EXAMPLE_PROMPTS = [
+  "Find 20 SaaS founders who raised a seed round this month and pitch them...",
+  "Send follow-ups to all leads who opened my email but never replied...",
+  "Research 15 e-commerce store owners in Austin and write personalized emails...",
+  "Find marketing directors at Series A startups and draft outreach about our agency...",
+  "Check my inbox for replies and draft responses to the interested leads...",
+  "Build a campaign targeting HR managers at companies with 50-200 employees...",
+];
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -56,25 +67,33 @@ const STATUS_COLOR: Record<string, string> = {
   cancelled:   "#f87171",
 };
 
-// ─── Quick-start suggestions ──────────────────────────────────────────────────
-
-const SUGGESTIONS = [
-  "Show me my campaigns",
-  "Check my inbox",
-  "View analytics",
-  "List follow-ups",
-];
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function AgentInterface({ email }: { email: string }) {
-  const [prompt, setPrompt]   = useState("");
-  const [focused, setFocused] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [steps, setSteps]     = useState<AgentStep[]>([]);
-  const [result, setResult]   = useState<AgentResult | null>(null);
-  const [error, setError]     = useState<string | null>(null);
-  const textareaRef           = useRef<HTMLTextAreaElement>(null);
+export default function AgentInterface({
+  email,
+  hasCompanyProfile,
+}: {
+  email: string;
+  hasCompanyProfile: boolean;
+}) {
+  const [prompt, setPrompt]         = useState("");
+  const [focused, setFocused]       = useState(false);
+  const [loading, setLoading]       = useState(false);
+  const [steps, setSteps]           = useState<AgentStep[]>([]);
+  const [result, setResult]         = useState<AgentResult | null>(null);
+  const [error, setError]           = useState<string | null>(null);
+  const [promptIdx, setPromptIdx]   = useState(0);
+  const [hoveredChip, setHoveredChip] = useState<string | null>(null);
+  const textareaRef                 = useRef<HTMLTextAreaElement>(null);
+
+  // Cycle example prompts every 3.5s, stop when focused or has input
+  useEffect(() => {
+    if (prompt || focused) return;
+    const id = setInterval(() => {
+      setPromptIdx((i) => (i + 1) % EXAMPLE_PROMPTS.length);
+    }, 3500);
+    return () => clearInterval(id);
+  }, [prompt, focused]);
 
   const submit = async (text?: string) => {
     const q = (text ?? prompt).trim();
@@ -147,6 +166,7 @@ export default function AgentInterface({ email }: { email: string }) {
   };
 
   const hasOutput = steps.length > 0 || result !== null || error !== null;
+  const showPlaceholder = !prompt && !loading;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "calc(100vh - 60px)", paddingBottom: 80 }}>
@@ -160,13 +180,19 @@ export default function AgentInterface({ email }: { email: string }) {
         justifyContent: "center",
         padding: "48px 32px 36px",
         borderBottom: "1px solid rgba(255,255,255,0.06)",
+        position: "relative",
+        overflow: "hidden",
+        // Dot grid background
+        backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.032) 1px, transparent 1px)",
+        backgroundSize: "28px 28px",
       }}>
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.38, ease: EASE_OUT }}
-          style={{ width: "100%", maxWidth: 680, textAlign: "center" }}
+          style={{ width: "100%", maxWidth: 680, textAlign: "center", position: "relative", zIndex: 1 }}
         >
+          {/* Username label */}
           <p style={{
             fontSize: 11,
             fontWeight: 500,
@@ -179,26 +205,80 @@ export default function AgentInterface({ email }: { email: string }) {
             {email.split("@")[0]}
           </p>
 
+          {/* Headline */}
           <h1 style={{
-            fontSize: "clamp(22px, 3vw, 30px)",
-            fontWeight: 500,
+            fontSize: "clamp(36px, 5vw, 64px)",
+            fontWeight: 600,
             fontFamily: "var(--font-syne)",
             color: "#fff",
-            letterSpacing: "-0.03em",
-            lineHeight: 1.2,
-            marginBottom: 32,
+            letterSpacing: "-0.04em",
+            lineHeight: 1.1,
+            marginBottom: 24,
           }}>
             What can I help you with?
           </h1>
 
-          {/* Prompt textarea */}
+          {/* Company profile badge */}
+          <div style={{ marginBottom: 24 }}>
+            {hasCompanyProfile ? (
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#4ade80", flexShrink: 0 }} />
+                <span style={{ fontSize: 11, color: "#4ade80", fontFamily: "var(--font-outfit)", fontWeight: 500 }}>
+                  Company profile active
+                </span>
+              </div>
+            ) : (
+              <Link href="/dashboard/settings" style={{
+                display: "inline-flex", alignItems: "center", gap: 5,
+                fontSize: 11, color: "rgba(255,82,0,0.65)", fontFamily: "var(--font-outfit)",
+                textDecoration: "none",
+              }}>
+                Set up your company profile
+              </Link>
+            )}
+          </div>
+
+          {/* Prompt input */}
           <div style={{
             position: "relative",
             backgroundColor: "#0e0e0e",
             border: `1px solid ${focused ? "rgba(255,82,0,0.35)" : "rgba(255,255,255,0.08)"}`,
             borderRadius: 10,
-            transition: "border-color 200ms ease",
+            transition: "border-color 200ms ease, box-shadow 200ms ease",
+            boxShadow: focused
+              ? "0 0 0 1px rgba(255,82,0,0.12), 0 0 32px rgba(255,82,0,0.07)"
+              : "none",
           }}>
+            {/* Animated placeholder */}
+            {showPlaceholder && (
+              <div style={{
+                position: "absolute",
+                top: 16, left: 18, right: 56,
+                pointerEvents: "none",
+                userSelect: "none",
+                zIndex: 1,
+              }}>
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={promptIdx}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: focused ? 0.18 : 0.32 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    transition={{ duration: 0.38, ease: EASE_OUT }}
+                    style={{
+                      display: "block",
+                      color: "#888",
+                      fontFamily: "var(--font-outfit)",
+                      fontSize: 14,
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    {EXAMPLE_PROMPTS[promptIdx]}
+                  </motion.span>
+                </AnimatePresence>
+              </div>
+            )}
+
             <textarea
               ref={textareaRef}
               value={prompt}
@@ -206,7 +286,6 @@ export default function AgentInterface({ email }: { email: string }) {
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
               onKeyDown={handleKey}
-              placeholder="e.g. Show me my campaigns, Check my inbox, Draft a campaign for SaaS founders..."
               rows={3}
               style={{
                 width: "100%",
@@ -220,8 +299,11 @@ export default function AgentInterface({ email }: { email: string }) {
                 lineHeight: 1.6,
                 resize: "none",
                 boxSizing: "border-box",
+                position: "relative",
+                zIndex: 2,
               }}
             />
+
             <button
               onClick={() => submit()}
               disabled={!prompt.trim() || loading}
@@ -229,6 +311,7 @@ export default function AgentInterface({ email }: { email: string }) {
                 position: "absolute",
                 right: 12,
                 bottom: 12,
+                zIndex: 3,
                 width: 32,
                 height: 32,
                 borderRadius: 7,
@@ -238,11 +321,13 @@ export default function AgentInterface({ email }: { email: string }) {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                transition: "background-color 150ms ease",
+                transition: "background-color 150ms ease, transform 100ms ease-out",
               }}
+              onMouseDown={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(0.97)"; }}
+              onMouseUp={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)"; }}
             >
               {loading
-                ? <Loader2 size={14} color="#555" className="spin" />
+                ? <Loader2 size={14} color="#555" className="nexora-spin" />
                 : <ArrowUp size={14} color={prompt.trim() ? "#fff" : "#333"} />
               }
             </button>
@@ -258,19 +343,23 @@ export default function AgentInterface({ email }: { email: string }) {
                 transition={{ duration: 0.2 }}
                 style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center", marginTop: 16 }}
               >
-                {SUGGESTIONS.map((s) => (
+                {["Show my campaigns", "Check inbox", "View analytics", "List follow-ups"].map((s) => (
                   <button
                     key={s}
                     onClick={() => submit(s)}
+                    onMouseEnter={() => setHoveredChip(s)}
+                    onMouseLeave={() => setHoveredChip(null)}
                     style={{
                       padding: "5px 12px",
                       backgroundColor: "transparent",
-                      border: "1px solid rgba(255,255,255,0.08)",
+                      border: `1px solid ${hoveredChip === s ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.08)"}`,
                       borderRadius: 6,
-                      color: "#555",
+                      color: hoveredChip === s ? "#888" : "#555",
                       fontSize: 12,
                       fontFamily: "var(--font-outfit)",
                       cursor: "pointer",
+                      transform: hoveredChip === s ? "translateY(-2px)" : "translateY(0)",
+                      transition: "transform 150ms ease-out, border-color 150ms ease, color 150ms ease",
                     }}
                   >
                     {s}
@@ -499,7 +588,7 @@ export default function AgentInterface({ email }: { email: string }) {
       </div>
 
       <style>{`
-        .spin { animation: nexora-spin 1s linear infinite; }
+        .nexora-spin { animation: nexora-spin 1s linear infinite; }
         @keyframes nexora-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
     </div>

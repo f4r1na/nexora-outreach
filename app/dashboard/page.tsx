@@ -7,5 +7,13 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  return <AgentInterface email={user.email!} />;
+  const { data: profile } = await supabase
+    .from("company_profiles")
+    .select("id")
+    .eq("user_id", user.id)
+    .single();
+
+  const hasCompanyProfile = !!profile?.id;
+
+  return <AgentInterface email={user.email!} hasCompanyProfile={hasCompanyProfile} />;
 }
