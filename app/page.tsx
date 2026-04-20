@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import LandingPrompt from "./_landing/prompt";
 import MeshBackground from "./_components/mesh-bg";
+import { NexoraLogo, NexoraIcon } from "@/components/ui/nexora-logo";
 
 export const metadata = {
   title: "Nexora Outreach — AI Cold Email at Scale",
@@ -53,19 +54,8 @@ export default async function Home() {
         WebkitBackdropFilter: "blur(20px)",
         borderBottom: "1px solid rgba(255,255,255,0.08)",
       }}>
-        <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-          <div style={{
-            width: 30, height: 30, borderRadius: 8,
-            backgroundColor: "#FF5200",
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <svg width="15" height="15" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <path d="M2 12V2h2.5l5.5 7V2H12v10h-2.5L4 5v7H2z" fill="white" />
-            </svg>
-          </div>
-          <span style={{ fontSize: 15, fontWeight: 600, color: "#fff", fontFamily: "var(--font-space-grotesk)", letterSpacing: "-0.02em" }}>
-            Nexora
-          </span>
+        <Link href="/" style={{ textDecoration: "none" }}>
+          <NexoraLogo size={26} wordmarkSize={15} />
         </Link>
 
         <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
@@ -502,11 +492,7 @@ export default async function Home() {
         position: "relative", zIndex: 1,
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: "#FF5200", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <svg width="11" height="11" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <path d="M2 12V2h2.5l5.5 7V2H12v10h-2.5L4 5v7H2z" fill="white" />
-            </svg>
-          </div>
+          <NexoraIcon size={20} />
           <span style={{ fontSize: 12.5, color: "rgba(255,255,255,0.35)" }}>
             © {new Date().getFullYear()} Nexora Studios
           </span>

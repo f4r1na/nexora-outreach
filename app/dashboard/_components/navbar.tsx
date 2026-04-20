@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { logout } from "@/app/actions/auth";
 import { Settings, LogOut, Sparkles } from "lucide-react";
+import { NexoraLogo } from "@/components/ui/nexora-logo";
 
 interface NavbarProps {
   email: string;
@@ -45,20 +46,8 @@ export default function Navbar({ email, plan }: NavbarProps) {
       }}
     >
       {/* Logo */}
-      <Link href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 9, textDecoration: "none" }}>
-        <div style={{
-          width: 28, height: 28,
-          backgroundColor: "#FF5200",
-          borderRadius: 8,
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-            <path d="M2 12V2h2.5l5.5 7V2H12v10h-2.5L4 5v7H2z" fill="white" />
-          </svg>
-        </div>
-        <span style={{ fontSize: 15, fontWeight: 600, color: "#fff", fontFamily: "var(--font-space-grotesk)", letterSpacing: "-0.02em" }}>
-          Nexora
-        </span>
+      <Link href="/dashboard" style={{ textDecoration: "none" }}>
+        <NexoraLogo size={24} wordmarkSize={15} />
       </Link>
 
       {/* Nav links */}
