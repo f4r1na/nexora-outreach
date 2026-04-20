@@ -9,6 +9,7 @@ import {
   Rocket, Target, Users, Building2, Briefcase, Store,
 } from "lucide-react";
 import MeshBackground from "@/app/_components/mesh-bg";
+import WelcomeCard from "./welcome-card";
 
 const EASE = [0.4, 0, 0.2, 1] as const;
 const EASE_OUT = [0.23, 1, 0.32, 1] as const;
@@ -199,6 +200,8 @@ export default function AgentInterface({
         <MeshBackground />
 
         <div style={{ width: "100%", maxWidth: 780, textAlign: "center", position: "relative", zIndex: 2 }}>
+
+          <WelcomeCard hasCompanyProfile={hasCompanyProfile} />
 
           {/* Username pulse */}
           <motion.p

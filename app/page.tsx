@@ -2,6 +2,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import LandingPrompt from "./_landing/prompt";
+import LandingDemo from "./_landing/demo";
+import FAQ from "./_landing/faq";
+import { TrustBar, Testimonials } from "./_landing/trust";
 import MeshBackground from "./_components/mesh-bg";
 import { NexoraLogo, NexoraIcon } from "@/components/ui/nexora-logo";
 
@@ -140,6 +143,12 @@ export default async function Home() {
         <div style={{ maxWidth: 760, margin: "0 auto" }}>
           <LandingPrompt />
         </div>
+
+        {/* Try it free (demo) — button inline, panel expands full-width below */}
+        <LandingDemo />
+
+        {/* Trust bar */}
+        <TrustBar />
 
         {/* Inline social proof */}
         <div style={{
@@ -440,6 +449,12 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      {/* ─── TESTIMONIALS + TRUSTED BY ──────────────────────────────── */}
+      <Testimonials />
+
+      {/* ─── FAQ ────────────────────────────────────────────────────── */}
+      <FAQ />
 
       {/* ─── FINAL CTA ──────────────────────────────────────────────── */}
       <section style={{
