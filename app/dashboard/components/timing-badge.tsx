@@ -13,66 +13,39 @@ type TimingResult = {
   color: string;
 };
 
-const URGENCY_DAYS: Record<string, number> = {
-  job_change: 3,
-  hiring: 2,
-  funding: 7,
-  tech_change: 14,
-  post_activity: 3,
-};
-
-function parseRelativeDays(dateStr: string): number {
-  const lower = (dateStr ?? "").toLowerCase();
-  const match = lower.match(/(\d+)\s*(day|week|month)/);
-  if (!match) return 0;
-  const num = parseInt(match[1]);
-  const unit = match[2];
-  if (unit === "day") return num;
-  if (unit === "week") return num * 7;
-  if (unit === "month") return num * 30;
-  return 0;
-}
-
 function computeTiming(signalData: SignalData | null | undefined): TimingResult {
-  if (!signalData?.signals?.length) {
+  const signals = signalData?.signals ?? [];
+  if (!signals.length) {
     return { status: "none", label: "No urgent signals", detail: "No time-sensitive triggers detected.", color: "#484848" };
   }
 
-  let bestSignal: SignalEntry | null = null;
-  let bestDaysLeft = Infinity;
-  let bestType = "";
-
-  for (const sig of signalData.signals) {
-    const type = sig.type in URGENCY_DAYS ? sig.type : "post_activity";
-    const urgencyDays = URGENCY_DAYS[type];
-    const ageDays = parseRelativeDays(sig.date);
-    const daysLeft = urgencyDays - ageDays;
-    if (daysLeft > 0 && daysLeft < bestDaysLeft) {
-      bestDaysLeft = daysLeft;
-      bestSignal = sig;
-      bestType = type;
-    }
-  }
-
-  if (!bestSignal) {
-    return { status: "none", label: "No urgent signals", detail: "Signal window has passed.", color: "#484848" };
-  }
-
-  const typeLabel = bestType.replace(/_/g, " ");
-
-  if (bestDaysLeft <= 2) {
+  const urgentTypes = ["hiring", "funding", "job_change"];
+  const urgent = signals.find((s) => urgentTypes.some((t) => (s.type ?? "").toLowerCase().includes(t)));
+  if (urgent) {
+    const typeLabel = (urgent.type ?? "signal").replace(/_/g, " ");
     return {
       status: "urgent",
-      label: `Send now - ${typeLabel} detected ${bestSignal.date}`,
-      detail: bestSignal.text,
+      label: `Send now - ${typeLabel} detected`,
+      detail: urgent.text,
       color: "#4ade80",
     };
   }
 
+  const high = signals.find((s) => (s.strength ?? "").toLowerCase() === "high");
+  if (high) {
+    return {
+      status: "soon",
+      label: "Active signals detected",
+      detail: high.text,
+      color: "#F59E0B",
+    };
+  }
+
+  const first = signals[0];
   return {
     status: "soon",
-    label: `Send this week - ${typeLabel} signal`,
-    detail: bestSignal.text,
+    label: "Recent activity detected",
+    detail: first.text,
     color: "#F59E0B",
   };
 }
