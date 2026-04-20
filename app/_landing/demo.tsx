@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   ArrowUp, Loader2, Check, Search, Users, Brain, Mail, Sparkles,
-  Building2, Briefcase, Store, Target, Rocket,
+  Building2, Briefcase, Store, Target, Rocket, Flame, Gauge, Wand2, Snowflake,
 } from "lucide-react";
 
 const EASE = [0.4, 0, 0.2, 1] as const;
@@ -13,18 +13,21 @@ const EASE = [0.4, 0, 0.2, 1] as const;
 type DemoStep = { msg: string; delay: number; icon: string; hl?: boolean };
 
 const DEMO_STEPS: DemoStep[] = [
-  { msg: "Parsing your request...",            delay:  800, icon: "brain"  },
-  { msg: "Identifying target audience...",     delay: 1200, icon: "target" },
-  { msg: "Searching for matching leads...",    delay: 1500, icon: "search" },
-  { msg: "Found 23 potential leads",           delay:    0, icon: "users",  hl: true },
-  { msg: "Researching top prospects...",       delay: 2000, icon: "brain"  },
-  { msg: "Writing personalized emails...",     delay: 1800, icon: "mail"   },
-  { msg: "Preview ready — 23 emails drafted",  delay:    0, icon: "check",  hl: true },
-  { msg: "Done",                               delay:    0, icon: "check"  },
+  { msg: "Parsing your request...",                      delay:  800, icon: "brain"  },
+  { msg: "Identifying target audience...",               delay: 1200, icon: "target" },
+  { msg: "Searching for matching leads...",              delay: 1500, icon: "search" },
+  { msg: "Found 23 potential leads",                     delay:    0, icon: "users",  hl: true },
+  { msg: "Scoring 23 leads for fit...",                  delay: 1400, icon: "gauge"  },
+  { msg: "Finding personalization signals...",           delay: 1600, icon: "wand"   },
+  { msg: "8 hot leads, 12 warm, 3 cold identified",      delay:    0, icon: "flame",  hl: true },
+  { msg: "Personalizing emails for top leads...",        delay: 1800, icon: "mail"   },
+  { msg: "Preview ready — 23 emails drafted",            delay:    0, icon: "check",  hl: true },
+  { msg: "Done",                                         delay:    0, icon: "check"  },
 ];
 
 const ICON_MAP: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
   brain: Brain, target: Target, search: Search, users: Users, mail: Mail, check: Check,
+  gauge: Gauge, wand: Wand2, flame: Flame,
 };
 
 type DemoTemplate = { title: string; prompt: string; icon: React.ComponentType<{ size?: number; color?: string }> };
@@ -35,26 +38,53 @@ const DEMO_TEMPLATES: DemoTemplate[] = [
   { title: "Enterprise ICs",   prompt: "Connect with senior engineers at enterprise SaaS companies hiring for platform roles.", icon: Building2 },
 ];
 
-const FAKE_LEADS = [
+type FakeLead = {
+  name: string; initials: string; company: string; role: string;
+  preview: string; color: string;
+  score: number;
+  hook: string;
+  personalized: boolean;
+  source: string;
+};
+
+const FAKE_LEADS: FakeLead[] = [
   {
     name: "John Smith",    initials: "JS",
     company: "Acme SaaS",  role: "CEO",
     preview: "Hi John, saw that Acme just raised a seed round — congrats. I noticed your team is hiring for growth roles...",
     color: "#FF5200",
+    score: 87,
+    hook: "Saw Acme just closed a $4M seed round — congrats.",
+    personalized: true,
+    source: "Crunchbase funding",
   },
   {
     name: "Sarah Chen",    initials: "SC",
     company: "Flowlane",   role: "Head of Growth",
     preview: "Hi Sarah, Flowlane's recent expansion into APAC caught my eye. Most teams at your stage struggle with...",
     color: "#F59E0B",
+    score: 72,
+    hook: "Flowlane's APAC expansion last month caught my eye.",
+    personalized: true,
+    source: "Company blog",
   },
   {
     name: "Marcus Patel",  initials: "MP",
     company: "Devhub",     role: "Founder",
     preview: "Hi Marcus, love what Devhub is shipping in dev tooling. Your Product Hunt launch last week was clean...",
     color: "#FF5200",
+    score: 44,
+    hook: "Quick question about what you're building at Devhub.",
+    personalized: false,
+    source: "none",
   },
 ];
+
+function tierFor(score: number): { label: string; color: string; Icon: React.ComponentType<{ size?: number; color?: string }> } {
+  if (score >= 80) return { label: "Hot",  color: "#FF5200", Icon: Flame };
+  if (score >= 50) return { label: "Warm", color: "#F59E0B", Icon: Gauge };
+  return { label: "Cold", color: "#8A8A98", Icon: Snowflake };
+}
 
 export default function LandingDemo() {
   const reduced = useReducedMotion();
@@ -64,6 +94,7 @@ export default function LandingDemo() {
   const [running, setRunning] = useState(false);
   const [steps, setSteps] = useState<{ msg: string; icon: string; hl?: boolean }[]>([]);
   const [showResults, setShowResults] = useState(false);
+  const [filter, setFilter] = useState<"all" | "hot" | "warm" | "cold">("all");
   const containerRef = useRef<HTMLDivElement>(null);
   const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -294,53 +325,156 @@ export default function LandingDemo() {
                     transition={{ duration: 0.5, ease: EASE }}
                     style={{ marginTop: 28 }}
                   >
-                    <p style={{
-                      fontSize: 11, fontWeight: 500, letterSpacing: "0.1em",
-                      color: "#F59E0B", textTransform: "uppercase", marginBottom: 14,
-                    }}>
-                      Preview — 3 of 23 drafted emails
-                    </p>
+                    {(() => {
+                      const sorted = [...FAKE_LEADS].sort((a, b) => b.score - a.score);
+                      const counts = {
+                        hot:  sorted.filter((l) => l.score >= 80).length,
+                        warm: sorted.filter((l) => l.score >= 50 && l.score < 80).length,
+                        cold: sorted.filter((l) => l.score < 50).length,
+                      };
+                      const visible = sorted.filter((l) => {
+                        if (filter === "all")  return true;
+                        if (filter === "hot")  return l.score >= 80;
+                        if (filter === "warm") return l.score >= 50 && l.score < 80;
+                        return l.score < 50;
+                      });
 
-                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                      {FAKE_LEADS.map((l, i) => (
-                        <motion.div
-                          key={l.name}
-                          initial={reduced ? false : { opacity: 0, y: 12 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ duration: 0.4, ease: EASE, delay: i * 0.1 }}
-                          className="glass"
-                          style={{
-                            padding: "16px 18px",
-                            borderRadius: 12,
-                            display: "flex", gap: 14, alignItems: "flex-start",
-                          }}
-                        >
+                      return (
+                        <>
                           <div style={{
-                            width: 38, height: 38, borderRadius: 10,
-                            backgroundColor: `${l.color}18`,
-                            border: `1px solid ${l.color}40`,
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            fontSize: 12, fontWeight: 600, color: l.color, flexShrink: 0,
-                            fontFamily: "var(--font-space-grotesk)",
+                            display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
+                            marginBottom: 16,
                           }}>
-                            {l.initials}
+                            <Flame size={14} color="#FF5200" />
+                            <span style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", fontWeight: 500 }}>
+                              {counts.hot} hot, {counts.warm} warm, {counts.cold} cold
+                            </span>
+                            <span style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>
+                              — sending to hot and warm first
+                            </span>
                           </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginBottom: 4 }}>
-                              <span style={{ fontSize: 14, fontWeight: 600, color: "#fff", fontFamily: "var(--font-space-grotesk)" }}>
-                                {l.name}
-                              </span>
-                              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.45)" }}>
-                                {l.role} · {l.company}
-                              </span>
-                            </div>
-                            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.65)", lineHeight: 1.55 }}>
-                              {l.preview}
-                            </p>
+
+                          <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
+                            {([
+                              ["all",  `All (${sorted.length})`],
+                              ["hot",  `Hot (${counts.hot})`],
+                              ["warm", `Warm (${counts.warm})`],
+                              ["cold", `Cold (${counts.cold})`],
+                            ] as const).map(([k, label]) => {
+                              const active = filter === k;
+                              return (
+                                <button
+                                  key={k}
+                                  type="button"
+                                  onClick={() => setFilter(k)}
+                                  className="nx-press"
+                                  style={{
+                                    padding: "6px 12px",
+                                    borderRadius: 999,
+                                    fontSize: 12, fontWeight: 500,
+                                    fontFamily: "var(--font-outfit)",
+                                    cursor: "pointer",
+                                    backgroundColor: active ? "rgba(255,82,0,0.14)" : "rgba(255,255,255,0.03)",
+                                    border: `1px solid ${active ? "rgba(255,82,0,0.35)" : "rgba(255,255,255,0.08)"}`,
+                                    color: active ? "#FF5200" : "rgba(255,255,255,0.6)",
+                                    transition: "all 180ms ease",
+                                  }}
+                                >
+                                  {label}
+                                </button>
+                              );
+                            })}
                           </div>
-                        </motion.div>
-                      ))}
-                    </div>
+
+                          <p style={{
+                            fontSize: 11, fontWeight: 500, letterSpacing: "0.1em",
+                            color: "#F59E0B", textTransform: "uppercase", marginBottom: 14,
+                          }}>
+                            Preview — {visible.length} of 23 drafted emails
+                          </p>
+
+                          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                            {visible.map((l, i) => {
+                              const t = tierFor(l.score);
+                              return (
+                                <motion.div
+                                  key={l.name}
+                                  initial={reduced ? false : { opacity: 0, y: 12 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ duration: 0.4, ease: EASE, delay: i * 0.08 }}
+                                  className="glass"
+                                  style={{
+                                    padding: "16px 18px",
+                                    borderRadius: 12,
+                                    display: "flex", gap: 14, alignItems: "flex-start",
+                                  }}
+                                >
+                                  <div style={{
+                                    width: 38, height: 38, borderRadius: 10,
+                                    backgroundColor: `${l.color}18`,
+                                    border: `1px solid ${l.color}40`,
+                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                    fontSize: 12, fontWeight: 600, color: l.color, flexShrink: 0,
+                                    fontFamily: "var(--font-space-grotesk)",
+                                  }}>
+                                    {l.initials}
+                                  </div>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+                                      <span style={{ fontSize: 14, fontWeight: 600, color: "#fff", fontFamily: "var(--font-space-grotesk)" }}>
+                                        {l.name}
+                                      </span>
+                                      <span style={{ fontSize: 12, color: "rgba(255,255,255,0.45)" }}>
+                                        {l.role} · {l.company}
+                                      </span>
+
+                                      <span style={{
+                                        display: "inline-flex", alignItems: "center", gap: 4,
+                                        padding: "2px 8px", borderRadius: 999,
+                                        fontSize: 10, fontWeight: 600, letterSpacing: "0.04em",
+                                        textTransform: "uppercase",
+                                        backgroundColor: `${t.color}15`,
+                                        border: `1px solid ${t.color}38`,
+                                        color: t.color,
+                                      }}>
+                                        <t.Icon size={10} color={t.color} />
+                                        {t.label} · {l.score}
+                                      </span>
+
+                                      <span style={{
+                                        display: "inline-flex", alignItems: "center", gap: 4,
+                                        padding: "2px 8px", borderRadius: 999,
+                                        fontSize: 10, fontWeight: 500, letterSpacing: "0.04em",
+                                        textTransform: "uppercase",
+                                        backgroundColor: l.personalized ? "rgba(74,222,128,0.08)" : "rgba(255,255,255,0.04)",
+                                        border: `1px solid ${l.personalized ? "rgba(74,222,128,0.22)" : "rgba(255,255,255,0.08)"}`,
+                                        color: l.personalized ? "#4ade80" : "rgba(255,255,255,0.45)",
+                                      }}>
+                                        <Wand2 size={10} color={l.personalized ? "#4ade80" : "rgba(255,255,255,0.45)"} />
+                                        {l.personalized ? "Personalized" : "Generic opening"}
+                                      </span>
+                                    </div>
+
+                                    <p style={{
+                                      fontSize: 12.5,
+                                      color: l.personalized ? "#4ade80" : "rgba(255,255,255,0.45)",
+                                      marginBottom: 6,
+                                      lineHeight: 1.5,
+                                      fontStyle: "italic",
+                                    }}>
+                                      {l.hook}
+                                    </p>
+                                    <p style={{ fontSize: 13, color: "rgba(255,255,255,0.65)", lineHeight: 1.55 }}>
+                                      {l.preview}
+                                    </p>
+                                  </div>
+                                </motion.div>
+                              );
+                            })}
+                          </div>
+                        </>
+                      );
+                    })()}
 
                     <motion.div
                       initial={reduced ? false : { opacity: 0, y: 10 }}
