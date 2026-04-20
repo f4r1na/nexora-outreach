@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import LandingPrompt from "./_landing/prompt";
+import MeshBackground from "./_components/mesh-bg";
 
 export const metadata = {
   title: "Nexora Outreach — AI Cold Email at Scale",
@@ -39,19 +40,7 @@ export default async function Home() {
       overflowX: "hidden",
       position: "relative",
     }}>
-      {/* Ambient meshes */}
-      <div style={{
-        position: "absolute", top: -100, left: "-10%",
-        width: 800, height: 800,
-        background: "radial-gradient(circle, rgba(255,82,0,0.12) 0%, transparent 60%)",
-        pointerEvents: "none", zIndex: 0,
-      }} />
-      <div style={{
-        position: "absolute", top: 400, right: "-10%",
-        width: 700, height: 700,
-        background: "radial-gradient(circle, rgba(245,158,11,0.08) 0%, transparent 60%)",
-        pointerEvents: "none", zIndex: 0,
-      }} />
+      <MeshBackground />
 
       {/* ─── NAVBAR ─────────────────────────────────────────────────── */}
       <nav style={{
@@ -59,8 +48,9 @@ export default async function Home() {
         height: 64,
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "0 clamp(20px, 4vw, 56px)",
-        backgroundColor: "rgba(8,8,16,0.72)",
-        backdropFilter: "blur(16px)",
+        backgroundColor: "rgba(8,8,16,0.8)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
         borderBottom: "1px solid rgba(255,255,255,0.08)",
       }}>
         <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
@@ -142,7 +132,7 @@ export default async function Home() {
           letterSpacing: "-0.04em",
         }}>
           <span style={{ display: "block", color: "#fff" }}>Cold outreach that</span>
-          <span style={{ display: "block", color: "#FF5200", fontStyle: "italic", fontWeight: 500 }}>
+          <span className="headline-gradient" style={{ display: "block", fontStyle: "italic", fontWeight: 500 }}>
             actually works.
           </span>
         </h1>

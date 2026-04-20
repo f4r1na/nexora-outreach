@@ -37,8 +37,9 @@ export default function Navbar({ email, plan }: NavbarProps) {
         alignItems: "center",
         justifyContent: "space-between",
         padding: "0 28px",
-        backgroundColor: "rgba(8,8,16,0.72)",
-        backdropFilter: "blur(16px)",
+        backgroundColor: "rgba(8,8,16,0.8)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
         borderBottom: "1px solid rgba(255,255,255,0.08)",
         zIndex: 50,
       }}
