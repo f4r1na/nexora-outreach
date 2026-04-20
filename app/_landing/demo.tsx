@@ -1,182 +1,528 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
+import {
+  ArrowUp, Loader2, Check, Search, Users, Brain, Mail, Sparkles,
+  Building2, Briefcase, Store, Target, Rocket, Flame, Gauge, Wand2, Snowflake,
+} from "lucide-react";
 
-const LEADS = [
-  { name: "Sarah Chen", company: "Acme Corp", role: "VP Sales", note: "just closed Series B" },
-  { name: "Marcus Lee", company: "Finova", role: "Head of Growth", note: "hiring 50 SDRs this quarter" },
-  { name: "Priya Kapoor", company: "Orion AI", role: "CEO", note: "launched product last week" },
+const EASE = [0.4, 0, 0.2, 1] as const;
+
+type DemoStep = { msg: string; delay: number; icon: string; hl?: boolean };
+
+const DEMO_STEPS: DemoStep[] = [
+  { msg: "Parsing your request...",                      delay:  800, icon: "brain"  },
+  { msg: "Identifying target audience...",               delay: 1200, icon: "target" },
+  { msg: "Searching for matching leads...",              delay: 1500, icon: "search" },
+  { msg: "Found 23 potential leads",                     delay:    0, icon: "users",  hl: true },
+  { msg: "Scoring 23 leads for fit...",                  delay: 1400, icon: "gauge"  },
+  { msg: "Finding personalization signals...",           delay: 1600, icon: "wand"   },
+  { msg: "8 hot leads, 12 warm, 3 cold identified",      delay:    0, icon: "flame",  hl: true },
+  { msg: "Personalizing emails for top leads...",        delay: 1800, icon: "mail"   },
+  { msg: "Preview ready — 23 emails drafted",            delay:    0, icon: "check",  hl: true },
+  { msg: "Done",                                         delay:    0, icon: "check"  },
 ];
 
-const EMAILS = [
+const ICON_MAP: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
+  brain: Brain, target: Target, search: Search, users: Users, mail: Mail, check: Check,
+  gauge: Gauge, wand: Wand2, flame: Flame,
+};
+
+type DemoTemplate = { title: string; prompt: string; icon: React.ComponentType<{ size?: number; color?: string }> };
+const DEMO_TEMPLATES: DemoTemplate[] = [
+  { title: "SaaS founders",    prompt: "Find recently funded SaaS founders in the US and pitch our analytics product.", icon: Rocket },
+  { title: "Agency outreach",  prompt: "Reach out to growth leaders at Series A startups and offer our SEO service.", icon: Briefcase },
+  { title: "E-commerce DTC",   prompt: "Target DTC e-commerce founders struggling with CAC and introduce our retention tool.", icon: Store },
+  { title: "Enterprise ICs",   prompt: "Connect with senior engineers at enterprise SaaS companies hiring for platform roles.", icon: Building2 },
+];
+
+type FakeLead = {
+  name: string; initials: string; company: string; role: string;
+  preview: string; color: string;
+  score: number;
+  hook: string;
+  personalized: boolean;
+  source: string;
+};
+
+const FAKE_LEADS: FakeLead[] = [
   {
-    subject: "Congrats on the Series B, Sarah — quick idea",
-    body: "Closing a Series B is a massive moment — and exactly when outreach volume needs to scale. Nexora helps Acme's sales team write 100 personalized cold emails in under 60 seconds. Worth a quick call?",
+    name: "John Smith",    initials: "JS",
+    company: "Acme SaaS",  role: "CEO",
+    preview: "Hi John, saw that Acme just raised a seed round — congrats. I noticed your team is hiring for growth roles...",
+    color: "#FF5200",
+    score: 87,
+    hook: "Saw Acme just closed a $4M seed round — congrats.",
+    personalized: true,
+    source: "Crunchbase funding",
   },
   {
-    subject: "Scaling 50 SDRs? Here's how to arm them instantly",
-    body: "Hiring 50 SDRs this quarter means you need personalized outreach at serious volume, fast. Nexora generates hyper-personalized emails for every lead in your pipeline — in seconds. Let's talk.",
+    name: "Sarah Chen",    initials: "SC",
+    company: "Flowlane",   role: "Head of Growth",
+    preview: "Hi Sarah, Flowlane's recent expansion into APAC caught my eye. Most teams at your stage struggle with...",
+    color: "#F59E0B",
+    score: 72,
+    hook: "Flowlane's APAC expansion last month caught my eye.",
+    personalized: true,
+    source: "Company blog",
   },
   {
-    subject: "Loved what Orion AI shipped last week, Priya",
-    body: "Launching a new product is the perfect moment to flood your pipeline with personalized outreach. Nexora writes 100 cold emails in 60 seconds — each one referencing what makes each prospect tick.",
+    name: "Marcus Patel",  initials: "MP",
+    company: "Devhub",     role: "Founder",
+    preview: "Hi Marcus, love what Devhub is shipping in dev tooling. Your Product Hunt launch last week was clean...",
+    color: "#FF5200",
+    score: 44,
+    hook: "Quick question about what you're building at Devhub.",
+    personalized: false,
+    source: "none",
   },
 ];
+
+function tierFor(score: number): { label: string; color: string; Icon: React.ComponentType<{ size?: number; color?: string }> } {
+  if (score >= 80) return { label: "Hot",  color: "#FF5200", Icon: Flame };
+  if (score >= 50) return { label: "Warm", color: "#F59E0B", Icon: Gauge };
+  return { label: "Cold", color: "#8A8A98", Icon: Snowflake };
+}
 
 export default function LandingDemo() {
-  const [active, setActive] = useState(0);
-  const [progress, setProgress] = useState(0);
-  const [done, setDone] = useState(false);
+  const reduced = useReducedMotion();
+  const [open, setOpen] = useState(false);
+  const [prompt, setPrompt] = useState("");
+  const [focused, setFocused] = useState(false);
+  const [running, setRunning] = useState(false);
+  const [steps, setSteps] = useState<{ msg: string; icon: string; hl?: boolean }[]>([]);
+  const [showResults, setShowResults] = useState(false);
+  const [filter, setFilter] = useState<"all" | "hot" | "warm" | "cold">("all");
+  const containerRef = useRef<HTMLDivElement>(null);
+  const timeoutsRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  // Auto-cycle leads
   useEffect(() => {
-    const cycle = setInterval(() => {
-      setActive((i) => (i + 1) % LEADS.length);
-    }, 4500);
-    return () => clearInterval(cycle);
+    return () => { timeoutsRef.current.forEach(clearTimeout); };
   }, []);
 
-  // Animate generation bar whenever lead changes
-  useEffect(() => {
-    setDone(false);
-    setProgress(0);
-    let p = 0;
-    const tick = setInterval(() => {
-      p += 6 + Math.random() * 6;
-      if (p >= 100) {
-        clearInterval(tick);
-        setProgress(100);
-        setDone(true);
-      } else {
-        setProgress(Math.round(p));
-      }
-    }, 55);
-    return () => clearInterval(tick);
-  }, [active]);
+  const runDemo = (text: string) => {
+    const q = text.trim();
+    if (!q || running) return;
+    setRunning(true); setSteps([]); setShowResults(false);
+    timeoutsRef.current.forEach(clearTimeout); timeoutsRef.current = [];
 
-  const lead = LEADS[active];
-  const email = EMAILS[active];
+    let acc = 0;
+    DEMO_STEPS.forEach((s) => {
+      acc += s.delay;
+      const t = setTimeout(() => {
+        setSteps((prev) => [...prev, { msg: s.msg, icon: s.icon, hl: s.hl }]);
+      }, acc);
+      timeoutsRef.current.push(t);
+    });
+    const end = setTimeout(() => {
+      setRunning(false);
+      setShowResults(true);
+    }, acc + 600);
+    timeoutsRef.current.push(end);
+  };
+
+  const useTpl = (t: DemoTemplate) => { setPrompt(t.prompt); runDemo(t.prompt); };
+
+  const handleOpen = () => {
+    setOpen(true);
+    setTimeout(() => containerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+  };
 
   return (
-    <div style={{
-      backgroundColor: "#0c0c0c",
-      border: "1px solid rgba(255,255,255,0.09)",
-      borderRadius: 18, overflow: "hidden",
-      fontFamily: "var(--font-outfit)",
-      boxShadow: "0 40px 100px rgba(0,0,0,0.7)",
-    }}>
-      {/* Traffic lights */}
-      <div style={{
-        padding: "11px 18px",
-        backgroundColor: "#101010",
-        borderBottom: "1px solid rgba(255,255,255,0.055)",
-        display: "flex", alignItems: "center", gap: 7,
-      }}>
-        {["#ff5f57", "#febc2e", "#28c840"].map((c) => (
-          <div key={c} style={{ width: 11, height: 11, borderRadius: "50%", backgroundColor: c }} />
-        ))}
-        <span style={{ marginLeft: 10, fontSize: 11.5, color: "rgba(255,255,255,0.25)", letterSpacing: "0.02em" }}>
-          Nexora Outreach — Campaign Generator
-        </span>
-      </div>
+    <>
+      <button
+        type="button"
+        onClick={handleOpen}
+        className="nx-press"
+        style={{
+          display: "inline-flex", alignItems: "center", gap: 8,
+          marginTop: 14,
+          padding: "12px 22px",
+          backgroundColor: "rgba(255,255,255,0.05)",
+          border: "1px solid rgba(255,255,255,0.12)",
+          color: "#fff",
+          borderRadius: 999,
+          fontSize: 13.5, fontWeight: 500,
+          fontFamily: "var(--font-outfit)",
+          cursor: "pointer",
+        }}
+      >
+        <Sparkles size={14} color="#F59E0B" />
+        Try it free — no signup needed
+      </button>
 
-      {/* Body */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr" }}>
-
-        {/* Left panel — lead input */}
-        <div style={{ padding: "28px 26px", borderRight: "1px solid rgba(255,255,255,0.055)" }}>
-          <p style={{ fontSize: 10, fontWeight: 800, color: "#FF5200", textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 20 }}>Lead</p>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-            {[
-              { label: "Name", value: lead.name },
-              { label: "Company", value: lead.company },
-              { label: "Role", value: lead.role },
-              { label: "Custom note", value: lead.note },
-            ].map(({ label, value }) => (
-              <div key={label}>
-                <p style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", margin: "0 0 3px", textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
-                <p style={{
-                  fontSize: 13, color: label === "Custom note" ? "#FF5200" : "#e8e8e8",
-                  margin: 0, fontWeight: label === "Custom note" ? 600 : 400,
-                }}>{value}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Progress */}
-          <div style={{ marginTop: 28 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
-              <span style={{ fontSize: 11, color: done ? "#4ade80" : "rgba(255,255,255,0.28)" }}>
-                {done ? "✓ Email generated" : "Generating…"}
-              </span>
-              <span style={{ fontSize: 11, fontWeight: 700, color: done ? "#4ade80" : "#FF5200" }}>{progress}%</span>
-            </div>
-            <div style={{ height: 3, backgroundColor: "rgba(255,255,255,0.07)", borderRadius: 2, overflow: "hidden" }}>
+      <AnimatePresence>
+        {open && (
+          <motion.section
+            ref={containerRef}
+            initial={reduced ? false : { opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.5, ease: EASE }}
+            style={{
+              padding: "clamp(40px, 6vw, 72px) clamp(20px, 4vw, 56px)",
+              position: "relative", zIndex: 1,
+              borderTop: "1px solid rgba(255,255,255,0.06)",
+              overflow: "hidden",
+            }}
+          >
+            <div style={{ maxWidth: 820, margin: "0 auto" }}>
               <div style={{
-                height: "100%", borderRadius: 2,
-                width: `${progress}%`,
-                backgroundColor: done ? "#4ade80" : "#FF5200",
-                transition: "width 0.06s linear, background-color 0.4s",
-              }} />
-            </div>
-          </div>
+                display: "inline-flex", alignItems: "center", gap: 8,
+                padding: "6px 14px", borderRadius: 999,
+                backgroundColor: "rgba(255,82,0,0.10)",
+                border: "1px solid rgba(255,82,0,0.25)",
+                marginBottom: 20,
+              }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: "#FF5200" }} />
+                <span style={{ fontSize: 11, fontWeight: 500, color: "#FF5200", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+                  Demo mode — see Nexora in action
+                </span>
+              </div>
 
-          {/* Lead switcher dots */}
-          <div style={{ display: "flex", gap: 7, marginTop: 22 }}>
-            {LEADS.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setActive(i)}
-                aria-label={`Switch to lead ${i + 1}`}
+              <h3 style={{
+                fontSize: "clamp(24px, 3.2vw, 34px)",
+                fontWeight: 600, fontFamily: "var(--font-space-grotesk)",
+                letterSpacing: "-0.025em", lineHeight: 1.1, marginBottom: 10,
+              }}>
+                Type a prompt or pick a template.
+              </h3>
+              <p style={{ fontSize: 14.5, color: "rgba(255,255,255,0.55)", marginBottom: 28, lineHeight: 1.55 }}>
+                Watch the agent research, write, and draft emails in real time. Nothing is sent — this is a preview.
+              </p>
+
+              <div
+                className={!focused && !running ? "breathe-glow" : undefined}
                 style={{
-                  width: i === active ? 22 : 8, height: 8, borderRadius: 4,
-                  border: "none", cursor: "pointer", padding: 0,
-                  backgroundColor: i === active ? "#FF5200" : "rgba(255,255,255,0.15)",
-                  transition: "width 0.3s, background-color 0.3s",
+                  position: "relative", padding: 1.5, borderRadius: 999,
+                  background: focused
+                    ? "linear-gradient(135deg, #FF5200 0%, #F59E0B 100%)"
+                    : "linear-gradient(135deg, rgba(255,82,0,0.55) 0%, rgba(245,158,11,0.55) 100%)",
+                  transition: "background 260ms ease",
+                  marginBottom: 24,
                 }}
-              />
-            ))}
-          </div>
-        </div>
+              >
+                <div style={{
+                  backgroundColor: "#0E0E18", borderRadius: 999,
+                  display: "flex", alignItems: "center",
+                  padding: "8px 8px 8px 22px", gap: 10,
+                }}>
+                  <input
+                    type="text"
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    onFocus={() => setFocused(true)}
+                    onBlur={() => setFocused(false)}
+                    onKeyDown={(e) => { if (e.key === "Enter") runDemo(prompt); }}
+                    placeholder="Find recently funded SaaS founders in the US..."
+                    disabled={running}
+                    style={{
+                      flex: 1, background: "transparent", border: "none", outline: "none",
+                      color: "#fff", fontSize: 15, fontFamily: "var(--font-outfit)",
+                      minHeight: 44,
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => runDemo(prompt)}
+                    disabled={running || !prompt.trim()}
+                    className="nx-press"
+                    style={{
+                      display: "inline-flex", alignItems: "center", justifyContent: "center",
+                      width: 44, height: 44, borderRadius: 999,
+                      backgroundColor: prompt.trim() && !running ? "#FF5200" : "rgba(255,255,255,0.08)",
+                      border: "none", color: "#fff", cursor: running ? "default" : "pointer",
+                      transition: "background-color 150ms ease",
+                    }}
+                  >
+                    {running ? <Loader2 size={16} className="nx-spin" /> : <ArrowUp size={16} />}
+                  </button>
+                </div>
+              </div>
 
-        {/* Right panel — generated email */}
-        <div style={{ padding: "28px 26px", minHeight: 280 }}>
-          <p style={{ fontSize: 10, fontWeight: 800, color: "#FF5200", textTransform: "uppercase", letterSpacing: "0.14em", marginBottom: 20 }}>Generated Email</p>
+              {!running && steps.length === 0 && (
+                <div style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+                  gap: 10,
+                }}>
+                  {DEMO_TEMPLATES.map((t) => {
+                    const Icon = t.icon;
+                    return (
+                      <button
+                        key={t.title}
+                        type="button"
+                        onClick={() => useTpl(t)}
+                        className="glass glass-hover nx-press"
+                        style={{
+                          textAlign: "left",
+                          padding: "14px",
+                          borderRadius: 14,
+                          display: "flex", alignItems: "center", gap: 10,
+                          cursor: "pointer",
+                          color: "#fff", fontFamily: "var(--font-outfit)",
+                        }}
+                      >
+                        <div style={{
+                          width: 32, height: 32, borderRadius: 8,
+                          background: "linear-gradient(135deg, #FF5200 0%, #F59E0B 100%)",
+                          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                        }}>
+                          <Icon size={15} color="#fff" />
+                        </div>
+                        <span style={{ fontSize: 13, fontWeight: 500 }}>{t.title}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
 
-          {done ? (
-            <div key={`${active}-done`} style={{ animation: "nxFadeUp 0.35s ease-out forwards" }}>
-              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", margin: "0 0 5px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Subject</p>
-              <p style={{ fontSize: 13, color: "#fff", fontWeight: 700, margin: "0 0 18px", lineHeight: 1.5 }}>{email.subject}</p>
+              {steps.length > 0 && (
+                <div style={{
+                  backgroundColor: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderRadius: 14,
+                  padding: 18,
+                  marginTop: 8,
+                  display: "flex", flexDirection: "column", gap: 10,
+                }}>
+                  {steps.map((s, i) => {
+                    const Icon = ICON_MAP[s.icon] ?? Check;
+                    const accent = s.hl ? "#F59E0B" : "#FF5200";
+                    return (
+                      <motion.div
+                        key={i}
+                        initial={reduced ? false : { opacity: 0, x: -8 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, ease: EASE }}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 12,
+                          padding: "10px 14px",
+                          borderRadius: "3px 10px 10px 3px",
+                          borderLeft: `3px solid ${accent}`,
+                          backgroundColor: "rgba(255,255,255,0.02)",
+                        }}
+                      >
+                        <Icon size={14} color={accent} />
+                        <span style={{
+                          fontSize: 13.5,
+                          color: s.hl ? "#fff" : "rgba(255,255,255,0.75)",
+                          fontWeight: s.hl ? 500 : 400,
+                        }}>{s.msg}</span>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
 
-              <p style={{ fontSize: 10, color: "rgba(255,255,255,0.25)", margin: "0 0 8px", textTransform: "uppercase", letterSpacing: "0.08em" }}>Body</p>
-              <p style={{ fontSize: 12.5, color: "rgba(255,255,255,0.6)", margin: 0, lineHeight: 1.8 }}>{email.body}</p>
+              <AnimatePresence>
+                {showResults && (
+                  <motion.div
+                    initial={reduced ? false : { opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, ease: EASE }}
+                    style={{ marginTop: 28 }}
+                  >
+                    {(() => {
+                      const sorted = [...FAKE_LEADS].sort((a, b) => b.score - a.score);
+                      const counts = {
+                        hot:  sorted.filter((l) => l.score >= 80).length,
+                        warm: sorted.filter((l) => l.score >= 50 && l.score < 80).length,
+                        cold: sorted.filter((l) => l.score < 50).length,
+                      };
+                      const visible = sorted.filter((l) => {
+                        if (filter === "all")  return true;
+                        if (filter === "hot")  return l.score >= 80;
+                        if (filter === "warm") return l.score >= 50 && l.score < 80;
+                        return l.score < 50;
+                      });
+
+                      return (
+                        <>
+                          <div style={{
+                            display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
+                            marginBottom: 16,
+                          }}>
+                            <Flame size={14} color="#FF5200" />
+                            <span style={{ fontSize: 13, color: "rgba(255,255,255,0.8)", fontWeight: 500 }}>
+                              {counts.hot} hot, {counts.warm} warm, {counts.cold} cold
+                            </span>
+                            <span style={{ fontSize: 13, color: "rgba(255,255,255,0.4)" }}>
+                              — sending to hot and warm first
+                            </span>
+                          </div>
+
+                          <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
+                            {([
+                              ["all",  `All (${sorted.length})`],
+                              ["hot",  `Hot (${counts.hot})`],
+                              ["warm", `Warm (${counts.warm})`],
+                              ["cold", `Cold (${counts.cold})`],
+                            ] as const).map(([k, label]) => {
+                              const active = filter === k;
+                              return (
+                                <button
+                                  key={k}
+                                  type="button"
+                                  onClick={() => setFilter(k)}
+                                  className="nx-press"
+                                  style={{
+                                    padding: "6px 12px",
+                                    borderRadius: 999,
+                                    fontSize: 12, fontWeight: 500,
+                                    fontFamily: "var(--font-outfit)",
+                                    cursor: "pointer",
+                                    backgroundColor: active ? "rgba(255,82,0,0.14)" : "rgba(255,255,255,0.03)",
+                                    border: `1px solid ${active ? "rgba(255,82,0,0.35)" : "rgba(255,255,255,0.08)"}`,
+                                    color: active ? "#FF5200" : "rgba(255,255,255,0.6)",
+                                    transition: "all 180ms ease",
+                                  }}
+                                >
+                                  {label}
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          <p style={{
+                            fontSize: 11, fontWeight: 500, letterSpacing: "0.1em",
+                            color: "#F59E0B", textTransform: "uppercase", marginBottom: 14,
+                          }}>
+                            Preview — {visible.length} of 23 drafted emails
+                          </p>
+
+                          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                            {visible.map((l, i) => {
+                              const t = tierFor(l.score);
+                              return (
+                                <motion.div
+                                  key={l.name}
+                                  initial={reduced ? false : { opacity: 0, y: 12 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ duration: 0.4, ease: EASE, delay: i * 0.08 }}
+                                  className="glass"
+                                  style={{
+                                    padding: "16px 18px",
+                                    borderRadius: 12,
+                                    display: "flex", gap: 14, alignItems: "flex-start",
+                                  }}
+                                >
+                                  <div style={{
+                                    width: 38, height: 38, borderRadius: 10,
+                                    backgroundColor: `${l.color}18`,
+                                    border: `1px solid ${l.color}40`,
+                                    display: "flex", alignItems: "center", justifyContent: "center",
+                                    fontSize: 12, fontWeight: 600, color: l.color, flexShrink: 0,
+                                    fontFamily: "var(--font-space-grotesk)",
+                                  }}>
+                                    {l.initials}
+                                  </div>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 6 }}>
+                                      <span style={{ fontSize: 14, fontWeight: 600, color: "#fff", fontFamily: "var(--font-space-grotesk)" }}>
+                                        {l.name}
+                                      </span>
+                                      <span style={{ fontSize: 12, color: "rgba(255,255,255,0.45)" }}>
+                                        {l.role} · {l.company}
+                                      </span>
+
+                                      <span style={{
+                                        display: "inline-flex", alignItems: "center", gap: 4,
+                                        padding: "2px 8px", borderRadius: 999,
+                                        fontSize: 10, fontWeight: 600, letterSpacing: "0.04em",
+                                        textTransform: "uppercase",
+                                        backgroundColor: `${t.color}15`,
+                                        border: `1px solid ${t.color}38`,
+                                        color: t.color,
+                                      }}>
+                                        <t.Icon size={10} color={t.color} />
+                                        {t.label} · {l.score}
+                                      </span>
+
+                                      <span style={{
+                                        display: "inline-flex", alignItems: "center", gap: 4,
+                                        padding: "2px 8px", borderRadius: 999,
+                                        fontSize: 10, fontWeight: 500, letterSpacing: "0.04em",
+                                        textTransform: "uppercase",
+                                        backgroundColor: l.personalized ? "rgba(74,222,128,0.08)" : "rgba(255,255,255,0.04)",
+                                        border: `1px solid ${l.personalized ? "rgba(74,222,128,0.22)" : "rgba(255,255,255,0.08)"}`,
+                                        color: l.personalized ? "#4ade80" : "rgba(255,255,255,0.45)",
+                                      }}>
+                                        <Wand2 size={10} color={l.personalized ? "#4ade80" : "rgba(255,255,255,0.45)"} />
+                                        {l.personalized ? "Personalized" : "Generic opening"}
+                                      </span>
+                                    </div>
+
+                                    <p style={{
+                                      fontSize: 12.5,
+                                      color: l.personalized ? "#4ade80" : "rgba(255,255,255,0.45)",
+                                      marginBottom: 6,
+                                      lineHeight: 1.5,
+                                      fontStyle: "italic",
+                                    }}>
+                                      {l.hook}
+                                    </p>
+                                    <p style={{ fontSize: 13, color: "rgba(255,255,255,0.65)", lineHeight: 1.55 }}>
+                                      {l.preview}
+                                    </p>
+                                  </div>
+                                </motion.div>
+                              );
+                            })}
+                          </div>
+                        </>
+                      );
+                    })()}
+
+                    <motion.div
+                      initial={reduced ? false : { opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, ease: EASE, delay: 0.45 }}
+                      style={{
+                        marginTop: 22,
+                        padding: "26px 24px",
+                        borderRadius: 16,
+                        textAlign: "center",
+                        background: "linear-gradient(135deg, rgba(255,82,0,0.1) 0%, rgba(245,158,11,0.08) 100%)",
+                        border: "1px solid rgba(255,82,0,0.25)",
+                      }}
+                    >
+                      <h4 style={{
+                        fontSize: 22, fontWeight: 600,
+                        fontFamily: "var(--font-space-grotesk)",
+                        letterSpacing: "-0.02em",
+                        marginBottom: 14,
+                      }}>
+                        Ready to send these for real?
+                      </h4>
+                      <Link
+                        href="/signup"
+                        className="nx-press"
+                        style={{
+                          display: "inline-flex", alignItems: "center", gap: 8,
+                          padding: "12px 24px",
+                          backgroundColor: "#FF5200", color: "#fff",
+                          borderRadius: 999,
+                          fontSize: 13.5, fontWeight: 600,
+                          fontFamily: "var(--font-outfit)",
+                          textDecoration: "none",
+                        }}
+                      >
+                        Start free — 50 emails included
+                      </Link>
+                      <p style={{ fontSize: 12, color: "rgba(255,255,255,0.42)", marginTop: 10 }}>
+                        No credit card required
+                      </p>
+                    </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-              {[78, 55, 88, 48, 65, 40, 72, 35].map((w, i) => (
-                <div key={i} style={{
-                  height: 9, borderRadius: 4,
-                  backgroundColor: "rgba(255,255,255,0.06)",
-                  width: `${w}%`,
-                  animation: `nxPulse 1.6s ease-in-out ${i * 0.12}s infinite`,
-                }} />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      <style>{`
-        @keyframes nxFadeUp {
-          from { opacity: 0; transform: translateY(8px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes nxPulse {
-          0%, 100% { opacity: 0.35; }
-          50%       { opacity: 0.75; }
-        }
-      `}</style>
-    </div>
+          </motion.section>
+        )}
+      </AnimatePresence>
+    </>
   );
 }

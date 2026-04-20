@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
+
+function getServiceClient() {
+  return createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -37,6 +46,19 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Check for Ghost Writer style (Agency plan)
+    const db = getServiceClient();
+    const { data: writingStyle } = await db
+      .from("writing_styles")
+      .select("style_summary")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const ghostWriterStyle: string | null = writingStyle?.style_summary ?? null;
+    if (ghostWriterStyle) {
+      console.log("Ghost Writer style active for user:", user.id);
+    }
+
     const { data: campaign, error: campaignError } = await supabase
       .from("campaigns")
       .insert({
@@ -61,6 +83,17 @@ export async function POST(req: NextRequest) {
       console.log("Generating for:", lead.name, "| note:", note);
 
       try {
+        const styleInstruction = ghostWriterStyle
+          ? `\n\nIMPORTANT: Write in the user's personal style. Here is their style guide:\n${ghostWriterStyle}\nMatch their tone, sentence structure, vocabulary, and patterns exactly.`
+          : "";
+
+        const signalData = lead.signal_data || null;
+        const signalInstruction = signalData
+          ? `\n\nSIGNAL RADAR INTELLIGENCE — Use this research to make the email hyper-personalized. Weave in specific details naturally; do not list them:\n${JSON.stringify(signalData)}`
+          : "";
+
+        const leadName = lead.name || lead.first_name || "";
+
         const message = await anthropic.messages.create({
           model: "claude-haiku-4-5-20251001",
           max_tokens: 500,
@@ -68,7 +101,7 @@ export async function POST(req: NextRequest) {
             role: "user",
             content: `Write a cold email. Return ONLY a raw JSON object with "subject" and "body" keys. No markdown, no code fences, no explanation.
 
-Name: ${lead.name}
+Name: ${leadName}
 Company: ${lead.company}
 Role: ${lead.role}
 Situation: ${note}
@@ -76,7 +109,7 @@ Situation: ${note}
 The email body MUST start by directly mentioning: "${note}"
 Tone: ${tone}
 Max 3 sentences in body.
-No generic openers. Reference the situation in the first word.`
+No generic openers. Reference the situation in the first word.${signalInstruction}${styleInstruction}`
           }]
         });
 
@@ -96,13 +129,15 @@ No generic openers. Reference the situation in the first word.`
         if (campaign) {
           await supabase.from("leads").insert({
             campaign_id: campaign.id,
-            first_name: lead.name,
+            first_name: lead.name || lead.first_name,
             company: lead.company,
             role: lead.role,
             email: lead.email,
             custom_note: note,
             generated_subject: parsed.subject,
             generated_body: parsed.body,
+            signal_data: signalData ?? null,
+            signal_status: signalData ? "done" : "pending",
           });
         }
 

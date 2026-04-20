@@ -1,109 +1,420 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-syne: var(--font-syne);
+  --font-space-grotesk: var(--font-space-grotesk);
+  --font-syne: var(--font-space-grotesk);
   --font-outfit: var(--font-outfit);
   --color-black: var(--black);
   --color-black-2: var(--black-2);
   --color-black-3: var(--black-3);
   --color-orange: var(--orange);
   --color-orange-h: var(--orange-h);
+  --color-amber: var(--amber);
 }
 
 :root {
-  --black: #060606;
-  --black-2: #0e0e0e;
-  --black-3: #161616;
-  --orange: #ff5200;
-  --orange-h: #ff6a1f;
+  --font-syne: var(--font-space-grotesk);
+  --black:    #080810;
+  --black-2:  #0E0E18;
+  --black-3:  #14141E;
+  --black-4:  #1A1A24;
+  --orange:   #FF5200;
+  --orange-h: #FF6B1A;
+  --amber:    #F59E0B;
+  --amber-h:  #FBBF24;
+  --sidebar-width: 240px;
+
+  /* Easing */
+  --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Border */
+  --border: rgba(255,255,255,0.06);
+  --border-strong: rgba(255,255,255,0.10);
 }
+
+/* ── Base ────────────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
 
 body {
   background-color: var(--black);
   color: #fff;
   font-family: var(--font-outfit), sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Dot grid background pattern */
+/* ── Dot grid ────────────────────────────────────────────────────────────────── */
 .dot-grid {
-  background-image: radial-gradient(
-    circle,
-    rgba(255, 255, 255, 0.07) 1px,
-    transparent 1px
-  );
-  background-size: 28px 28px;
+  background-image: radial-gradient(circle, rgba(255,255,255,0.045) 1px, transparent 1px);
+  background-size: 26px 26px;
 }
 
-/* Form input */
+/* ── Form input ──────────────────────────────────────────────────────────────── */
 .nx-input {
   width: 100%;
-  padding: 0.75rem 1rem;
-  background-color: var(--black-3);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.6875rem 0.875rem;
+  background-color: var(--black-2);
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: 0.5rem;
   color: #fff;
   font-family: var(--font-outfit), sans-serif;
-  font-size: 0.9375rem;
+  font-size: 0.875rem;
   outline: none;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.18s ease;
 }
+.nx-input::placeholder { color: rgba(255,255,255,0.22); }
+.nx-input:focus { border-color: rgba(255,82,0,0.4); }
 
-.nx-input::placeholder {
-  color: rgba(255, 255, 255, 0.25);
-}
-
-.nx-input:focus {
-  border-color: rgba(255, 82, 0, 0.5);
-}
-
-/* Primary button */
+/* ── Primary button ──────────────────────────────────────────────────────────── */
 .nx-btn {
   width: 100%;
-  padding: 0.75rem 1.5rem;
+  padding: 0.6875rem 1.25rem;
   background-color: var(--orange);
   color: #fff;
   font-family: var(--font-outfit), sans-serif;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.4375rem;
   border: none;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  transition: background-color 0.15s ease, transform 0.12s var(--ease-out);
 }
+.nx-btn:hover { background-color: var(--orange-h); }
+.nx-btn:active { transform: scale(0.97); }
+.nx-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
-.nx-btn:hover {
-  background-color: var(--orange-h);
-}
-
-.nx-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Error message */
+/* ── Error ───────────────────────────────────────────────────────────────────── */
 .nx-error {
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   color: #f87171;
-  background-color: rgba(127, 29, 29, 0.25);
-  border: 1px solid rgba(153, 27, 27, 0.4);
+  background-color: rgba(239,68,68,0.07);
+  border: 1px solid rgba(239,68,68,0.18);
   border-radius: 0.5rem;
-  padding: 0.625rem 1rem;
+  padding: 0.625rem 0.875rem;
 }
 
-/* Fade-up entrance animation */
+/* ── Keyframes ───────────────────────────────────────────────────────────────── */
 @keyframes fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.3; }
+  50%       { opacity: 0.55; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes count-bar {
+  from { width: 0%; }
+}
+
+/* ── Utilities ───────────────────────────────────────────────────────────────── */
+.fade-up  { animation: fade-up  0.36s var(--ease-out) both; }
+.fade-in  { animation: fade-in  0.3s ease both; }
+
+/* ── Skeleton ────────────────────────────────────────────────────────────────── */
+.skeleton {
+  background-color: rgba(255,255,255,0.045);
+  border-radius: 6px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+/* ── Nav link ────────────────────────────────────────────────────────────────── */
+.nav-link {
+  transition: color 0.15s ease, background-color 0.15s ease !important;
+}
+@media (hover: hover) and (pointer: fine) {
+  .nav-link:not(.nav-link-active):hover {
+    color: #aaa !important;
+    background-color: rgba(255,255,255,0.035) !important;
   }
 }
 
-.fade-up {
-  animation: fade-up 0.5s ease-out forwards;
+/* ── Stat card ───────────────────────────────────────────────────────────────── */
+.stat-card {
+  transition: border-color 0.2s ease, transform 0.2s var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .stat-card:hover {
+    border-color: rgba(255,255,255,0.11) !important;
+    transform: translateY(-1px);
+  }
+}
+
+/* ── Action card ─────────────────────────────────────────────────────────────── */
+.action-card {
+  transition: border-color 0.18s ease, background-color 0.18s ease;
+  text-decoration: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .action-card:hover {
+    border-color: rgba(255,255,255,0.10) !important;
+    background-color: #111 !important;
+  }
+}
+
+/* ── Table row ───────────────────────────────────────────────────────────────── */
+.table-row {
+  transition: background-color 0.13s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .table-row:hover {
+    background-color: rgba(255,255,255,0.022) !important;
+  }
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────────── */
+.btn-primary {
+  transition: background-color 0.15s ease, transform 0.12s var(--ease-out), opacity 0.15s ease;
+}
+.btn-primary:active { transform: scale(0.97); }
+
+.btn-ghost {
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, transform 0.12s var(--ease-out);
+}
+.btn-ghost:active { transform: scale(0.97); }
+
+/* ── Filter tab ──────────────────────────────────────────────────────────────── */
+.filter-tab { transition: color 0.15s ease; position: relative; }
+.filter-tab::after {
+  content: '';
+  position: absolute; bottom: -1px; left: 50%;
+  transform: translateX(-50%);
+  width: 0; height: 1px;
+  background-color: #FF5200;
+  transition: width 0.18s var(--ease-out);
+}
+.filter-tab-active::after { width: 70%; }
+
+/* ── Progress bar ────────────────────────────────────────────────────────────── */
+.progress-bar { transition: width 0.55s var(--ease-out); }
+
+/* ── Toast ───────────────────────────────────────────────────────────────────── */
+@keyframes toast-in  { from { opacity:0; transform:translateY(-8px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+@keyframes toast-out { from { opacity:1; transform:translateY(0) scale(1); } to { opacity:0; transform:translateY(-6px) scale(0.97); } }
+.toast-enter { animation: toast-in  0.2s var(--ease-out) both; }
+.toast-exit  { animation: toast-out 0.16s ease-in both; }
+
+/* ── Modal ───────────────────────────────────────────────────────────────────── */
+@keyframes modal-backdrop-in  { from { opacity:0; } to { opacity:1; } }
+@keyframes modal-content-in   { from { opacity:0; transform:scale(0.96) translateY(5px); } to { opacity:1; transform:scale(1) translateY(0); } }
+.modal-backdrop { animation: modal-backdrop-in 0.18s ease both; }
+.modal-content  { animation: modal-content-in  0.22s var(--ease-out) both; }
+
+/* ── Status badges ───────────────────────────────────────────────────────────── */
+.nx-badge {
+  display: inline-flex; align-items: center;
+  padding: 2px 8px; border-radius: 999px;
+  font-size: 10px; font-weight: 500;
+  font-family: var(--font-outfit);
+  letter-spacing: 0.04em; text-transform: uppercase;
+  line-height: 1.6; white-space: nowrap;
+}
+.nx-badge-green  { color:#4ade80; background:rgba(74,222,128,0.08);  border:1px solid rgba(74,222,128,0.18); }
+.nx-badge-orange { color:#fb923c; background:rgba(251,146,60,0.08);  border:1px solid rgba(251,146,60,0.18); }
+.nx-badge-blue   { color:#60a5fa; background:rgba(96,165,250,0.08);  border:1px solid rgba(96,165,250,0.18); }
+.nx-badge-gray   { color:#555;    background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07); }
+.nx-badge-red    { color:#f87171; background:rgba(248,113,113,0.08); border:1px solid rgba(248,113,113,0.18); }
+
+/* ── Section label ───────────────────────────────────────────────────────────── */
+.nx-section-label {
+  font-size: 10px; font-weight: 500;
+  letter-spacing: 0.07em; text-transform: uppercase;
+  color: #444; font-family: var(--font-outfit);
+}
+
+/* ── Field label ─────────────────────────────────────────────────────────────── */
+.nx-field-label {
+  font-size: 12px; font-weight: 500;
+  color: rgba(255,255,255,0.5); font-family: var(--font-outfit);
+  display: block; margin-bottom: 6px;
+}
+
+/* ── Credit bar ──────────────────────────────────────────────────────────────── */
+.credit-bar-track {
+  height: 2px; background:rgba(255,255,255,0.06);
+  border-radius:999px; overflow:hidden;
+}
+.credit-bar-fill {
+  height:100%; border-radius:999px;
+  background:#FF5200; transition:width 0.55s var(--ease-out);
+}
+
+/* ── Step indicator ──────────────────────────────────────────────────────────── */
+.step-circle {
+  width:22px; height:22px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:10px; font-weight:600; font-family:var(--font-outfit);
+  flex-shrink:0;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.step-circle-done   { background:rgba(74,222,128,0.1);  border:1px solid rgba(74,222,128,0.22); color:#4ade80; }
+.step-circle-active { background:rgba(255,82,0,0.1);    border:1px solid rgba(255,82,0,0.28);   color:#FF5200; }
+.step-circle-pending{ background:transparent;             border:1px solid rgba(255,255,255,0.09); color:#444; }
+
+.step-connector      { flex:1; height:1px; background:rgba(255,255,255,0.06); margin:0 10px; transition:background-color 0.3s ease; }
+.step-connector-done { background:rgba(74,222,128,0.18); }
+
+/* ── Landing page nav link hover ─────────────────────────────────────────────── */
+.landing-nav-link {
+  transition: color 0.15s ease;
+}
+.landing-nav-link:hover { color: rgba(255,255,255,0.75) !important; }
+
+/* ── Prose spacing fix ────────────────────────────────────────────────────────── */
+p { margin: 0; }
+h1, h2, h3, h4, h5, h6 { margin: 0; }
+ul, ol { margin: 0; padding: 0; }
+
+/* ── Animated mesh gradient background ───────────────────────────────────────── */
+.mesh-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.mesh-bg::before,
+.mesh-bg::after,
+.mesh-bg > .mesh-blob {
+  content: "";
+  position: absolute;
+  width: 60vw;
+  height: 60vw;
+  max-width: 900px;
+  max-height: 900px;
+  border-radius: 50%;
+  filter: blur(80px);
+  will-change: transform;
+}
+.mesh-bg::before {
+  top: -15%; left: -10%;
+  background: radial-gradient(circle at center, rgba(255,82,0,0.15) 0%, transparent 65%);
+  animation: mesh-drift-1 18s ease-in-out infinite;
+}
+.mesh-bg::after {
+  bottom: -20%; right: -15%;
+  background: radial-gradient(circle at center, rgba(245,158,11,0.10) 0%, transparent 65%);
+  animation: mesh-drift-2 20s ease-in-out infinite;
+}
+.mesh-bg > .mesh-blob {
+  top: 30%; left: 40%;
+  width: 45vw; height: 45vw;
+  background: radial-gradient(circle at center, rgba(204,34,0,0.08) 0%, transparent 65%);
+  animation: mesh-drift-3 16s ease-in-out infinite;
+}
+@keyframes mesh-drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50%      { transform: translate(8vw, 6vw) scale(1.08); }
+}
+@keyframes mesh-drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1.05); }
+  50%      { transform: translate(-10vw, -4vw) scale(1); }
+}
+@keyframes mesh-drift-3 {
+  0%, 100% { transform: translate(-20%, -20%) scale(1); }
+  50%      { transform: translate(10%, 15%) scale(1.1); }
+}
+
+/* ── Noise overlay ────────────────────────────────────────────────────────────── */
+.noise-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+
+/* ── Glassmorphism card ──────────────────────────────────────────────────────── */
+.glass {
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .glass-hover:hover {
+    transform: translateY(-4px);
+    border-color: rgba(255,82,0,0.4);
+    background: rgba(255,255,255,0.055);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 32px rgba(255,82,0,0.08);
+  }
+}
+
+/* ── Spinning halo for prompt bar ────────────────────────────────────────────── */
+@keyframes halo-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ── Username pulse ──────────────────────────────────────────────────────────── */
+@keyframes username-pulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 0.28; }
+}
+.username-pulse { animation: username-pulse 4s ease-in-out infinite; }
+
+/* ── Prompt bar breathing glow (idle) ────────────────────────────────────────── */
+@keyframes breathe-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255,82,0,0.0), 0 12px 44px -18px rgba(0,0,0,0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(255,82,0,0.10), 0 18px 60px -18px rgba(255,82,0,0.28);
+  }
+}
+.breathe-glow { animation: breathe-glow 4.2s ease-in-out infinite; }
+
+/* ── Headline gradient text ──────────────────────────────────────────────────── */
+.headline-gradient {
+  background: linear-gradient(110deg, #FF5200 0%, #F59E0B 55%, #FF5200 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  filter: drop-shadow(0 4px 24px rgba(255,82,0,0.25));
+}
+
+/* ── Micro-interactions ──────────────────────────────────────────────────────── */
+.nx-press {
+  transition: transform 0.12s var(--ease-out);
+}
+.nx-press:active { transform: scale(0.97); }
+
+@keyframes nx-spin {
+  to { transform: rotate(360deg); }
+}
+.nx-spin { animation: nx-spin 0.9s linear infinite; }
+
+@keyframes nx-shake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-5px); }
+  40%      { transform: translateX(5px); }
+  60%      { transform: translateX(-3px); }
+  80%      { transform: translateX(3px); }
+}
+.nx-shake { animation: nx-shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+
+/* ── Reduced motion ──────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .mesh-bg::before, .mesh-bg::after, .mesh-bg > .mesh-blob,
+  .username-pulse, .breathe-glow {
+    animation: none !important;
+  }
 }
 
 /* Campaign wizard */
