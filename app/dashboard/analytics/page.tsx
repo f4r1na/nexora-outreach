@@ -186,23 +186,26 @@ export default function AnalyticsPage() {
           </div>
 
         ) : !hasData ? (
-          <div style={{
-            display: "flex", flexDirection: "column", alignItems: "center",
-            justifyContent: "center", minHeight: 360, textAlign: "center", gap: 12,
-          }}>
-            <p style={{ fontSize: 13, color: "#484848", fontFamily: "var(--font-outfit)" }}>
-              No data yet. Send a campaign to start tracking.
-            </p>
-            <Link href="/dashboard/campaigns/new" style={{
-              fontSize: 12, color: "#FF5200", fontFamily: "var(--font-outfit)", textDecoration: "none",
+          <>
+            <CampaignIQCard sentCount={stats?.sent ?? 0} campaignCount={campaigns.length} />
+            <div style={{
+              display: "flex", flexDirection: "column", alignItems: "center",
+              justifyContent: "center", minHeight: 280, textAlign: "center", gap: 12,
             }}>
-              Create campaign
-            </Link>
-          </div>
+              <p style={{ fontSize: 13, color: "#484848", fontFamily: "var(--font-outfit)" }}>
+                No data yet. Send a campaign to start tracking.
+              </p>
+              <Link href="/dashboard/campaigns/new" style={{
+                fontSize: 12, color: "#FF5200", fontFamily: "var(--font-outfit)", textDecoration: "none",
+              }}>
+                Create campaign
+              </Link>
+            </div>
+          </>
 
         ) : (
           <>
-            <CampaignIQCard sentCount={stats?.sent ?? 0} />
+            <CampaignIQCard sentCount={stats?.sent ?? 0} campaignCount={campaigns.length} />
 
             {/* Stat cards with count-up */}
             <StaggerList style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 20 }}>

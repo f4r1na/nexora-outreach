@@ -136,6 +136,15 @@ export default function LeadPanel({
     return () => document.removeEventListener("keydown", down);
   }, [lead, onClose]);
 
+  useEffect(() => {
+    if (!lead?.id || lead.signal_status !== "done") return;
+    fetch("/api/timing/watch", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ leadIds: [lead.id] }),
+    }).catch(() => {});
+  }, [lead?.id, lead?.signal_status]);
+
   const handleCopy = () => {
     navigator.clipboard
       .writeText(`Subject: ${subject}\n\n${body}`)

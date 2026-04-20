@@ -38,8 +38,8 @@ export async function POST(_req: NextRequest) {
     .eq("user_id", user.id)
     .eq("event_type", "sent");
 
-  if ((sentCount ?? 0) < 10) {
-    return NextResponse.json({ error: "Not enough data", minimum: 10, sent: sentCount ?? 0 });
+  if ((sentCount ?? 0) < 1) {
+    return NextResponse.json({ error: "Not enough data", minimum: 1, sent: sentCount ?? 0 });
   }
 
   const [{ data: sentEvents }, { data: repliedEvents }] = await Promise.all([
