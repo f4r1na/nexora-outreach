@@ -79,6 +79,37 @@ CREATE POLICY "Users can view own events" ON email_events FOR ALL USING (auth.ui
 CREATE INDEX idx_email_events_campaign ON email_events(campaign_id);
 CREATE INDEX idx_email_events_user ON email_events(user_id);
 
+-- Campaign IQ
+CREATE TABLE IF NOT EXISTS campaign_iq_insights (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id uuid REFERENCES auth.users NOT NULL,
+  campaign_id uuid REFERENCES campaigns(id) ON DELETE SET NULL,
+  best_opening_style text,
+  best_subject_pattern text,
+  winning_signals jsonb DEFAULT '[]',
+  losing_patterns jsonb DEFAULT '[]',
+  improvement_suggestions jsonb DEFAULT '[]',
+  confidence_score int DEFAULT 0 CHECK (confidence_score >= 0 AND confidence_score <= 100),
+  reply_count_at_analysis int DEFAULT 0,
+  analyzed_at timestamptz DEFAULT now()
+);
+ALTER TABLE campaign_iq_insights ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage own insights" ON campaign_iq_insights FOR ALL USING (auth.uid() = user_id);
+
+-- Timing Triggers
+CREATE TABLE IF NOT EXISTS timing_triggers (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  lead_id uuid REFERENCES leads(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES auth.users NOT NULL,
+  trigger_type text NOT NULL CHECK (trigger_type IN ('funding', 'hiring', 'tech_change', 'job_change', 'post_activity')),
+  trigger_data jsonb DEFAULT '{}',
+  detected_at timestamptz DEFAULT now(),
+  optimal_send_by timestamptz,
+  acted_on boolean DEFAULT false
+);
+ALTER TABLE timing_triggers ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can manage own timing triggers" ON timing_triggers FOR ALL USING (auth.uid() = user_id);
+
 -- Ghost Writer Mode
 CREATE TABLE IF NOT EXISTS writing_styles (
   id uuid DEFAULT gen_random_uuid() PRIMARY KEY,

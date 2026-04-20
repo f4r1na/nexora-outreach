@@ -10,6 +10,7 @@ import {
   RotateCcw,
   Check,
 } from "lucide-react";
+import TimingBadge from "@/app/dashboard/components/timing-badge";
 
 export type Signal = {
   type: string;
@@ -585,6 +586,9 @@ export default function LeadPanel({
                   </div>
                 )}
               </div>
+
+              {/* Timing Badge */}
+              <TimingBadge signalData={lead.signal_data} />
 
               {/* Email Preview */}
               <div

@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { PageWrapper, StaggerList, StaggerItem, CountUp, ScrollReveal } from "../_components/motion";
 import { Lock } from "lucide-react";
+import CampaignIQCard from "../components/campaign-iq-card";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -201,6 +202,8 @@ export default function AnalyticsPage() {
 
         ) : (
           <>
+            <CampaignIQCard sentCount={stats?.sent ?? 0} />
+
             {/* Stat cards with count-up */}
             <StaggerList style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 20 }}>
               {[
