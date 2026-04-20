@@ -1,283 +1,109 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { UpgradeModal } from "@/components/upgrade-modal";
-import type { PlanKey } from "@/lib/plans";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
 
-type Lead = {
-  first_name: string;
-  company: string;
-  role: string;
-  email: string;
-  custom_note: string;
+type Msg = { id: string; role: "ai" | "user"; text: string };
+type ActivityStep = { id: string; text: string; variant: "orange" | "amber" | "green" };
+type Answers = { targetAudience: string; goal: string; leadCount: string; location: string; sendMode: string };
+type LaunchResult = { campaignId: string; leadCount: number; hot: number; warm: number; cold: number };
+
+// ── Config ────────────────────────────────────────────────────────────────────
+
+const QUESTIONS = [
+  {
+    id: 1,
+    text: "Who are you trying to reach?",
+    options: ["SaaS Founders", "Agency Owners", "E-commerce Brands", "Real Estate Agents", "Startup CTOs", "Marketing Directors"],
+    canType: true,
+  },
+  {
+    id: 2,
+    text: "What's your outreach goal?",
+    options: ["Book a product demo", "Sell a service", "Find partnerships", "Generate leads", "Recruit candidates"],
+    canType: true,
+  },
+  {
+    id: 3,
+    text: "How many leads do you want?",
+    options: ["10 leads — quick test", "25 leads — small batch", "50 leads — standard", "100 leads — full campaign"],
+    canType: false,
+  },
+  {
+    id: 4,
+    text: "Any location preference?",
+    options: ["Anywhere", "United States", "New York", "San Francisco", "Florida", "Europe"],
+    canType: true,
+  },
+  {
+    id: 5,
+    text: "How should I send the emails?",
+    options: [
+      "Review each email before sending",
+      "Send to hot leads automatically",
+      "Send all automatically",
+      "Save as draft first",
+    ],
+    canType: false,
+  },
+] as const;
+
+type QuestionId = 1 | 2 | 3 | 4 | 5;
+
+const ANSWER_KEYS: (keyof Answers)[] = ["targetAudience", "goal", "leadCount", "location", "sendMode"];
+
+const ACTIVITY_SCHEDULE: Record<
+  QuestionId,
+  (ans: string) => { text: string; variant: "orange" | "amber" | "green"; delay: number }[]
+> = {
+  1: (ans) => [
+    { text: `Analyzing target: ${ans}...`, variant: "amber", delay: 400 },
+    { text: "Identified key outreach characteristics...", variant: "amber", delay: 1700 },
+  ],
+  2: (ans) => [
+    { text: `Campaign goal: ${ans}...`, variant: "amber", delay: 400 },
+    { text: `Optimizing approach for "${ans}"...`, variant: "amber", delay: 1600 },
+  ],
+  3: (ans) => {
+    const n = parseInt(ans) || 10;
+    const found = Math.floor(n * (2.1 + Math.random() * 0.8));
+    return [
+      { text: `Searching for ${ans}...`, variant: "orange", delay: 400 },
+      { text: `Found ${found} potential matches...`, variant: "orange", delay: 1800 },
+      { text: "Scoring leads for fit...", variant: "amber", delay: 2900 },
+    ];
+  },
+  4: (ans) => [
+    { text: `Filtering by location: ${ans}...`, variant: "orange", delay: 400 },
+    { text: `${ans === "Anywhere" ? "Global leads" : ans + " leads"} matched...`, variant: "orange", delay: 1700 },
+  ],
+  5: (_ans) => [
+    { text: "Writing personalized emails...", variant: "green", delay: 400 },
+    { text: "Applying company profile context...", variant: "amber", delay: 1500 },
+    { text: "Generating subject line variations...", variant: "green", delay: 2400 },
+    { text: "Campaign ready — emails prepared", variant: "green", delay: 3300 },
+  ],
 };
 
-type GeneratedEmail = {
-  lead_id: string;
-  first_name: string;
-  company: string;
-  email: string;
-  subject: string;
-  body: string;
-};
+const genId = () => Math.random().toString(36).slice(2, 9);
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const TONES = ["Professional", "Friendly", "Bold", "Minimal"] as const;
-
-// ─── CSV Parser ───────────────────────────────────────────────────────────────
-
-function parseCSVLine(line: string): string[] {
-  const result: string[] = [];
-  let current = "";
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') {
-      inQuotes = !inQuotes;
-    } else if (ch === "," && !inQuotes) {
-      result.push(current.trim());
-      current = "";
-    } else {
-      current += ch;
-    }
-  }
-  result.push(current.trim());
-  return result;
+function getLeadStats(leadCountAnswer: string) {
+  const total = parseInt(leadCountAnswer.split(" ")[0]) || 10;
+  const hot = Math.floor(total * 0.35);
+  const warm = Math.floor(total * 0.5);
+  const cold = total - hot - warm;
+  return { total, hot, warm, cold };
 }
 
-function normalizeHeader(h: string): string {
-  return h.toLowerCase().replace(/[\s_\-]+/g, "_").replace(/[^a-z_]/g, "");
-}
+// ── Icons ─────────────────────────────────────────────────────────────────────
 
-function findIdx(headers: string[], ...keys: string[]): number {
-  for (const key of keys) {
-    const i = headers.findIndex((h) => h === key || h.startsWith(key));
-    if (i >= 0) return i;
-  }
-  return -1;
-}
-
-function parseCSV(text: string): Lead[] {
-  const lines = text.trim().split(/\r?\n/).filter((l) => l.trim());
-  if (lines.length < 2) return [];
-
-  const rawHeaders = parseCSVLine(lines[0]);
-  const headers = rawHeaders.map(normalizeHeader);
-
-  const nameIdx = findIdx(headers, "first_name", "name", "firstname", "full_name");
-  const companyIdx = findIdx(headers, "company", "organization", "org", "employer");
-  const roleIdx = findIdx(headers, "role", "title", "job_title", "position", "job");
-  const emailIdx = findIdx(headers, "email", "email_address", "mail");
-  const noteIdx = findIdx(headers, "custom_note", "note", "notes", "message", "context");
-
-  const parsed = lines
-    .slice(1)
-    .filter((l) => l.trim())
-    .map((line) => {
-      const cols = parseCSVLine(line);
-      // Use null-safe get: returns the trimmed value or "" if column missing/empty
-      const get = (idx: number) =>
-        idx >= 0 && cols[idx] !== undefined ? cols[idx].trim() : "";
-      return {
-        first_name: get(nameIdx),
-        company: get(companyIdx),
-        role: get(roleIdx),
-        email: get(emailIdx),
-        custom_note: get(noteIdx),
-      };
-    });
-
-  console.log("[CSV parser] headers detected:", {
-    name: nameIdx,
-    company: companyIdx,
-    role: roleIdx,
-    email: emailIdx,
-    note: noteIdx,
-  });
-  console.log("[CSV parser] parsed leads:", parsed);
-  return parsed;
-}
-
-// ─── Text → Leads Parser (for PDF / plain text extraction) ───────────────────
-
-function parseTextToLeads(text: string): Lead[] {
-  const lines = text.trim().split(/\r?\n/).filter((l) => l.trim());
-  if (lines.length < 2) return [];
-
-  const normH = (h: string) => h.toLowerCase().replace(/[\s_-]+/g, "_").replace(/[^a-z_]/g, "");
-  const colIdx = (headers: string[], ...keys: string[]) => {
-    for (const key of keys) {
-      const i = headers.findIndex((h) => h === key || h.startsWith(key));
-      if (i >= 0) return i;
-    }
-    return -1;
-  };
-
-  for (const sep of [",", "\t", ";"]) {
-    if (!lines[0].includes(sep)) continue;
-    const headers = lines[0].split(sep).map((h) => normH(h.trim().replace(/^["']|["']$/g, "")));
-    const nameIdx    = colIdx(headers, "first_name", "name", "firstname", "full_name");
-    const companyIdx = colIdx(headers, "company", "organization", "org", "employer");
-    const roleIdx    = colIdx(headers, "role", "title", "job_title", "position", "job");
-    const emailIdx   = colIdx(headers, "email", "email_address", "mail");
-    const noteIdx    = colIdx(headers, "custom_note", "note", "notes", "message", "context");
-    if (nameIdx < 0 && emailIdx < 0) continue;
-    const results = lines.slice(1).filter((l) => l.trim()).map((line) => {
-      const cols = line.split(sep).map((c) => c.trim().replace(/^["']|["']$/g, ""));
-      const get = (idx: number) => (idx >= 0 && cols[idx] !== undefined ? cols[idx] : "");
-      return { first_name: get(nameIdx), company: get(companyIdx), role: get(roleIdx), email: get(emailIdx), custom_note: get(noteIdx) };
-    }).filter((l) => l.first_name || l.email);
-    if (results.length > 0) return results;
-  }
-
-  // Fallback: extract by email address
-  const emailRe = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-  const leads: Lead[] = [];
-  for (const line of lines) {
-    const match = line.match(emailRe);
-    if (match) {
-      const email = match[0];
-      const rest = line.replace(email, "").replace(/[,|;:\t]+/g, " ").trim();
-      const name = rest.split(/\s+/).filter(Boolean).slice(0, 2).join(" ");
-      leads.push({ first_name: name, company: "", role: "", email, custom_note: "" });
-    }
-  }
-  return leads;
-}
-
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function StepIndicator({ current }: { current: 1 | 2 | 3 }) {
-  const steps = [
-    { n: 1, label: "Name Campaign" },
-    { n: 2, label: "Upload Leads" },
-    { n: 3, label: "Review Emails" },
-  ];
-
+function IconX() {
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 0,
-        marginBottom: 36,
-      }}
-    >
-      {steps.map((step, i) => {
-        const done = current > step.n;
-        const active = current === step.n;
-        return (
-          <div key={step.n} style={{ display: "flex", alignItems: "center", flex: i < 2 ? 1 : "none" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-              <div
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  fontFamily: "var(--font-syne)",
-                  backgroundColor: done || active ? "#FF5200" : "rgba(255,255,255,0.06)",
-                  color: done || active ? "#fff" : "rgba(255,255,255,0.3)",
-                  border: done || active ? "none" : "1px solid rgba(255,255,255,0.1)",
-                  transition: "all 0.2s",
-                }}
-              >
-                {done ? (
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                ) : (
-                  step.n
-                )}
-              </div>
-              <span
-                style={{
-                  fontSize: 13,
-                  fontFamily: "var(--font-outfit)",
-                  fontWeight: active ? 600 : 400,
-                  color: active ? "#fff" : done ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.25)",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {step.label}
-              </span>
-            </div>
-            {i < 2 && (
-              <div
-                style={{
-                  flex: 1,
-                  height: 1,
-                  margin: "0 16px",
-                  backgroundColor: current > step.n ? "rgba(255,82,0,0.4)" : "rgba(255,255,255,0.07)",
-                  transition: "background-color 0.3s",
-                }}
-              />
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function ProgressBar({ progress }: { progress: number }) {
-  return (
-    <div
-      style={{
-        width: "100%",
-        height: 4,
-        borderRadius: 99,
-        backgroundColor: "rgba(255,255,255,0.06)",
-        overflow: "hidden",
-      }}
-    >
-      <div
-        style={{
-          height: "100%",
-          width: `${progress}%`,
-          borderRadius: 99,
-          backgroundColor: "#FF5200",
-          transition: "width 0.4s ease",
-          boxShadow: "0 0 12px rgba(255,82,0,0.6)",
-        }}
-      />
-    </div>
-  );
-}
-
-// ─── Icons ────────────────────────────────────────────────────────────────────
-
-function IconUpload() {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path d="M12 15V3M8 7l4-4 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M3 17v1a3 3 0 003 3h12a3 3 0 003-3v-1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function IconEdit() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M11.5 2.5a1.414 1.414 0 112 2L5 13H3v-2L11.5 2.5z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function IconExport() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M8 2v8M5 7l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
     </svg>
   );
 }
@@ -290,269 +116,450 @@ function IconArrowLeft() {
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+function IconSend() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
-export default function NewCampaignPage() {
+function IconCheck() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M3 8l4 4 6-7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// ── Summary Card ──────────────────────────────────────────────────────────────
+
+function SummaryCard({
+  answers,
+  leadStats,
+  isLaunching,
+  launchError,
+  launchResult,
+  onLaunch,
+  onEdit,
+}: {
+  answers: Answers;
+  leadStats: ReturnType<typeof getLeadStats>;
+  isLaunching: boolean;
+  launchError: string | null;
+  launchResult: LaunchResult | null;
+  onLaunch: () => void;
+  onEdit: () => void;
+}) {
+  const stats = launchResult
+    ? { total: launchResult.leadCount, hot: launchResult.hot, warm: launchResult.warm, cold: launchResult.cold }
+    : leadStats;
+  const isDone = !!launchResult;
+
+  return (
+    <div
+      className="wiz-msg"
+      style={{
+        marginTop: 8,
+        padding: "20px",
+        backgroundColor: "#0e0e0e",
+        border: "1px solid rgba(255,255,255,0.09)",
+        borderRadius: 16,
+        borderTop: `2px solid ${isDone ? "#22C55E" : "rgba(255,82,0,0.35)"}`,
+        transition: "border-top-color 0.4s",
+      }}
+    >
+      {/* Header */}
+      <div style={{ marginBottom: 14 }}>
+        <p style={{ fontSize: 14, fontWeight: 700, color: isDone ? "#22C55E" : "#FF5200", fontFamily: "var(--font-syne)", marginBottom: 3 }}>
+          {isDone ? "Campaign launched!" : "Here's your campaign — ready to launch"}
+        </p>
+        <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-outfit)" }}>
+          {isDone
+            ? `${stats.total} leads found — ${stats.hot} hot, ${stats.warm} warm, ${stats.cold} cold`
+            : `~${stats.total} leads ready — ${stats.hot} hot, ${stats.warm} warm, ${stats.cold} cold`}
+        </p>
+      </div>
+
+      {/* Summary fields */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 16 }}>
+        {[
+          { label: "Target", value: answers.targetAudience },
+          { label: "Goal", value: answers.goal },
+          { label: "Leads", value: answers.leadCount?.split(" — ")[0] },
+          { label: "Location", value: answers.location },
+          { label: "Send mode", value: answers.sendMode },
+        ].map(({ label, value }) => (
+          <div
+            key={label}
+            style={{
+              padding: "8px 11px",
+              backgroundColor: "rgba(255,255,255,0.025)",
+              borderRadius: 8,
+              border: "1px solid rgba(255,255,255,0.06)",
+            }}
+          >
+            <p style={{ fontSize: 9.5, color: "rgba(255,255,255,0.22)", fontFamily: "var(--font-outfit)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 3 }}>
+              {label}
+            </p>
+            <p style={{ fontSize: 12, color: "#fff", fontFamily: "var(--font-outfit)", fontWeight: 500, lineHeight: 1.4 }}>
+              {value || "—"}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      {launchError && (
+        <p className="nx-error" style={{ marginBottom: 12, fontSize: 12 }}>
+          {launchError}
+        </p>
+      )}
+
+      {!isDone ? (
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            onClick={onLaunch}
+            disabled={isLaunching}
+            className="wiz-launch-btn"
+            style={{
+              flex: 1,
+              padding: "11px 20px",
+              borderRadius: 999,
+              border: "none",
+              backgroundColor: "#FF5200",
+              color: "#fff",
+              fontSize: 13.5,
+              fontWeight: 600,
+              fontFamily: "var(--font-outfit)",
+              cursor: isLaunching ? "not-allowed" : "pointer",
+              opacity: isLaunching ? 0.75 : 1,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+            }}
+          >
+            {isLaunching ? (
+              <>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ animation: "wiz-spin 0.9s linear infinite" }} aria-hidden="true">
+                  <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                </svg>
+                Launching...
+              </>
+            ) : (
+              <>
+                <IconSend />
+                Launch campaign
+              </>
+            )}
+          </button>
+          {!isLaunching && (
+            <button
+              onClick={onEdit}
+              className="wiz-ghost-btn"
+              style={{
+                padding: "11px 18px",
+                borderRadius: 999,
+                border: "1px solid rgba(255,255,255,0.1)",
+                backgroundColor: "transparent",
+                color: "rgba(255,255,255,0.45)",
+                fontSize: 13,
+                fontFamily: "var(--font-outfit)",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+              }}
+            >
+              Edit preferences
+            </button>
+          )}
+        </div>
+      ) : (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", backgroundColor: "rgba(34,197,94,0.08)", borderRadius: 8, border: "1px solid rgba(34,197,94,0.2)" }}>
+          <IconCheck />
+          <p style={{ fontSize: 12, color: "rgba(34,197,94,0.8)", fontFamily: "var(--font-outfit)" }}>
+            Redirecting to your campaign...
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Wizard Content (inner, uses useSearchParams) ───────────────────────────────
+
+function WizardContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const templateParam = searchParams.get("template");
 
-  // ── Step 1 state
-  const [name, setName] = useState("");
-  const [tone, setTone] = useState<string>("Professional");
+  // step: 0=initializing, 1-5=questions, 6=summary, 7=launching
+  const [step, setStep] = useState(0);
+  const [messages, setMessages] = useState<Msg[]>([]);
+  const [activitySteps, setActivitySteps] = useState<ActivityStep[]>([]);
+  const [answers, setAnswers] = useState<Partial<Answers>>({});
+  const [showTypeInput, setShowTypeInput] = useState(false);
+  const [typeInput, setTypeInput] = useState("");
+  const [optionsVisible, setOptionsVisible] = useState(false);
+  const [answering, setAnswering] = useState(false);
+  const [isLaunching, setIsLaunching] = useState(false);
+  const [launchError, setLaunchError] = useState<string | null>(null);
+  const [launchResult, setLaunchResult] = useState<LaunchResult | null>(null);
 
-  // ── Step 2 state
-  const [leads, setLeads] = useState<Lead[]>([]);
-  const [isDragging, setIsDragging] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const convRef = useRef<HTMLDivElement>(null);
+  const activityRef = useRef<HTMLDivElement>(null);
+  const timerRefs = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const templateFiredRef = useRef(false);
 
-  // ── Step 3 state
-  const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [campaignId, setCampaignId] = useState<string | null>(null);
-  const [emails, setEmails] = useState<GeneratedEmail[]>([]);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editSubject, setEditSubject] = useState("");
-  const [editBody, setEditBody] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [upgradeModal, setUpgradeModal] = useState<PlanKey | null>(null);
-  const [userPlan, setUserPlan] = useState<string>("free");
-  const [downloading, setDownloading] = useState<string | null>(null);
-
-  // Fetch user plan for export gate
-  useEffect(() => {
-    fetch("/api/subscription")
-      .then((r) => r.json())
-      .then((d) => setUserPlan(d.subscription?.plan ?? "free"))
-      .catch(() => {});
+  const scrollConv = useCallback(() => {
+    setTimeout(() => {
+      if (convRef.current) convRef.current.scrollTop = convRef.current.scrollHeight;
+    }, 60);
   }, []);
 
-  async function handleDownload(format: "csv") {
-    if (!campaignId) return;
-    setDownloading(format);
-    try {
-      const res = await fetch(`/api/export?campaignId=${campaignId}&format=${format}`);
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Export failed" }));
-        alert(err.error ?? "Export failed");
-        return;
-      }
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `nexora-campaign-${campaignId.slice(0, 8)}.${format}`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } catch {
-      alert("Download failed. Please try again.");
-    } finally {
-      setDownloading(null);
-    }
-  }
+  const scrollActivity = useCallback(() => {
+    setTimeout(() => {
+      if (activityRef.current) activityRef.current.scrollTop = activityRef.current.scrollHeight;
+    }, 60);
+  }, []);
 
-  // ── File handling (CSV, Excel, Word)
-  const handleFile = useCallback(async (file: File) => {
-    const ext = file.name.split(".").pop()?.toLowerCase();
-
-    // CSV — always allowed, parse client-side
-    if (ext === "csv") {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const text = e.target?.result as string;
-        const parsed = parseCSV(text);
-        if (parsed.length === 0) {
-          setError("No leads found. Make sure your CSV has headers and data rows.");
-          return;
-        }
-        setError(null);
-        setLeads(parsed);
-      };
-      reader.readAsText(file);
-      return;
-    }
-
-    // XLSX — Pro/Agency, parsed client-side with xlsx package
-    if (ext === "xlsx" || ext === "xls") {
-      if (userPlan !== "pro" && userPlan !== "agency") {
-        setError("Excel uploads require a Pro plan or higher. Please upgrade.");
-        return;
-      }
-      setError(null);
-      try {
-        const XLSX = await import("xlsx");
-        const arrayBuffer = await file.arrayBuffer();
-        const workbook = XLSX.read(arrayBuffer, { type: "array" });
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        // Convert to array-of-objects using first row as headers
-        const rows: Record<string, string>[] = XLSX.utils.sheet_to_json(sheet, { defval: "" });
-        console.log("[XLSX] rows:", rows.length, "sample keys:", Object.keys(rows[0] ?? {}));
-
-        if (rows.length === 0) {
-          setError("No data found in this Excel file.");
-          return;
-        }
-
-        const normKey = (k: string) => k.toLowerCase().replace(/[\s_-]+/g, "_").replace(/[^a-z_]/g, "");
-        const findKey = (obj: Record<string, string>, ...candidates: string[]) => {
-          const keys = Object.keys(obj);
-          for (const c of candidates) {
-            const found = keys.find((k) => normKey(k) === c || normKey(k).startsWith(c));
-            if (found) return found;
-          }
-          return null;
-        };
-
-        const first = rows[0];
-        const nameKey    = findKey(first, "first_name", "name", "firstname", "full_name");
-        const companyKey = findKey(first, "company", "organization", "org", "employer");
-        const roleKey    = findKey(first, "role", "title", "job_title", "position", "job");
-        const emailKey   = findKey(first, "email", "email_address", "mail");
-        const noteKey    = findKey(first, "custom_note", "note", "notes", "message", "context");
-
-        if (!nameKey && !emailKey) {
-          setError("Could not find name or email columns. Make sure your Excel file has headers like: name, company, role, email, note.");
-          return;
-        }
-
-        const parsed: Lead[] = rows.map((row) => ({
-          first_name: nameKey    ? String(row[nameKey] ?? "")    : "",
-          company:    companyKey ? String(row[companyKey] ?? "") : "",
-          role:       roleKey    ? String(row[roleKey] ?? "")    : "",
-          email:      emailKey   ? String(row[emailKey] ?? "")   : "",
-          custom_note: noteKey   ? String(row[noteKey] ?? "")    : "",
-        })).filter((l) => l.first_name || l.email);
-
-        console.log("[XLSX] leads parsed:", parsed.length);
-        if (parsed.length === 0) {
-          setError("No valid leads found. Make sure rows have at least a name or email.");
-          return;
-        }
-        setLeads(parsed);
-      } catch (err: any) {
-        console.error("[XLSX] parse error:", err);
-        setError("Failed to parse Excel file: " + (err?.message ?? "Unknown error"));
-      }
-      return;
-    }
-
-    // DOCX — Agency only, parsed server-side with mammoth
-    if (ext === "docx") {
-      if (userPlan !== "agency") {
-        setError("Word uploads require an Agency plan. Please upgrade.");
-        return;
-      }
-      setError(null);
-      const form = new FormData();
-      form.append("file", file);
-      try {
-        const res = await fetch("/api/parse-file", { method: "POST", body: form });
-        const json = await res.json();
-        if (!res.ok) {
-          setError(json.error ?? "Failed to parse file.");
-          return;
-        }
-        if (!json.leads || json.leads.length === 0) {
-          setError("No leads found in this Word document. Make sure it contains structured lead data.");
-          return;
-        }
-        setLeads(json.leads);
-      } catch {
-        setError("Failed to upload file. Please try again.");
-      }
-      return;
-    }
-
-    const accepted = userPlan === "agency" ? ".csv, .xlsx, or .docx" : userPlan === "pro" ? ".csv or .xlsx" : ".csv";
-    setError(`Unsupported file type. Please upload a ${accepted} file.`);
-  }, [userPlan]);
-
-  const onDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-      setIsDragging(false);
-      const file = e.dataTransfer.files[0];
-      if (file) handleFile(file);
+  const addMsg = useCallback(
+    (role: Msg["role"], text: string) => {
+      setMessages((prev) => [...prev, { id: genId(), role, text }]);
+      scrollConv();
     },
-    [handleFile]
+    [scrollConv]
   );
 
-  // ── Progress bar animation during generation
-  useEffect(() => {
-    if (!isGenerating) return;
-    setProgress(0);
-    const interval = setInterval(() => {
-      setProgress((p) => {
-        if (p >= 88) {
-          clearInterval(interval);
-          return 88;
-        }
-        return p + Math.random() * 6 + 2;
+  const addActivity = useCallback(
+    (text: string, variant: ActivityStep["variant"]) => {
+      setActivitySteps((prev) => [...prev, { id: genId(), text, variant }]);
+      scrollActivity();
+    },
+    [scrollActivity]
+  );
+
+  const scheduleActivity = useCallback(
+    (qId: QuestionId, answer: string) => {
+      const schedule = ACTIVITY_SCHEDULE[qId](answer);
+      schedule.forEach(({ text, variant, delay }) => {
+        const t = setTimeout(() => addActivity(text, variant), delay);
+        timerRefs.current.push(t);
       });
-    }, 500);
-    return () => clearInterval(interval);
-  }, [isGenerating]);
+    },
+    [addActivity]
+  );
 
-  // ── Generate
-  const handleGenerate = async () => {
-    setError(null);
-    setIsGenerating(true);
-    setStep(3);
+  // Init: show Q1 after mount
+  useEffect(() => {
+    const t = setTimeout(() => {
+      addMsg("ai", QUESTIONS[0].text);
+      const t2 = setTimeout(() => {
+        setStep(1);
+        setOptionsVisible(true);
+      }, 150);
+      timerRefs.current.push(t2);
+    }, 550);
+    timerRefs.current.push(t);
+    return () => timerRefs.current.forEach(clearTimeout);
+  }, [addMsg]);
+
+  const handleAnswer = useCallback(
+    (answer: string) => {
+      if (answering || step < 1 || step > 5) return;
+
+      setAnswering(true);
+      setOptionsVisible(false);
+      setShowTypeInput(false);
+      setTypeInput("");
+
+      setAnswers((prev) => ({ ...prev, [ANSWER_KEYS[step - 1]]: answer }));
+      addMsg("user", answer);
+      scheduleActivity(step as QuestionId, answer);
+
+      if (step < 5) {
+        const nextStep = (step + 1) as QuestionId;
+        const t = setTimeout(() => {
+          addMsg("ai", QUESTIONS[nextStep - 1].text);
+          const t2 = setTimeout(() => {
+            setStep(nextStep);
+            setAnswering(false);
+            setOptionsVisible(true);
+          }, 120);
+          timerRefs.current.push(t2);
+        }, 950);
+        timerRefs.current.push(t);
+      } else {
+        // Q5 done → show summary after activity steps finish
+        const t = setTimeout(() => {
+          setStep(6);
+          setAnswering(false);
+        }, 3700);
+        timerRefs.current.push(t);
+      }
+    },
+    [step, answering, addMsg, scheduleActivity]
+  );
+
+  // Template pre-fill
+  useEffect(() => {
+    if (!templateParam || templateFiredRef.current || step !== 1 || !optionsVisible) return;
+    const MAP: Record<string, string> = {
+      "saas-founders": "SaaS Founders",
+      "agency-owners": "Agency Owners",
+      ecommerce: "E-commerce Brands",
+      "real-estate": "Real Estate Agents",
+      "startup-cto": "Startup CTOs",
+      marketing: "Marketing Directors",
+    };
+    const answer = MAP[templateParam];
+    if (answer) {
+      templateFiredRef.current = true;
+      const t = setTimeout(() => handleAnswer(answer), 700);
+      timerRefs.current.push(t);
+    }
+  }, [templateParam, step, optionsVisible, handleAnswer]);
+
+  const handleLaunch = async () => {
+    if (isLaunching) return;
+    setIsLaunching(true);
+    setLaunchError(null);
+    setStep(7);
+
     try {
-      // Debug: verify notes are present before sending
-      console.log("[wizard] sending leads to API:", JSON.stringify(leads, null, 2));
-      leads.forEach((l, i) =>
-        console.log(`[wizard] lead ${i} — name: "${l.first_name}", note: "${l.custom_note}"`)
-      );
-
-      const res = await fetch("/api/generate", {
+      const res = await fetch("/api/campaign/wizard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ campaignName: name, tone, leads }),
+        body: JSON.stringify(answers),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Generation failed");
-      setProgress(100);
-      await new Promise((r) => setTimeout(r, 600));
-      setCampaignId(data.campaignId);
-      setEmails(data.emails);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong");
-      setStep(2);
-    } finally {
-      setIsGenerating(false);
+
+      if (!res.ok || !res.body) {
+        const err = await res.json().catch(() => ({ error: "Launch failed" }));
+        setLaunchError(err.error ?? "Launch failed");
+        setIsLaunching(false);
+        setStep(6);
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.type === "activity") {
+              addActivity(data.text, data.variant ?? "orange");
+            } else if (data.type === "done") {
+              setLaunchResult({
+                campaignId: data.campaignId,
+                leadCount: data.leadCount,
+                hot: data.hot,
+                warm: data.warm,
+                cold: data.cold,
+              });
+              setIsLaunching(false);
+              setTimeout(() => router.push(`/dashboard/campaigns/${data.campaignId}`), 2000);
+            } else if (data.type === "error") {
+              setLaunchError(data.message);
+              setIsLaunching(false);
+              setStep(6);
+            }
+          } catch {}
+        }
+      }
+    } catch (err: unknown) {
+      setLaunchError(err instanceof Error ? err.message : "Launch failed");
+      setIsLaunching(false);
+      setStep(6);
     }
   };
 
-  // ── Edit save
-  const saveEdit = (id: string) => {
-    setEmails((prev) =>
-      prev.map((e) =>
-        e.lead_id === id ? { ...e, subject: editSubject, body: editBody } : e
-      )
-    );
-    setEditingId(null);
-  };
+  const handleEdit = useCallback(() => {
+    timerRefs.current.forEach(clearTimeout);
+    timerRefs.current = [];
+    setStep(1);
+    setMessages([{ id: genId(), role: "ai", text: QUESTIONS[0].text }]);
+    setActivitySteps([]);
+    setAnswers({});
+    setAnswering(false);
+    setOptionsVisible(true);
+    setLaunchError(null);
+    setLaunchResult(null);
+    templateFiredRef.current = false;
+  }, []);
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // Render
-  // ─────────────────────────────────────────────────────────────────────────────
+  const currentQ = step >= 1 && step <= 5 ? QUESTIONS[step - 1] : null;
+  const leadStats = answers.leadCount ? getLeadStats(answers.leadCount) : { total: 10, hot: 3, warm: 5, cold: 2 };
 
   return (
     <>
-      {/* Top bar */}
+      {/* Animation styles */}
+      <style>{`
+        @keyframes wiz-fade-up {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes wiz-slide-right {
+          from { opacity: 0; transform: translateX(18px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes wiz-option-in {
+          from { opacity: 0; transform: scale(0.92) translateY(8px); }
+          to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes wiz-think {
+          0%, 80%, 100% { transform: scale(0.65); opacity: 0.3; }
+          40% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes wiz-spin { to { transform: rotate(360deg); } }
+
+        .wiz-msg { animation: wiz-fade-up 0.32s cubic-bezier(.23,1,.32,1) forwards; }
+        .wiz-step { animation: wiz-slide-right 0.36s cubic-bezier(.23,1,.32,1) forwards; }
+        .wiz-think-dot { animation: wiz-think 1.4s ease-in-out infinite; }
+
+        .wiz-option {
+          transition: border-color 0.14s, background-color 0.14s, color 0.14s, transform 0.1s;
+        }
+        .wiz-option:hover {
+          border-color: rgba(255,82,0,0.5) !important;
+          background-color: rgba(255,82,0,0.08) !important;
+          color: #fff !important;
+        }
+        .wiz-option:active { transform: scale(0.96); }
+
+        .wiz-launch-btn {
+          transition: background-color 0.14s, transform 0.1s;
+        }
+        .wiz-launch-btn:hover:not(:disabled) { background-color: #ff6a1f !important; }
+        .wiz-launch-btn:active:not(:disabled) { transform: scale(0.98); }
+
+        .wiz-ghost-btn {
+          transition: border-color 0.14s, color 0.14s;
+        }
+        .wiz-ghost-btn:hover {
+          border-color: rgba(255,255,255,0.22) !important;
+          color: rgba(255,255,255,0.65) !important;
+        }
+      `}</style>
+
+      {/* ── Header ── */}
       <header
         style={{
-          padding: "0 32px",
-          height: 68,
+          padding: "0 28px",
+          height: 64,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           borderBottom: "1px solid rgba(255,255,255,0.06)",
-          backgroundColor: "rgba(6,6,6,0.85)",
+          backgroundColor: "rgba(6,6,6,0.9)",
           backdropFilter: "blur(12px)",
           position: "sticky",
           top: 0,
@@ -574,892 +581,378 @@ export default function NewCampaignPage() {
               padding: "6px 10px",
               borderRadius: 7,
               border: "1px solid rgba(255,255,255,0.07)",
-              transition: "color 0.15s",
+              transition: "color 0.14s",
             }}
           >
             <IconArrowLeft />
             Back
           </Link>
-          <span style={{ color: "rgba(255,255,255,0.12)", fontSize: 16 }}>/</span>
-          <span
-            style={{
-              fontSize: 15,
-              fontWeight: 700,
-              color: "#fff",
-              fontFamily: "var(--font-syne)",
-            }}
-          >
-            New Campaign
+          <span style={{ color: "rgba(255,255,255,0.1)", fontSize: 16 }}>/</span>
+          <span style={{ fontSize: 15, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)" }}>
+            Campaign Wizard
           </span>
         </div>
-
-        {/* Export button — only in review state */}
-        {step === 3 && !isGenerating && emails.length > 0 && campaignId && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <button
-              onClick={() => handleDownload("csv")}
-              disabled={downloading === "csv"}
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                padding: "7px 14px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
-                fontFamily: "var(--font-outfit)", cursor: "pointer",
-                backgroundColor: "#FF5200", color: "#fff", border: "none",
-                opacity: downloading === "csv" ? 0.7 : 1,
-              }}
-            >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              {downloading === "csv" ? "Downloading…" : "Export CSV"}
-            </button>
-          </div>
-        )}
-
-        {/* Upgrade modal */}
-        {upgradeModal && (
-          <UpgradeModal requiredPlan={upgradeModal} onClose={() => setUpgradeModal(null)} />
-        )}
+        <Link
+          href="/dashboard"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 32,
+            height: 32,
+            borderRadius: 8,
+            border: "1px solid rgba(255,255,255,0.08)",
+            backgroundColor: "rgba(255,255,255,0.02)",
+            color: "rgba(255,255,255,0.35)",
+            transition: "background-color 0.14s",
+          }}
+          aria-label="Close wizard"
+        >
+          <IconX />
+        </Link>
       </header>
 
-      {/* Page body */}
-      <main
+      {/* ── Body: split layout ── */}
+      <div
         style={{
           flex: 1,
-          padding: "36px 32px 64px",
-          maxWidth: 760,
-          width: "100%",
-          marginInline: "auto",
+          display: "flex",
+          minHeight: 0,
+          height: "calc(100vh - 64px)",
+          overflow: "hidden",
         }}
       >
-        <StepIndicator current={step} />
-
-        {/* ── STEP 1 ── */}
-        {step === 1 && (
-          <div className="fade-up">
-            <h1
-              style={{
-                fontSize: 26,
-                fontWeight: 700,
-                color: "#fff",
-                fontFamily: "var(--font-syne)",
-                marginBottom: 6,
-              }}
-            >
-              Name your campaign
-            </h1>
-            <p
-              style={{
-                fontSize: 14,
-                color: "rgba(255,255,255,0.4)",
-                fontFamily: "var(--font-outfit)",
-                marginBottom: 32,
-              }}
-            >
-              Give it a clear name and choose the tone for your cold emails.
-            </p>
-
-            {/* Campaign name */}
-            <div style={{ marginBottom: 28 }}>
-              <label
-                htmlFor="campaign-name"
-                style={{
-                  display: "block",
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: "rgba(255,255,255,0.55)",
-                  fontFamily: "var(--font-outfit)",
-                  marginBottom: 8,
-                }}
-              >
-                Campaign name
-              </label>
-              <input
-                id="campaign-name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. SaaS Founders Q2"
-                className="nx-input"
-                autoFocus
-              />
-            </div>
-
-            {/* Tone */}
-            <div style={{ marginBottom: 36 }}>
-              <p
-                style={{
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: "rgba(255,255,255,0.55)",
-                  fontFamily: "var(--font-outfit)",
-                  marginBottom: 10,
-                }}
-              >
-                Tone
-              </p>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                {TONES.map((t) => {
-                  const active = tone === t;
-                  return (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setTone(t)}
-                      style={{
-                        padding: "9px 20px",
-                        borderRadius: 8,
-                        border: active
-                          ? "1px solid rgba(255,82,0,0.5)"
-                          : "1px solid rgba(255,255,255,0.09)",
-                        backgroundColor: active
-                          ? "rgba(255,82,0,0.15)"
-                          : "rgba(255,255,255,0.03)",
-                        color: active ? "#FF5200" : "rgba(255,255,255,0.5)",
-                        fontSize: 13.5,
-                        fontWeight: active ? 600 : 400,
-                        fontFamily: "var(--font-outfit)",
-                        cursor: "pointer",
-                        transition: "all 0.15s",
-                      }}
-                    >
-                      {t}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <button
-              type="button"
-              disabled={!name.trim()}
-              onClick={() => setStep(2)}
-              className="nx-btn"
-              style={{ maxWidth: 200 }}
-            >
-              Continue →
-            </button>
-          </div>
-        )}
-
-        {/* ── STEP 2 ── */}
-        {step === 2 && (
-          <div className="fade-up">
-            <h1
-              style={{
-                fontSize: 26,
-                fontWeight: 700,
-                color: "#fff",
-                fontFamily: "var(--font-syne)",
-                marginBottom: 6,
-              }}
-            >
-              Upload your leads
-            </h1>
-            <p
-              style={{
-                fontSize: 14,
-                color: "rgba(255,255,255,0.4)",
-                fontFamily: "var(--font-outfit)",
-                marginBottom: 32,
-              }}
-            >
-              {userPlan === "agency"
-                ? <>Drop a CSV, Excel, or Word doc with columns: <em>name, company, role, email, note</em>. Any order, any extra columns are ignored.</>
-                : userPlan === "pro"
-                ? <>Drop a CSV or Excel file with columns: <em>name, company, role, email, note</em>. Any order, any extra columns are ignored.</>
-                : <>Drop a CSV with columns: <em>name, company, role, email, note</em>. Any order, any extra columns are ignored.</>
-              }
-            </p>
-
-            {/* Drop zone */}
-            <div
-              onDragOver={(e) => {
-                e.preventDefault();
-                setIsDragging(true);
-              }}
-              onDragLeave={() => setIsDragging(false)}
-              onDrop={onDrop}
-              onClick={() => fileInputRef.current?.click()}
-              style={{
-                border: isDragging
-                  ? "2px solid #FF5200"
-                  : "2px dashed rgba(255,255,255,0.12)",
-                borderRadius: 14,
-                padding: "40px 24px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 10,
-                cursor: "pointer",
-                backgroundColor: isDragging
-                  ? "rgba(255,82,0,0.05)"
-                  : "rgba(255,255,255,0.02)",
-                transition: "all 0.15s",
-                marginBottom: 24,
-              }}
-            >
-              <div
-                style={{
-                  width: 52,
-                  height: 52,
-                  borderRadius: 12,
-                  backgroundColor: "rgba(255,82,0,0.1)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#FF5200",
-                  marginBottom: 4,
-                }}
-              >
-                <IconUpload />
-              </div>
-              <p
-                style={{
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: "#fff",
-                  fontFamily: "var(--font-outfit)",
-                  margin: 0,
-                  textAlign: "center",
-                }}
-              >
-                {userPlan === "agency"
-                  ? <>Drop your CSV, Excel, or Word doc here or <span style={{ color: "#FF5200" }}>browse files</span></>
-                  : userPlan === "pro"
-                  ? <>Drop your CSV or Excel file here or <span style={{ color: "#FF5200" }}>browse files</span></>
-                  : <>Drop your CSV here or <span style={{ color: "#FF5200" }}>browse files</span></>
-                }
-              </p>
-              <p
-                style={{
-                  fontSize: 12,
-                  color: "rgba(255,255,255,0.3)",
-                  fontFamily: "var(--font-outfit)",
-                  margin: 0,
-                }}
-              >
-                {userPlan === "agency"
-                  ? ".csv, .xlsx, .docx accepted"
-                  : userPlan === "pro"
-                  ? ".csv, .xlsx accepted"
-                  : ".csv files only"
-                }
-              </p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={
-                  userPlan === "agency"
-                    ? ".csv,.xlsx,.xls,.docx"
-                    : userPlan === "pro"
-                    ? ".csv,.xlsx,.xls"
-                    : ".csv"
-                }
-                style={{ display: "none" }}
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleFile(file);
-                  e.target.value = "";
-                }}
-              />
-            </div>
-
-            {error && (
-              <p className="nx-error" style={{ marginBottom: 16 }}>
-                {error}
-              </p>
-            )}
-
-            {/* Preview table */}
-            {leads.length > 0 && (
-              <div style={{ marginBottom: 28 }}>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    marginBottom: 12,
-                  }}
-                >
-                  <p
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: "#fff",
-                      fontFamily: "var(--font-outfit)",
-                    }}
-                  >
-                    {leads.length} lead{leads.length !== 1 ? "s" : ""} ready
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setLeads([])}
-                    style={{
-                      fontSize: 12,
-                      color: "rgba(255,255,255,0.3)",
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                      fontFamily: "var(--font-outfit)",
-                    }}
-                  >
-                    Remove
-                  </button>
-                </div>
-
-                <div
-                  style={{
-                    borderRadius: 10,
-                    border: "1px solid rgba(255,255,255,0.07)",
-                    overflow: "hidden",
-                  }}
-                >
-                  {/* Column headers */}
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr",
-                      padding: "8px 16px",
-                      backgroundColor: "rgba(255,255,255,0.03)",
-                      borderBottom: "1px solid rgba(255,255,255,0.06)",
-                    }}
-                  >
-                    {["Name", "Company", "Role", "Email", "Note"].map((col) => (
-                      <div
-                        key={col}
-                        style={{
-                          fontSize: 10,
-                          fontWeight: 600,
-                          letterSpacing: "0.07em",
-                          textTransform: "uppercase",
-                          color: "rgba(255,255,255,0.25)",
-                          fontFamily: "var(--font-outfit)",
-                        }}
-                      >
-                        {col}
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Rows (max 5 preview) */}
-                  {leads.slice(0, 5).map((lead, i) => (
-                    <div
-                      key={i}
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr",
-                        padding: "10px 16px",
-                        borderBottom:
-                          i < Math.min(leads.length, 5) - 1
-                            ? "1px solid rgba(255,255,255,0.04)"
-                            : "none",
-                      }}
-                    >
-                      {[
-                        lead.first_name,
-                        lead.company,
-                        lead.role,
-                        lead.email,
-                        lead.custom_note,
-                      ].map((val, j) => (
-                        <div
-                          key={j}
-                          style={{
-                            fontSize: 12,
-                            color: val
-                              ? "rgba(255,255,255,0.65)"
-                              : "rgba(255,255,255,0.2)",
-                            fontFamily: "var(--font-outfit)",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                            paddingRight: 8,
-                          }}
-                        >
-                          {val || "—"}
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-
-                  {leads.length > 5 && (
-                    <div
-                      style={{
-                        padding: "8px 16px",
-                        fontSize: 11,
-                        color: "rgba(255,255,255,0.25)",
-                        fontFamily: "var(--font-outfit)",
-                        backgroundColor: "rgba(255,255,255,0.02)",
-                      }}
-                    >
-                      +{leads.length - 5} more leads not shown
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Actions */}
-            <div style={{ display: "flex", gap: 12 }}>
-              <button
-                type="button"
-                onClick={() => setStep(1)}
-                style={{
-                  padding: "10px 20px",
-                  borderRadius: 8,
-                  border: "1px solid rgba(255,255,255,0.09)",
-                  backgroundColor: "transparent",
-                  color: "rgba(255,255,255,0.5)",
-                  fontSize: 13.5,
-                  fontWeight: 500,
-                  fontFamily: "var(--font-outfit)",
-                  cursor: "pointer",
-                }}
-              >
-                ← Back
-              </button>
-              <button
-                type="button"
-                disabled={leads.length === 0}
-                onClick={handleGenerate}
-                className="nx-btn"
-                style={{ flex: 1, maxWidth: 220 }}
-              >
-                Generate emails →
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ── STEP 3: Loading ── */}
-        {step === 3 && isGenerating && (
+        {/* ── LEFT: Conversation ── */}
+        <div
+          style={{
+            width: "60%",
+            display: "flex",
+            flexDirection: "column",
+            borderRight: "1px solid rgba(255,255,255,0.06)",
+            minHeight: 0,
+            overflow: "hidden",
+          }}
+        >
+          {/* Progress dots + step label */}
           <div
-            className="fade-up"
             style={{
+              padding: "16px 28px 14px",
+              borderBottom: "1px solid rgba(255,255,255,0.04)",
               display: "flex",
-              flexDirection: "column",
               alignItems: "center",
-              paddingTop: 40,
-              gap: 24,
+              gap: 8,
+              flexShrink: 0,
             }}
           >
-            <div
+            {[1, 2, 3, 4, 5].map((n) => (
+              <div
+                key={n}
+                style={{
+                  width: 7,
+                  height: 7,
+                  borderRadius: "50%",
+                  backgroundColor: step >= n ? "#FF5200" : "rgba(255,255,255,0.09)",
+                  boxShadow: step >= n ? "0 0 7px rgba(255,82,0,0.55)" : "none",
+                  transition: "background-color 0.3s ease, box-shadow 0.3s ease",
+                }}
+              />
+            ))}
+            <span
               style={{
-                width: 64,
-                height: 64,
-                borderRadius: 16,
-                backgroundColor: "rgba(255,82,0,0.1)",
-                border: "1px solid rgba(255,82,0,0.2)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
+                marginLeft: 6,
+                fontSize: 11,
+                color: "rgba(255,255,255,0.22)",
+                fontFamily: "var(--font-outfit)",
               }}
             >
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10"
-                  stroke="#FF5200"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  style={{ animation: "spin 1s linear infinite" }}
-                />
-              </svg>
-            </div>
-
-            <div style={{ textAlign: "center" }}>
-              <h2
-                style={{
-                  fontSize: 22,
-                  fontWeight: 700,
-                  color: "#fff",
-                  fontFamily: "var(--font-syne)",
-                  marginBottom: 8,
-                }}
-              >
-                AI is writing {leads.length} email{leads.length !== 1 ? "s" : ""}…
-              </h2>
-              <p
-                style={{
-                  fontSize: 13,
-                  color: "rgba(255,255,255,0.35)",
-                  fontFamily: "var(--font-outfit)",
-                }}
-              >
-                Crafting hyper-personalized cold emails for each lead.
-              </p>
-            </div>
-
-            <div style={{ width: "100%", maxWidth: 400 }}>
-              <ProgressBar progress={progress} />
-              <p
-                style={{
-                  fontSize: 11,
-                  color: "rgba(255,255,255,0.25)",
-                  fontFamily: "var(--font-outfit)",
-                  marginTop: 8,
-                  textAlign: "center",
-                }}
-              >
-                {Math.round(progress)}% complete
-              </p>
-            </div>
-
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+              {step <= 5
+                ? `Step ${Math.max(step, 1)} of 5`
+                : step === 6
+                ? "Ready to launch"
+                : "Launching..."}
+            </span>
           </div>
-        )}
 
-        {/* ── STEP 3: Review ── */}
-        {step === 3 && !isGenerating && emails.length > 0 && (
-          <div className="fade-up">
-            {error && (
-              <p className="nx-error" style={{ marginBottom: 20 }}>
-                {error}
-              </p>
-            )}
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "space-between",
-                marginBottom: 24,
-                gap: 12,
-                flexWrap: "wrap",
-              }}
-            >
-              <div>
-                <h1
+          {/* Message history + options */}
+          <div
+            ref={convRef}
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              padding: "20px 28px 24px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+            }}
+          >
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className="wiz-msg"
+                style={{
+                  display: "flex",
+                  justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
+                }}
+              >
+                <div
                   style={{
-                    fontSize: 24,
-                    fontWeight: 700,
-                    color: "#fff",
-                    fontFamily: "var(--font-syne)",
-                    marginBottom: 4,
+                    maxWidth: "78%",
+                    padding: "11px 16px",
+                    borderRadius:
+                      msg.role === "user" ? "18px 18px 5px 18px" : "5px 18px 18px 18px",
+                    backgroundColor: msg.role === "user" ? "rgba(255,82,0,0.13)" : "#0e0e0e",
+                    border:
+                      msg.role === "user"
+                        ? "1px solid rgba(255,82,0,0.22)"
+                        : "1px solid rgba(255,255,255,0.07)",
+                    fontSize: msg.role === "ai" ? 15 : 13.5,
+                    fontWeight: msg.role === "ai" ? 600 : 400,
+                    lineHeight: 1.55,
+                    color:
+                      msg.role === "user"
+                        ? "rgba(255,255,255,0.9)"
+                        : "rgba(255,255,255,0.82)",
+                    fontFamily:
+                      msg.role === "ai" ? "var(--font-syne)" : "var(--font-outfit)",
                   }}
                 >
-                  Review your emails
-                </h1>
-                <p
-                  style={{
-                    fontSize: 13,
-                    color: "rgba(255,255,255,0.4)",
-                    fontFamily: "var(--font-outfit)",
-                  }}
-                >
-                  {emails.length} email{emails.length !== 1 ? "s" : ""} generated · Click edit to refine any email
-                </p>
+                  {msg.text}
+                </div>
               </div>
-              <Link
-                href="/dashboard"
-                style={{
-                  fontSize: 13,
-                  color: "rgba(255,255,255,0.4)",
-                  fontFamily: "var(--font-outfit)",
-                  textDecoration: "none",
-                  padding: "8px 14px",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  borderRadius: 7,
-                  alignSelf: "center",
-                }}
-              >
-                ← Back to Dashboard
-              </Link>
-            </div>
+            ))}
 
-            {/* Export button */}
-            <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
-              <button
-                onClick={() => handleDownload("csv")}
-                disabled={downloading === "csv" || !campaignId}
-                style={{
-                  background: "#FF5200", color: "#fff", border: "none",
-                  padding: "10px 20px", borderRadius: 8, cursor: "pointer",
-                  fontWeight: 600, fontFamily: "var(--font-outfit)", fontSize: 13,
-                  opacity: downloading === "csv" ? 0.7 : 1,
-                }}
-              >
-                {downloading === "csv" ? "Downloading…" : "Export CSV"}
-              </button>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              {emails.map((email) => {
-                const isEditing = editingId === email.lead_id;
-                const isExpanded = expandedId === email.lead_id;
-
-                return (
-                  <div
-                    key={email.lead_id}
-                    style={{
-                      backgroundColor: "var(--black-2)",
-                      border: "1px solid rgba(255,255,255,0.07)",
-                      borderRadius: 12,
-                      overflow: "hidden",
-                      transition: "border-color 0.15s",
-                    }}
-                  >
-                    {/* Card header */}
-                    <div
+            {/* Option pills */}
+            {currentQ && optionsVisible && !answering && step >= 1 && step <= 5 && (
+              <div style={{ marginTop: 4 }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {currentQ.options.map((option, i) => (
+                    <button
+                      key={option}
+                      onClick={() => handleAnswer(option)}
+                      className="wiz-option"
                       style={{
-                        padding: "16px 20px 12px",
-                        borderBottom: "1px solid rgba(255,255,255,0.05)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: 12,
+                        padding: "9px 18px",
+                        borderRadius: 999,
+                        border: "1px solid rgba(255,255,255,0.11)",
+                        backgroundColor: "rgba(255,255,255,0.03)",
+                        color: "rgba(255,255,255,0.62)",
+                        fontSize: 13,
+                        fontFamily: "var(--font-outfit)",
+                        cursor: "pointer",
+                        animation: `wiz-option-in 0.4s cubic-bezier(.23,1,.32,1) ${i * 48}ms both`,
                       }}
                     >
-                      <div style={{ minWidth: 0 }}>
-                        <p
-                          style={{
-                            fontSize: 13.5,
-                            fontWeight: 600,
-                            color: "#FF5200",
-                            fontFamily: "var(--font-outfit)",
-                            marginBottom: 1,
-                          }}
-                        >
-                          {email.first_name || "Lead"}
-                          {email.company && (
-                            <span style={{ color: "rgba(255,82,0,0.7)" }}>
-                              {" · "}{email.company}
-                            </span>
-                          )}
-                        </p>
-                        {email.email && (
-                          <p
-                            style={{
-                              fontSize: 11,
-                              color: "rgba(255,255,255,0.25)",
-                              fontFamily: "var(--font-outfit)",
-                            }}
-                          >
-                            {email.email}
-                          </p>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (isEditing) {
-                            setEditingId(null);
-                          } else {
-                            setEditingId(email.lead_id);
-                            setEditSubject(email.subject);
-                            setEditBody(email.body);
-                            setExpandedId(email.lead_id);
-                          }
-                        }}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 6,
-                          padding: "6px 12px",
-                          borderRadius: 6,
-                          border: "1px solid rgba(255,255,255,0.08)",
-                          backgroundColor: isEditing ? "rgba(255,82,0,0.1)" : "transparent",
-                          color: isEditing ? "#FF5200" : "rgba(255,255,255,0.4)",
-                          fontSize: 12,
-                          fontFamily: "var(--font-outfit)",
-                          cursor: "pointer",
-                          flexShrink: 0,
-                        }}
-                      >
-                        <IconEdit />
-                        {isEditing ? "Cancel" : "Edit"}
-                      </button>
-                    </div>
+                      {option}
+                    </button>
+                  ))}
+                  {currentQ.canType && (
+                    <button
+                      onClick={() => setShowTypeInput((v) => !v)}
+                      className="wiz-option"
+                      style={{
+                        padding: "9px 18px",
+                        borderRadius: 999,
+                        border: "1px solid rgba(255,255,255,0.06)",
+                        backgroundColor: "transparent",
+                        color: "rgba(255,255,255,0.3)",
+                        fontSize: 13,
+                        fontFamily: "var(--font-outfit)",
+                        cursor: "pointer",
+                        animation: `wiz-option-in 0.4s cubic-bezier(.23,1,.32,1) ${currentQ.options.length * 48}ms both`,
+                      }}
+                    >
+                      Type my own...
+                    </button>
+                  )}
+                </div>
 
-                    {/* Card body */}
-                    <div style={{ padding: "14px 20px 16px" }}>
-                      {isEditing ? (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                          <div>
-                            <label
-                              style={{
-                                display: "block",
-                                fontSize: 11,
-                                fontWeight: 600,
-                                letterSpacing: "0.06em",
-                                textTransform: "uppercase",
-                                color: "rgba(255,255,255,0.25)",
-                                fontFamily: "var(--font-outfit)",
-                                marginBottom: 6,
-                              }}
-                            >
-                              Subject
-                            </label>
-                            <input
-                              type="text"
-                              value={editSubject}
-                              onChange={(e) => setEditSubject(e.target.value)}
-                              className="nx-input"
-                              style={{ fontSize: 13 }}
-                            />
-                          </div>
-                          <div>
-                            <label
-                              style={{
-                                display: "block",
-                                fontSize: 11,
-                                fontWeight: 600,
-                                letterSpacing: "0.06em",
-                                textTransform: "uppercase",
-                                color: "rgba(255,255,255,0.25)",
-                                fontFamily: "var(--font-outfit)",
-                                marginBottom: 6,
-                              }}
-                            >
-                              Body
-                            </label>
-                            <textarea
-                              value={editBody}
-                              onChange={(e) => setEditBody(e.target.value)}
-                              rows={5}
-                              className="nx-input"
-                              style={{ fontSize: 13, resize: "vertical" }}
-                            />
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => saveEdit(email.lead_id)}
-                            style={{
-                              alignSelf: "flex-start",
-                              padding: "7px 18px",
-                              borderRadius: 7,
-                              border: "none",
-                              backgroundColor: "#FF5200",
-                              color: "#fff",
-                              fontSize: 12.5,
-                              fontWeight: 600,
-                              fontFamily: "var(--font-outfit)",
-                              cursor: "pointer",
-                            }}
-                          >
-                            Save changes
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <p
-                            style={{
-                              fontSize: 14,
-                              fontWeight: 600,
-                              color: "#fff",
-                              fontFamily: "var(--font-outfit)",
-                              marginBottom: 8,
-                            }}
-                          >
-                            {email.subject}
-                          </p>
-                          <p
-                            style={{
-                              fontSize: 13,
-                              color: "rgba(255,255,255,0.45)",
-                              fontFamily: "var(--font-outfit)",
-                              lineHeight: 1.65,
-                              display: isExpanded ? "block" : "-webkit-box",
-                              WebkitLineClamp: isExpanded ? undefined : 3,
-                              WebkitBoxOrient: isExpanded ? undefined : "vertical",
-                              overflow: isExpanded ? "visible" : "hidden",
-                            }}
-                          >
-                            {email.body}
-                          </p>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setExpandedId(isExpanded ? null : email.lead_id)
-                            }
-                            style={{
-                              marginTop: 6,
-                              fontSize: 12,
-                              color: "rgba(255,82,0,0.7)",
-                              background: "none",
-                              border: "none",
-                              cursor: "pointer",
-                              fontFamily: "var(--font-outfit)",
-                              padding: 0,
-                            }}
-                          >
-                            {isExpanded ? "Show less" : "Show more"}
-                          </button>
-                        </>
-                      )}
-                    </div>
+                {showTypeInput && (
+                  <div
+                    style={{
+                      marginTop: 12,
+                      display: "flex",
+                      gap: 8,
+                      animation: "wiz-fade-up 0.25s ease-out both",
+                    }}
+                  >
+                    <input
+                      value={typeInput}
+                      onChange={(e) => setTypeInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && typeInput.trim()) handleAnswer(typeInput.trim());
+                      }}
+                      placeholder="Type your answer..."
+                      autoFocus
+                      className="nx-input"
+                      style={{ flex: 1, fontSize: 13, padding: "9px 14px" }}
+                    />
+                    <button
+                      onClick={() => typeInput.trim() && handleAnswer(typeInput.trim())}
+                      disabled={!typeInput.trim()}
+                      style={{
+                        padding: "9px 16px",
+                        borderRadius: 8,
+                        border: "none",
+                        backgroundColor: "#FF5200",
+                        color: "#fff",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        fontFamily: "var(--font-outfit)",
+                        cursor: typeInput.trim() ? "pointer" : "not-allowed",
+                        opacity: typeInput.trim() ? 1 : 0.4,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        transition: "opacity 0.14s",
+                      }}
+                    >
+                      <IconSend />
+                    </button>
                   </div>
-                );
-              })}
-            </div>
+                )}
+              </div>
+            )}
 
-            {/* ── Coming Soon Cards ── */}
-            <div style={{ marginTop: 48 }}>
-              <h2 style={{
-                fontSize: 15, fontWeight: 700, color: "#fff",
-                fontFamily: "var(--font-syne)", marginBottom: 4,
-              }}>
-                Coming Soon
-              </h2>
-              <p style={{
-                fontSize: 12.5, color: "rgba(255,255,255,0.35)",
-                fontFamily: "var(--font-outfit)", marginBottom: 20,
-              }}>
-                Features we&apos;re building next. Stay tuned.
-              </p>
-
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
-                {[
-                  { emoji: "📧", title: "Gmail & Outlook Sending", desc: "Connect your inbox and send campaigns directly from Nexora.", plan: "Pro" },
-                  { emoji: "🤖", title: "AI Reply Handler", desc: "Automatically detect replies and draft personalized follow-ups.", plan: "Pro" },
-                  { emoji: "👥", title: "Ghost Writer Mode", desc: "Write campaigns on behalf of multiple team members with separate voice profiles.", plan: "Agency" },
-                ].map((f) => (
-                  <div key={f.title} style={{
-                    backgroundColor: "#0e0e0e",
-                    border: "1px solid rgba(255,255,255,0.07)",
-                    borderRadius: 14, padding: "22px 20px",
-                    position: "relative", overflow: "hidden",
-                  }}>
-                    <div style={{
-                      position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
-                      background: "radial-gradient(circle at 0% 0%, rgba(255,82,0,0.04) 0%, transparent 65%)",
-                      pointerEvents: "none",
-                    }} />
-                    <div style={{ position: "relative" }}>
-                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
-                        <span style={{ fontSize: 24, lineHeight: 1 }}>{f.emoji}</span>
-                        <span style={{
-                          fontSize: 9, fontWeight: 800, color: "#FF5200",
-                          backgroundColor: "rgba(255,82,0,0.12)", border: "1px solid rgba(255,82,0,0.2)",
-                          padding: "3px 8px", borderRadius: 999, letterSpacing: "0.06em", textTransform: "uppercase",
-                        }}>Coming Soon</span>
-                      </div>
-                      <p style={{ fontSize: 13, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 5 }}>
-                        {f.title}
-                      </p>
-                      <p style={{ fontSize: 11.5, color: "rgba(255,255,255,0.38)", fontFamily: "var(--font-outfit)", lineHeight: 1.6, marginBottom: 14 }}>
-                        {f.desc}
-                      </p>
-                      <span style={{
-                        fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)",
-                        backgroundColor: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)",
-                        padding: "3px 9px", borderRadius: 5, letterSpacing: "0.05em",
-                      }}>{f.plan} Plan</span>
-                    </div>
-                  </div>
+            {/* Thinking dots between questions */}
+            {answering && step <= 5 && (
+              <div style={{ display: "flex", gap: 5, padding: "4px 0" }}>
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="wiz-think-dot"
+                    style={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: "50%",
+                      backgroundColor: "rgba(255,82,0,0.5)",
+                      animationDelay: `${i * 0.18}s`,
+                    }}
+                  />
                 ))}
               </div>
-            </div>
+            )}
 
+            {/* Summary card */}
+            {(step === 6 || step === 7) && (
+              <SummaryCard
+                answers={answers as Answers}
+                leadStats={leadStats}
+                isLaunching={isLaunching}
+                launchError={launchError}
+                launchResult={launchResult}
+                onLaunch={handleLaunch}
+                onEdit={handleEdit}
+              />
+            )}
+
+            <div style={{ height: 12 }} />
           </div>
-        )}
+        </div>
 
-        {/* Error fallback on step 3 (after failed generation) */}
-        {step === 2 && error && (
-          <p className="nx-error" style={{ marginTop: 16 }}>
-            {error}
-          </p>
-        )}
-      </main>
+        {/* ── RIGHT: Activity feed ── */}
+        <div
+          style={{
+            width: "40%",
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0,
+            overflow: "hidden",
+            backgroundColor: "rgba(255,255,255,0.005)",
+          }}
+        >
+          {/* Feed header */}
+          <div
+            style={{
+              padding: "16px 22px 13px",
+              borderBottom: "1px solid rgba(255,255,255,0.05)",
+              flexShrink: 0,
+            }}
+          >
+            <p
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "rgba(255,255,255,0.2)",
+                fontFamily: "var(--font-outfit)",
+                margin: 0,
+              }}
+            >
+              Live Activity
+            </p>
+          </div>
+
+          {/* Feed items */}
+          <div
+            ref={activityRef}
+            style={{
+              flex: 1,
+              overflowY: "auto",
+              padding: "14px 18px 20px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+            }}
+          >
+            {activitySteps.length === 0 && (
+              <div style={{ display: "flex", gap: 5, padding: "10px 0" }}>
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="wiz-think-dot"
+                    style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: "50%",
+                      backgroundColor: "rgba(255,255,255,0.12)",
+                      animationDelay: `${i * 0.22}s`,
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+
+            {activitySteps.map((actStep) => (
+              <div
+                key={actStep.id}
+                className="wiz-step"
+                style={{
+                  padding: "9px 12px",
+                  borderRadius: 8,
+                  backgroundColor: "rgba(255,255,255,0.018)",
+                  border: "1px solid rgba(255,255,255,0.05)",
+                  borderLeft: `3px solid ${
+                    actStep.variant === "orange"
+                      ? "#FF5200"
+                      : actStep.variant === "amber"
+                      ? "#F59E0B"
+                      : "#22C55E"
+                  }`,
+                  fontSize: 11.5,
+                  color: "rgba(255,255,255,0.52)",
+                  fontFamily: "var(--font-outfit)",
+                  lineHeight: 1.5,
+                }}
+              >
+                {actStep.text}
+              </div>
+            ))}
+
+            <div style={{ height: 8 }} />
+          </div>
+        </div>
+      </div>
     </>
+  );
+}
+
+// ── Page export ────────────────────────────────────────────────────────────────
+
+export default function NewCampaignPage() {
+  return (
+    <Suspense fallback={null}>
+      <WizardContent />
+    </Suspense>
   );
 }
