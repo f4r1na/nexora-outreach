@@ -9,7 +9,10 @@ import {
   SkipForward,
   RotateCcw,
   Check,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
+import { toast } from "sonner";
 import TimingBadge from "@/app/dashboard/components/timing-badge";
 
 export type Signal = {
@@ -54,6 +57,8 @@ type Props = {
   totalLeads: number;
   onClose: () => void;
   onSkip: (leadId: string) => void;
+  onPrev?: () => void;
+  onNext?: () => void;
 };
 
 function getScore(
@@ -111,6 +116,8 @@ export default function LeadPanel({
   totalLeads,
   onClose,
   onSkip,
+  onPrev,
+  onNext,
 }: Props) {
   const [editingEmail, setEditingEmail] = useState(false);
   const [subject, setSubject] = useState("");
@@ -130,11 +137,15 @@ export default function LeadPanel({
   useEffect(() => {
     if (!lead) return;
     function down(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null;
+      const inEditable = target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
       if (e.key === "Escape") onClose();
+      else if (!inEditable && e.key === "ArrowLeft" && onPrev) { e.preventDefault(); onPrev(); }
+      else if (!inEditable && e.key === "ArrowRight" && onNext) { e.preventDefault(); onNext(); }
     }
     document.addEventListener("keydown", down);
     return () => document.removeEventListener("keydown", down);
-  }, [lead, onClose]);
+  }, [lead, onClose, onPrev, onNext]);
 
   useEffect(() => {
     if (!lead?.id || lead.signal_status !== "done") return;
@@ -150,7 +161,22 @@ export default function LeadPanel({
       .writeText(`Subject: ${subject}\n\n${body}`)
       .catch(() => {});
     setCopied(true);
+    toast("Copied to clipboard");
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSend = () => {
+    if (!lead) return;
+    toast.success(`Email sent to ${lead.first_name}`, {
+      style: { color: "#4ade80", borderColor: "rgba(74,222,128,0.25)" },
+    });
+    onSkip(lead.id);
+  };
+
+  const handleSkipToast = () => {
+    if (!lead) return;
+    toast("Lead skipped", { style: { color: "#888" } });
+    onSkip(lead.id);
   };
 
   const handleRefreshIntel = async () => {
@@ -234,7 +260,7 @@ export default function LeadPanel({
         aria-label={lead ? `${lead.first_name} lead details` : "Lead details"}
       >
         {lead && (
-          <>
+          <div key={lead.id} style={{ animation: "lp-fade 150ms ease" }}>
             {/* Header */}
             <div
               style={{
@@ -316,26 +342,75 @@ export default function LeadPanel({
                   {lead.email}
                 </p>
               </div>
-              <button
-                onClick={onClose}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  width: 30,
-                  height: 30,
-                  borderRadius: 7,
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  backgroundColor: "rgba(255,255,255,0.02)",
-                  color: "#444",
-                  cursor: "pointer",
-                  flexShrink: 0,
-                  transition: "background-color 0.14s, color 0.14s",
-                }}
-                aria-label="Close panel"
-              >
-                <X size={13} />
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                {(onPrev || onNext) && (
+                  <div style={{
+                    display: "flex", alignItems: "center", gap: 2,
+                    padding: "2px 4px",
+                    borderRadius: 7,
+                    border: "1px solid rgba(255,255,255,0.07)",
+                    backgroundColor: "rgba(255,255,255,0.02)",
+                    marginRight: 2,
+                  }}>
+                    <button
+                      onClick={onPrev}
+                      disabled={!onPrev || index <= 0}
+                      aria-label="Previous lead"
+                      style={{
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        width: 22, height: 22, borderRadius: 5,
+                        border: "none",
+                        backgroundColor: "transparent",
+                        color: !onPrev || index <= 0 ? "#2a2a36" : "#888",
+                        cursor: !onPrev || index <= 0 ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      <ChevronLeft size={12} />
+                    </button>
+                    <span style={{
+                      fontSize: 10, color: "#555", fontFamily: "var(--font-outfit)",
+                      padding: "0 4px", whiteSpace: "nowrap",
+                    }}>
+                      {index + 1} of {totalLeads}
+                    </span>
+                    <button
+                      onClick={onNext}
+                      disabled={!onNext || index >= totalLeads - 1}
+                      aria-label="Next lead"
+                      style={{
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        width: 22, height: 22, borderRadius: 5,
+                        border: "none",
+                        backgroundColor: "transparent",
+                        color: !onNext || index >= totalLeads - 1 ? "#2a2a36" : "#888",
+                        cursor: !onNext || index >= totalLeads - 1 ? "not-allowed" : "pointer",
+                      }}
+                    >
+                      <ChevronRight size={12} />
+                    </button>
+                  </div>
+                )}
+                <button
+                  onClick={onClose}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 30,
+                    height: 30,
+                    borderRadius: 7,
+                    border: "1px solid rgba(255,255,255,0.07)",
+                    backgroundColor: "rgba(255,255,255,0.02)",
+                    color: "#444",
+                    cursor: "pointer",
+                    flexShrink: 0,
+                    transition: "background-color 0.14s, color 0.14s",
+                  }}
+                  aria-label="Close panel"
+                >
+                  <X size={13} />
+                </button>
+              </div>
             </div>
 
             {/* Scrollable body */}
@@ -732,7 +807,7 @@ export default function LeadPanel({
               {/* Action Row */}
               <div style={{ display: "flex", gap: 8, paddingTop: 2 }}>
                 <button
-                  onClick={() => onSkip(lead.id)}
+                  onClick={handleSend}
                   style={{
                     flex: 1,
                     display: "flex",
@@ -755,7 +830,7 @@ export default function LeadPanel({
                   Send now
                 </button>
                 <button
-                  onClick={() => onSkip(lead.id)}
+                  onClick={handleSkipToast}
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -799,7 +874,7 @@ export default function LeadPanel({
                 </button>
               </div>
             </div>
-          </>
+          </div>
         )}
       </div>
 
@@ -807,6 +882,10 @@ export default function LeadPanel({
         @keyframes panel-think {
           0%, 80%, 100% { transform: scale(0.65); opacity: 0.3; }
           40% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes lp-fade {
+          from { opacity: 0; transform: translateX(4px); }
+          to { opacity: 1; transform: translateX(0); }
         }
       `}</style>
     </>

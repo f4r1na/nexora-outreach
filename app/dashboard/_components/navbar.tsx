@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import { logout } from "@/app/actions/auth";
-import { Settings, LogOut, Sparkles } from "lucide-react";
+import { Settings, LogOut, Sparkles, Search } from "lucide-react";
 import { NexoraLogo } from "@/components/ui/nexora-logo";
 
 interface NavbarProps {
@@ -104,6 +104,34 @@ export default function Navbar({ email, plan }: NavbarProps) {
             </span>
           </div>
         )}
+        <button
+          type="button"
+          aria-label="Open command palette"
+          onClick={() => window.dispatchEvent(new CustomEvent("nx:open-command-palette"))}
+          style={{
+            display: "flex", alignItems: "center", gap: 6,
+            height: 28, padding: "0 8px 0 8px",
+            borderRadius: 7,
+            border: "1px solid rgba(255,255,255,0.07)",
+            backgroundColor: "rgba(255,255,255,0.02)",
+            color: "#666",
+            cursor: "pointer",
+            fontFamily: "var(--font-outfit)",
+            fontSize: 11,
+          }}
+        >
+          <Search size={12} />
+          <span style={{ color: "#555" }}>Search</span>
+          <kbd style={{
+            fontSize: 9, color: "#555",
+            padding: "1px 5px",
+            border: "1px solid rgba(255,255,255,0.08)",
+            borderRadius: 3,
+            marginLeft: 2,
+          }}>
+            ⌘K
+          </kbd>
+        </button>
         <Link
           href="/dashboard/settings"
           style={{

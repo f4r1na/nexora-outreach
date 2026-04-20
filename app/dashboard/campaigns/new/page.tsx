@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -475,11 +476,13 @@ function WizardContent() {
                 cold: data.cold,
               });
               setIsLaunching(false);
+              toast.success("Campaign launched", { style: { color: "#FF5200", borderColor: "rgba(255,82,0,0.25)" } });
               setTimeout(() => router.push(`/dashboard/campaigns/${data.campaignId}`), 2000);
             } else if (data.type === "error") {
               setLaunchError(data.message);
               setIsLaunching(false);
               setStep(6);
+              toast.error("Something went wrong. Try again.");
             }
           } catch {}
         }
@@ -488,6 +491,7 @@ function WizardContent() {
       setLaunchError(err instanceof Error ? err.message : "Launch failed");
       setIsLaunching(false);
       setStep(6);
+      toast.error("Something went wrong. Try again.");
     }
   };
 
