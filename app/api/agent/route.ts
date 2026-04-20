@@ -3,6 +3,17 @@ import Anthropic from "@anthropic-ai/sdk";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
+// In-memory per-user rate limiter: 10 requests / 60 s
+const _rl = new Map<string, { n: number; reset: number }>();
+function isRateLimited(uid: string): boolean {
+  const now = Date.now();
+  const e = _rl.get(uid);
+  if (!e || now > e.reset) { _rl.set(uid, { n: 1, reset: now + 60_000 }); return false; }
+  if (e.n >= 10) return true;
+  e.n++;
+  return false;
+}
+
 type StepEvent    = { type: "step";   message: string; icon: string };
 type ResultEvent  = { type: "result"; data: AgentResult };
 type ErrorEvent   = { type: "error";  message: string };
@@ -36,8 +47,16 @@ export async function POST(req: Request) {
   const body = (await req.json()) as { prompt?: string };
   const prompt = body.prompt?.trim();
   if (!prompt) return new Response("Bad Request", { status: 400 });
+  if (prompt.length > 2000) return new Response("Prompt too long", { status: 400 });
 
   const userId = user.id;
+
+  if (isRateLimited(userId)) {
+    return new Response(JSON.stringify({ error: "Too many requests. Please wait a moment." }), {
+      status: 429,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
   // Fetch company profile for context
   const { data: companyProfile } = await supabase

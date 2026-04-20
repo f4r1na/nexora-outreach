@@ -291,6 +291,7 @@ function WizardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const templateParam = searchParams.get("template");
+  const q1Param = searchParams.get("q1");
 
   // step: 0=initializing, 1-5=questions, 6=summary, 7=launching
   const [step, setStep] = useState(0);
@@ -418,6 +419,14 @@ function WizardContent() {
       timerRefs.current.push(t);
     }
   }, [templateParam, step, optionsVisible, handleAnswer]);
+
+  // ?q1= pre-fill (from agent interface campaign intent detection)
+  useEffect(() => {
+    if (!q1Param || templateFiredRef.current || step !== 1 || !optionsVisible) return;
+    templateFiredRef.current = true;
+    const t = setTimeout(() => handleAnswer(decodeURIComponent(q1Param)), 700);
+    timerRefs.current.push(t);
+  }, [q1Param, step, optionsVisible, handleAnswer]);
 
   const handleLaunch = async () => {
     if (isLaunching) return;

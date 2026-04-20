@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import {
@@ -53,6 +54,23 @@ const ICON_MAP: Record<string, React.ReactNode> = {
 
 const STEP_COLORS = ["#FF5200", "#F59E0B", "#4ade80", "rgba(74,222,128,0.55)"] as const;
 
+const CAMPAIGN_PATTERNS = [
+  /find leads/i, /create campaign/i, /new campaign/i, /outreach to/i,
+  /reach out to/i, /cold email/i, /cold outreach/i, /prospect/i,
+  /\bfind \d+\b/i, /\bwrite .{0,30}emails?\b/i, /\bdraft .{0,30}emails?\b/i,
+];
+
+function isCampaignIntent(text: string): boolean {
+  return CAMPAIGN_PATTERNS.some((p) => p.test(text));
+}
+
+function inferAudience(text: string): string {
+  const m = text.match(
+    /(?:find|reach|target|prospect|outreach to|email)\s+(?:\d+\s+)?([A-Za-z][\w\s-]{2,40}?)(?:\s+(?:in\b|at\b|who\b|that\b|and\b|,)|$)/i
+  );
+  return m ? m[1].trim() : "";
+}
+
 const STATUS_COLOR: Record<string, string> = {
   sent: "#4ade80", pending: "#facc15", draft: "#555", draft_ready: "#60a5fa",
   ready: "#4ade80", active: "#4ade80", paused: "#555", cancelled: "#f87171",
@@ -103,6 +121,7 @@ export default function AgentInterface({
   email: string;
   hasCompanyProfile: boolean;
 }) {
+  const router = useRouter();
   const reduced = useReducedMotion();
   const [prompt, setPrompt]           = useState("");
   const [focused, setFocused]         = useState(false);
@@ -123,6 +142,16 @@ export default function AgentInterface({
   const submit = async (text?: string) => {
     const q = (text ?? prompt).trim();
     if (!q || loading) return;
+
+    if (isCampaignIntent(q)) {
+      const audience = inferAudience(q);
+      const dest = audience
+        ? `/dashboard/campaigns/new?q1=${encodeURIComponent(audience)}`
+        : "/dashboard/campaigns/new";
+      router.push(dest);
+      return;
+    }
+
     setLoading(true); setSteps([]); setResult(null); setError(null);
     if (!text) setPrompt("");
     try {
