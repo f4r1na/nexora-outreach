@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import SendCampaignButton from "./send-button";
 import FollowUpsTab from "./follow-ups-tab";
 import AnalyticsTab from "./analytics-tab";
-import { StaggerList, StaggerItem } from "../../_components/motion";
+import LeadsTab from "./_components/leads-tab";
 import { ArrowLeft } from "lucide-react";
 
 type Props = {
@@ -39,7 +39,7 @@ export default async function CampaignDetailPage({ params, searchParams }: Props
       .single(),
     supabase
       .from("leads")
-      .select("id, first_name, company, role, email, custom_note, generated_subject, generated_body")
+      .select("id, first_name, company, role, email, custom_note, generated_subject, generated_body, signal_data, signal_status")
       .eq("campaign_id", id)
       .order("created_at"),
     supabase
@@ -191,85 +191,7 @@ export default async function CampaignDetailPage({ params, searchParams }: Props
 
         {/* Leads tab */}
         {activeTab === "leads" && (
-          <>
-            {allLeads.length === 0 ? (
-              <div style={{ padding: "48px 0", textAlign: "center", color: "#444", fontFamily: "var(--font-outfit)", fontSize: 13 }}>
-                No emails generated yet.
-              </div>
-            ) : (
-              <StaggerList style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {allLeads.map((lead, i) => (
-                  <StaggerItem key={lead.id}>
-                  <div style={{
-                    backgroundColor: "#0e0e0e",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                    borderRadius: 10,
-                    padding: "18px 22px",
-                  }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12, gap: 12 }}>
-                      <div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                          <span style={{ fontSize: 13, fontWeight: 500, color: "#ccc", fontFamily: "var(--font-outfit)" }}>
-                            {lead.first_name}
-                          </span>
-                          {lead.company && (
-                            <span style={{ fontSize: 12, color: "#555" }}>{lead.company}</span>
-                          )}
-                          {lead.role && (
-                            <span style={{ fontSize: 12, color: "#444" }}>{lead.role}</span>
-                          )}
-                        </div>
-                        {lead.email && (
-                          <p style={{ fontSize: 11, color: "#444", marginTop: 2, fontFamily: "var(--font-outfit)" }}>
-                            {lead.email}
-                          </p>
-                        )}
-                      </div>
-                      <span style={{
-                        fontSize: 10,
-                        color: "#444",
-                        fontFamily: "var(--font-outfit)",
-                        flexShrink: 0,
-                      }}>
-                        #{i + 1}
-                      </span>
-                    </div>
-
-                    {lead.custom_note && (
-                      <div style={{
-                        marginBottom: 12,
-                        padding: "8px 12px",
-                        backgroundColor: "rgba(255,255,255,0.02)",
-                        borderLeft: "2px solid rgba(255,82,0,0.3)",
-                        borderRadius: "0 4px 4px 0",
-                      }}>
-                        <p style={{ fontSize: 12, color: "#666", fontFamily: "var(--font-outfit)", lineHeight: 1.5 }}>
-                          {lead.custom_note}
-                        </p>
-                      </div>
-                    )}
-
-                    <div style={{ height: 1, backgroundColor: "rgba(255,255,255,0.04)", marginBottom: 12 }} />
-
-                    <div style={{ marginBottom: 10 }}>
-                      <p style={{ fontSize: 10, fontWeight: 500, color: "#444", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4, fontFamily: "var(--font-outfit)" }}>Subject</p>
-                      <p style={{ fontSize: 13, fontWeight: 500, color: "#ccc", fontFamily: "var(--font-syne)", lineHeight: 1.4 }}>
-                        {lead.generated_subject}
-                      </p>
-                    </div>
-
-                    <div>
-                      <p style={{ fontSize: 10, fontWeight: 500, color: "#444", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 4, fontFamily: "var(--font-outfit)" }}>Body</p>
-                      <p style={{ fontSize: 13, color: "#666", lineHeight: 1.7, fontFamily: "var(--font-outfit)" }}>
-                        {lead.generated_body}
-                      </p>
-                    </div>
-                  </div>
-                  </StaggerItem>
-                ))}
-              </StaggerList>
-            )}
-          </>
+          <LeadsTab leads={allLeads as Parameters<typeof LeadsTab>[0]["leads"]} />
         )}
 
         {/* Follow-ups tab */}
