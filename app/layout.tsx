@@ -15,6 +15,9 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   title: "Nexora Outreach",
+  verification: {
+    google: "BTj1AwYMo4teq6n-NLvnYJ9wnGOH_tAwU3-bRzMrZz0",
+  },
 };
 
 export default function RootLayout({
