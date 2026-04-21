@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@/lib/supabase/server";
+import { rateLimit } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -58,6 +59,12 @@ export async function POST(req: NextRequest) {
 
         if (!user) {
           send({ type: "error", message: "Unauthorized" });
+          return;
+        }
+
+        const rl = rateLimit({ key: `wizard:${user.id}`, limit: 10, windowMs: 3600_000 });
+        if (!rl.ok) {
+          send({ type: "error", message: "Rate limit exceeded. Try again later." });
           return;
         }
 

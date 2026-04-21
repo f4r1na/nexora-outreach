@@ -14,7 +14,10 @@ export async function GET(req: NextRequest) {
 
   // Delegate to the send logic
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://nexoraoutreach.com";
-  const res = await fetch(`${baseUrl}/api/followups/send`, { method: "POST" });
+  const res = await fetch(`${baseUrl}/api/followups/send`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${cronSecret}` },
+  });
   const data = await res.json();
 
   return NextResponse.json({ ok: res.ok, ...data });

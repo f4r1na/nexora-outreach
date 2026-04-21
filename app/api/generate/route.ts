@@ -13,16 +13,19 @@ function getServiceClient() {
 
 export async function POST(req: NextRequest) {
   try {
-    console.log("ANTHROPIC_API_KEY loaded:", !!process.env.ANTHROPIC_API_KEY);
-
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
     const body = await req.json();
     const { campaignName, tone, leads } = body;
-    console.log("Generate request — campaign:", campaignName, "leads:", leads?.length);
 
     if (!leads || !Array.isArray(leads) || leads.length === 0) {
       return NextResponse.json({ error: "No leads provided" }, { status: 400 });
+    }
+    if (leads.length > 100) {
+      return NextResponse.json({ error: "Too many leads (max 100)" }, { status: 400 });
+    }
+    if (typeof campaignName !== "string" || campaignName.length > 200) {
+      return NextResponse.json({ error: "Invalid campaign name" }, { status: 400 });
     }
 
     const supabase = await createClient();
@@ -55,9 +58,6 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     const ghostWriterStyle: string | null = writingStyle?.style_summary ?? null;
-    if (ghostWriterStyle) {
-      console.log("Ghost Writer style active for user:", user.id);
-    }
 
     const { data: campaign, error: campaignError } = await supabase
       .from("campaigns")
@@ -80,7 +80,6 @@ export async function POST(req: NextRequest) {
 
     for (const lead of leads) {
       const note = lead.note || lead.custom_note || "";
-      console.log("Generating for:", lead.name, "| note:", note);
 
       try {
         const styleInstruction = ghostWriterStyle
@@ -114,15 +113,13 @@ No generic openers. Reference the situation in the first word.${signalInstructio
         });
 
         const raw = message.content[0].type === "text" ? message.content[0].text : "";
-        console.log("Raw Anthropic response for", lead.name, ":", raw);
 
         const cleaned = raw.replace(/```json\s*/gi, "").replace(/```/g, "").trim();
 
         let parsed: { subject: string; body: string };
         try {
           parsed = JSON.parse(cleaned);
-        } catch (parseErr) {
-          console.error("JSON parse failed for lead", lead.name, "raw:", raw);
+        } catch {
           parsed = { subject: `Email for ${lead.name}`, body: raw };
         }
 
@@ -142,8 +139,9 @@ No generic openers. Reference the situation in the first word.${signalInstructio
         }
 
         results.push({ ...lead, subject: parsed.subject, body: parsed.body });
-      } catch (leadErr: any) {
-        console.error("Error generating for lead", lead.name, ":", leadErr?.message);
+      } catch (leadErr: unknown) {
+        const msg = leadErr instanceof Error ? leadErr.message : String(leadErr);
+        console.error("generate lead error:", msg);
         // Push a fallback so the rest of the campaign still completes
         results.push({
           ...lead,
@@ -162,8 +160,9 @@ No generic openers. Reference the situation in the first word.${signalInstructio
       );
 
     return NextResponse.json({ campaignId: campaign.id, emails: results });
-  } catch (err: any) {
-    console.error("Generate route error:", err);
-    return NextResponse.json({ error: err?.message ?? "Internal server error" }, { status: 500 });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Internal server error";
+    console.error("generate route error:", msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
