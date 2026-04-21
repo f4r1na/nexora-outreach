@@ -23,64 +23,62 @@ export async function GET() {
 
     const db = getServiceClient();
 
+    // Always load campaigns for this user (independent of events table)
+    const { data: campaignRows } = await db
+      .from("campaigns")
+      .select("id, name, created_at, status, lead_count")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
     // Fetch all events for this user
     const { data: events } = await db
       .from("email_events")
       .select("event_type, campaign_id, created_at")
       .eq("user_id", user.id);
 
-    if (!events || events.length === 0) {
-      return NextResponse.json({
-        stats: { sent: 0, opened: 0, clicked: 0, replied: 0, open_rate: 0, click_rate: 0, reply_rate: 0 },
-        campaigns: [],
-        daily: buildEmptyDaily(),
-      });
-    }
+    console.log("[analytics]", { user_id: user.id, campaigns: campaignRows?.length ?? 0, events: events?.length ?? 0 });
 
-    // Overall stats
-    const sent = events.filter((e) => e.event_type === "sent").length;
-    const opened = events.filter((e) => e.event_type === "opened").length;
-    const clicked = events.filter((e) => e.event_type === "clicked").length;
-    const replied = events.filter((e) => e.event_type === "replied").length;
+    const evts = events ?? [];
+    const sent = evts.filter((e) => e.event_type === "sent").length;
+    const opened = evts.filter((e) => e.event_type === "opened").length;
+    const clicked = evts.filter((e) => e.event_type === "clicked").length;
+    const replied = evts.filter((e) => e.event_type === "replied").length;
 
     const open_rate = sent > 0 ? Math.round((opened / sent) * 100) : 0;
     const click_rate = sent > 0 ? Math.round((clicked / sent) * 100) : 0;
     const reply_rate = sent > 0 ? Math.round((replied / sent) * 100) : 0;
 
-    // Per-campaign breakdown
-    const campaignIds = [
-      ...new Set(events.map((e) => e.campaign_id).filter(Boolean)),
-    ] as string[];
-
-    const { data: campaignRows } = await db
-      .from("campaigns")
-      .select("id, name, created_at")
-      .in("id", campaignIds)
-      .order("created_at", { ascending: false });
-
+    // Per-campaign breakdown — include every campaign even with no events
     const campaigns = (campaignRows ?? []).map((camp) => {
-      const ce = events.filter((e) => e.campaign_id === camp.id);
+      const ce = evts.filter((e) => e.campaign_id === camp.id);
       const c_sent = ce.filter((e) => e.event_type === "sent").length;
       const c_opened = ce.filter((e) => e.event_type === "opened").length;
       const c_clicked = ce.filter((e) => e.event_type === "clicked").length;
       const c_replied = ce.filter((e) => e.event_type === "replied").length;
+      const effectiveSent = c_sent > 0 ? c_sent : (camp.status === "sent" ? (camp.lead_count ?? 0) : 0);
       return {
         id: camp.id,
         name: camp.name,
         created_at: camp.created_at,
-        sent: c_sent,
+        sent: effectiveSent,
         opened: c_opened,
         clicked: c_clicked,
         replied: c_replied,
-        open_rate: c_sent > 0 ? Math.round((c_opened / c_sent) * 100) : 0,
-        click_rate: c_sent > 0 ? Math.round((c_clicked / c_sent) * 100) : 0,
-        reply_rate: c_sent > 0 ? Math.round((c_replied / c_sent) * 100) : 0,
+        open_rate: effectiveSent > 0 ? Math.round((c_opened / effectiveSent) * 100) : 0,
+        click_rate: effectiveSent > 0 ? Math.round((c_clicked / effectiveSent) * 100) : 0,
+        reply_rate: effectiveSent > 0 ? Math.round((c_replied / effectiveSent) * 100) : 0,
       };
     });
 
+    const totalFallbackSent = campaigns.reduce((acc, c) => acc + c.sent, 0);
+    const finalSent = sent > 0 ? sent : totalFallbackSent;
+    const finalOpenRate = finalSent > 0 ? Math.round((opened / finalSent) * 100) : 0;
+    const finalClickRate = finalSent > 0 ? Math.round((clicked / finalSent) * 100) : 0;
+    const finalReplyRate = finalSent > 0 ? Math.round((replied / finalSent) * 100) : 0;
+
     // Daily send volume for last 30 days
     const daily = buildEmptyDaily();
-    const sentEvents = events.filter((e) => e.event_type === "sent");
+    const sentEvents = evts.filter((e) => e.event_type === "sent");
     for (const e of sentEvents) {
       const day = e.created_at.slice(0, 10);
       const entry = daily.find((d) => d.date === day);
@@ -88,7 +86,15 @@ export async function GET() {
     }
 
     return NextResponse.json({
-      stats: { sent, opened, clicked, replied, open_rate, click_rate, reply_rate },
+      stats: {
+        sent: finalSent,
+        opened,
+        clicked,
+        replied,
+        open_rate: finalOpenRate,
+        click_rate: finalClickRate,
+        reply_rate: finalReplyRate,
+      },
       campaigns,
       daily,
     });

@@ -50,14 +50,15 @@ const rowStyle: React.CSSProperties = {
   fontSize: 12, color: "#666", fontFamily: "var(--font-outfit)", margin: 0, lineHeight: 1.6,
 };
 
-export default function CampaignIQCard({ sentCount }: { sentCount: number }) {
+export default function CampaignIQCard({ sentCount, campaignCount = 0 }: { sentCount: number; campaignCount?: number }) {
   const [insight, setInsight] = useState<Insight | null>(null);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
+  const [noData, setNoData] = useState(false);
 
   useEffect(() => {
-    if (sentCount < 10) return;
+    if (sentCount < 1) return;
     runAnalysis(false);
   }, [sentCount]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -66,15 +67,16 @@ export default function CampaignIQCard({ sentCount }: { sentCount: number }) {
     else setLoading(true);
     try {
       const res = await fetch("/api/campaign-iq/analyze", { method: "POST" });
-      const data = await res.json() as { insight?: Insight };
-      if (data.insight) setInsight(data.insight);
+      const data = await res.json() as { insight?: Insight; error?: string };
+      if (data.insight) { setInsight(data.insight); setNoData(false); }
+      else if (data.error) setNoData(true);
     } finally {
       setLoading(false);
       setAnalyzing(false);
     }
   }
 
-  if (sentCount < 10) return null;
+  if (campaignCount < 1 && sentCount < 1) return null;
 
   if (loading) {
     return (
@@ -111,7 +113,56 @@ export default function CampaignIQCard({ sentCount }: { sentCount: number }) {
     );
   }
 
-  if (!insight) return null;
+  if (!insight) {
+    return (
+      <div style={{
+        backgroundColor: "#0e0e0e",
+        border: "1px solid rgba(255,82,0,0.12)",
+        borderRadius: 10,
+        padding: "14px 22px",
+        marginBottom: 16,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{
+            width: 28, height: 28, borderRadius: 7,
+            backgroundColor: "rgba(255,82,0,0.1)",
+            border: "1px solid rgba(255,82,0,0.2)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            color: "#FF5200",
+          }}>
+            <Brain size={13} strokeWidth={1.8} />
+          </div>
+          <div>
+            <p style={{ fontSize: 13, fontWeight: 600, color: "#ddd", fontFamily: "var(--font-space-grotesk)", margin: 0 }}>
+              Campaign IQ
+            </p>
+            <p style={{ fontSize: 10, color: "#444", fontFamily: "var(--font-outfit)", margin: 0, marginTop: 1 }}>
+              {noData && sentCount < 1 ? "Send a campaign to unlock reply-pattern insights" : "Run analysis on your campaigns"}
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => runAnalysis(true)}
+          disabled={analyzing || sentCount < 1}
+          style={{
+            fontSize: 11, fontWeight: 600, color: "#fff",
+            backgroundColor: sentCount < 1 ? "rgba(255,82,0,0.25)" : "#FF5200",
+            border: "none", borderRadius: 6,
+            padding: "6px 12px",
+            cursor: analyzing || sentCount < 1 ? "not-allowed" : "pointer",
+            fontFamily: "var(--font-outfit)",
+            opacity: analyzing ? 0.6 : 1,
+          }}
+        >
+          {analyzing ? "Analyzing..." : "Analyze now"}
+        </button>
+      </div>
+    );
+  }
 
   const scoreColor =
     insight.confidence_score >= 75 ? "#4ade80" :

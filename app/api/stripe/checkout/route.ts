@@ -10,11 +10,8 @@ const PRICE_IDS: Record<string, string> = {
 
 export async function POST(req: NextRequest) {
   try {
-    console.log("STRIPE_SECRET_KEY loaded:", !!process.env.STRIPE_SECRET_KEY)
-
     const { plan } = await req.json()
     const priceId = PRICE_IDS[plan]
-    console.log("plan:", plan, "priceId:", priceId)
 
     if (!priceId) return NextResponse.json({ error: "Invalid plan" }, { status: 400 })
 
@@ -35,13 +32,10 @@ export async function POST(req: NextRequest) {
       metadata: { user_id: user.id, plan },
     })
 
-    console.log("Stripe session created:", session.id, "url:", session.url)
     return NextResponse.json({ url: session.url })
-  } catch (err: any) {
-    console.error("Stripe checkout error full:", err)
-    console.error("Error message:", err?.message)
-    console.error("Error type:", err?.type)
-    console.error("STRIPE_SECRET_KEY defined:", !!process.env.STRIPE_SECRET_KEY)
-    return NextResponse.json({ error: err?.message ?? "Unknown error" }, { status: 500 })
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : "Unknown error"
+    console.error("stripe checkout error:", msg)
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }

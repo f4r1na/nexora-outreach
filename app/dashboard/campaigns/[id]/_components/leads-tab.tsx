@@ -74,6 +74,18 @@ export default function LeadsTab({ leads }: { leads: Lead[] }) {
     [leads]
   );
 
+  const handlePrev = useCallback(() => {
+    if (selectedIndex <= 0) return;
+    const next = leads[selectedIndex - 1];
+    if (next) { setSelectedLead(next); setSelectedIndex(selectedIndex - 1); }
+  }, [leads, selectedIndex]);
+
+  const handleNext = useCallback(() => {
+    if (selectedIndex >= leads.length - 1) return;
+    const next = leads[selectedIndex + 1];
+    if (next) { setSelectedLead(next); setSelectedIndex(selectedIndex + 1); }
+  }, [leads, selectedIndex]);
+
   if (leads.length === 0) {
     return (
       <div
@@ -285,6 +297,8 @@ export default function LeadsTab({ leads }: { leads: Lead[] }) {
         totalLeads={leads.length}
         onClose={handleClose}
         onSkip={handleSkip}
+        onPrev={handlePrev}
+        onNext={handleNext}
       />
 
       <style>{`
