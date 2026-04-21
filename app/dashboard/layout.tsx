@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Toaster } from "sonner";
+import Link from "next/link";
 import Navbar from "./_components/navbar";
 import OnboardingChecklist from "./components/onboarding-checklist";
 import CommandPalette from "./components/command-palette";
@@ -27,6 +28,18 @@ export default async function DashboardLayout({
       <Navbar email={user.email!} plan={plan} />
       <div style={{ paddingTop: 60, minHeight: "100vh", display: "flex", flexDirection: "column", position: "relative", zIndex: 1 }}>
         {children}
+        <footer style={{
+          marginTop: "auto",
+          borderTop: "1px solid rgba(255,255,255,0.05)",
+          padding: "14px 28px",
+          display: "flex", gap: 20, flexWrap: "wrap",
+        }}>
+          {[["Privacy", "/privacy"], ["Terms", "/terms"], ["Cookies", "/cookies"], ["Contact", "/contact"]].map(([label, href]) => (
+            <Link key={label} href={href} style={{ fontSize: 11.5, color: "rgba(255,255,255,0.22)", textDecoration: "none" }}>
+              {label}
+            </Link>
+          ))}
+        </footer>
       </div>
       <CommandPalette />
       <OnboardingChecklist />

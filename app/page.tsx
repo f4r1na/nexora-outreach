@@ -501,20 +501,30 @@ export default async function Home() {
       {/* ─── FOOTER ─────────────────────────────────────────────────── */}
       <footer style={{
         borderTop: "1px solid rgba(255,255,255,0.06)",
-        padding: "28px clamp(20px, 4vw, 56px)",
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        flexWrap: "wrap", gap: 16,
+        padding: "24px clamp(20px, 4vw, 56px)",
         position: "relative", zIndex: 1,
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <NexoraIcon size={20} />
-          <span style={{ fontSize: 12.5, color: "rgba(255,255,255,0.35)" }}>
-            © {new Date().getFullYear()} Nexora Studios
-          </span>
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          flexWrap: "wrap", gap: 16, marginBottom: 16,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <NexoraIcon size={20} />
+            <span style={{ fontSize: 12.5, color: "rgba(255,255,255,0.35)" }}>
+              © {new Date().getFullYear()} Nexora Studios
+            </span>
+          </div>
+          <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
+            <Link href="/login"  style={{ fontSize: 12.5, color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>Sign in</Link>
+            <Link href="/signup" style={{ fontSize: 12.5, color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>Sign up</Link>
+          </div>
         </div>
-        <div style={{ display: "flex", gap: 24 }}>
-          <Link href="/login"  style={{ fontSize: 12.5, color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>Sign in</Link>
-          <Link href="/signup" style={{ fontSize: 12.5, color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>Sign up</Link>
+        <div style={{ display: "flex", gap: 20, flexWrap: "wrap", borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: 16 }}>
+          {[["Privacy", "/privacy"], ["Terms", "/terms"], ["Cookies", "/cookies"], ["Contact", "/contact"]].map(([label, href]) => (
+            <Link key={label} href={href} style={{ fontSize: 12, color: "rgba(255,255,255,0.28)", textDecoration: "none" }}>
+              {label}
+            </Link>
+          ))}
         </div>
       </footer>
     </div>
