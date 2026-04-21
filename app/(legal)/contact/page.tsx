@@ -1,116 +1,154 @@
 import { Metadata } from "next";
+import { Mail, Lock, FileText } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Contact - Nexora Outreach",
 };
 
-function ContactCard({
-  icon, title, desc, email, response,
-}: {
-  icon: string; title: string; desc: string; email: string; response: string;
-}) {
-  return (
-    <div style={{
-      padding: "24px 22px",
-      backgroundColor: "rgba(255,255,255,0.02)",
-      border: "1px solid rgba(255,255,255,0.07)",
-      borderRadius: 14,
-    }}>
-      <div style={{ fontSize: 22, marginBottom: 12 }}>{icon}</div>
-      <h3 style={{
-        fontSize: 15, fontWeight: 600, color: "#fff",
-        fontFamily: "var(--font-space-grotesk)",
-        marginBottom: 6, letterSpacing: "-0.01em",
-      }}>
-        {title}
-      </h3>
-      <p style={{ fontSize: 13.5, color: "rgba(255,255,255,0.5)", lineHeight: 1.55, marginBottom: 16 }}>
-        {desc}
-      </p>
-      <a
-        href={`mailto:${email}`}
-        style={{
-          display: "inline-block",
-          fontSize: 13, fontWeight: 500,
-          color: "#FF5200",
-          textDecoration: "none",
-          padding: "8px 16px",
-          backgroundColor: "rgba(255,82,0,0.08)",
-          border: "1px solid rgba(255,82,0,0.2)",
-          borderRadius: 8,
-          fontFamily: "var(--font-outfit)",
-        }}
-      >
-        {email}
-      </a>
-      <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginTop: 12 }}>
-        {response}
-      </p>
-    </div>
-  );
-}
+const CARDS: { Icon: LucideIcon; label: string; email: string; note: string }[] = [
+  {
+    Icon: Mail,
+    label: "General Support",
+    email: "support@nexoraoutreach.com",
+    note: "Reply within 24h",
+  },
+  {
+    Icon: Lock,
+    label: "Privacy & Data",
+    email: "privacy@nexoraoutreach.com",
+    note: "GDPR compliant",
+  },
+  {
+    Icon: FileText,
+    label: "Legal",
+    email: "legal@nexoraoutreach.com",
+    note: "3-5 business days",
+  },
+];
 
 export default function ContactPage() {
   return (
     <>
-      <div style={{ marginBottom: 48 }}>
+      {/* Hero */}
+      <div style={{ marginBottom: 56 }}>
         <p style={{
           fontSize: 11, fontWeight: 500, letterSpacing: "0.1em",
-          color: "#F59E0B", textTransform: "uppercase", marginBottom: 12,
+          color: "#F59E0B", textTransform: "uppercase", marginBottom: 14,
+          fontFamily: "var(--font-outfit)",
         }}>
           Support
         </p>
         <h1 style={{
-          fontSize: "clamp(28px, 5vw, 44px)",
+          fontSize: "clamp(36px, 5vw, 56px)",
           fontWeight: 600,
           fontFamily: "var(--font-space-grotesk)",
           letterSpacing: "-0.03em",
-          lineHeight: 1.1,
+          lineHeight: 1.05,
           color: "#fff",
-          marginBottom: 16,
+          marginBottom: 18,
         }}>
           Get in touch
         </h1>
-        <p style={{ fontSize: 15, color: "rgba(255,255,255,0.5)", lineHeight: 1.65, maxWidth: 520 }}>
-          We are a small team. We read every message and respond to everything. No bots, no ticket queues.
+        <p style={{
+          fontSize: 15,
+          color: "rgba(255,255,255,0.5)",
+          lineHeight: 1.65,
+          fontFamily: "var(--font-outfit)",
+          maxWidth: 380,
+          margin: 0,
+        }}>
+          We read every message. No bots, no ticket queues.
         </p>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 14, marginBottom: 48 }}>
-        <ContactCard
-          icon="&#9993;"
-          title="General support"
-          desc="Product questions, bugs, billing issues, or anything else about using Nexora."
-          email="support@nexoraoutreach.com"
-          response="We reply within 24 hours on weekdays."
-        />
-        <ContactCard
-          icon="&#128274;"
-          title="Privacy & data requests"
-          desc="Account deletion, data export, GDPR requests, or questions about how we handle your data."
-          email="privacy@nexoraoutreach.com"
-          response="We respond to data requests within 30 days as required by GDPR."
-        />
-        <ContactCard
-          icon="&#128203;"
-          title="Legal & partnerships"
-          desc="Terms of service questions, enterprise agreements, or partnership inquiries."
-          email="legal@nexoraoutreach.com"
-          response="Typically within 3-5 business days."
-        />
+      {/* Contact cards */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+        gap: 12,
+        marginBottom: 48,
+      }}>
+        {CARDS.map(({ Icon, label, email, note }) => (
+          <div key={label} style={{
+            backgroundColor: "#0E0E18",
+            border: "1px solid rgba(255,255,255,0.06)",
+            borderRadius: 16,
+            padding: "24px 22px 22px",
+            display: "flex",
+            flexDirection: "column",
+          }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: 10, marginBottom: 18,
+              backgroundColor: "rgba(255,82,0,0.08)",
+              border: "1px solid rgba(255,82,0,0.16)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0,
+            }}>
+              <Icon size={15} color="#FF5200" />
+            </div>
+
+            <p style={{
+              fontSize: 10, fontWeight: 600, letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.35)",
+              fontFamily: "var(--font-outfit)",
+              marginBottom: 8,
+            }}>
+              {label}
+            </p>
+
+            <a
+              href={`mailto:${email}`}
+              style={{
+                fontSize: 13, fontWeight: 500,
+                color: "#fff",
+                textDecoration: "none",
+                fontFamily: "var(--font-outfit)",
+                marginBottom: 10,
+                wordBreak: "break-all",
+                lineHeight: 1.4,
+              }}
+            >
+              {email}
+            </a>
+
+            <p style={{
+              fontSize: 11.5,
+              color: "rgba(255,255,255,0.28)",
+              fontFamily: "var(--font-outfit)",
+              margin: 0,
+              marginTop: "auto",
+            }}>
+              {note}
+            </p>
+          </div>
+        ))}
       </div>
 
+      {/* Direct line */}
       <div style={{
-        padding: "20px 22px",
-        backgroundColor: "rgba(255,82,0,0.04)",
-        border: "1px solid rgba(255,82,0,0.14)",
-        borderRadius: 12,
-        fontSize: 13.5,
-        color: "rgba(255,255,255,0.5)",
-        lineHeight: 1.65,
+        borderTop: "1px solid rgba(255,255,255,0.06)",
+        paddingTop: 28,
+        display: "flex", alignItems: "center", flexWrap: "wrap", gap: 8,
       }}>
-        <strong style={{ color: "rgba(255,255,255,0.8)" }}>Working hours:</strong> Monday to Friday, 9am - 6pm CET.
-        Messages sent outside these hours will be answered the next business day.
+        <span style={{
+          fontSize: 13.5, color: "rgba(255,255,255,0.38)",
+          fontFamily: "var(--font-outfit)",
+        }}>
+          Or email us directly:
+        </span>
+        <a
+          href="mailto:support@nexoraoutreach.com"
+          style={{
+            fontSize: 13.5, fontWeight: 500,
+            color: "#FF5200",
+            textDecoration: "none",
+            fontFamily: "var(--font-outfit)",
+          }}
+        >
+          support@nexoraoutreach.com
+        </a>
       </div>
     </>
   );
