@@ -4,7 +4,7 @@ import Link from "next/link";
 import LandingPrompt from "./_landing/prompt";
 import LandingDemo from "./_landing/demo";
 import FAQ from "./_landing/faq";
-import { TrustBar, Testimonials } from "./_landing/trust";
+import { TrustBar } from "./_landing/trust";
 import MeshBackground from "./_components/mesh-bg";
 import { NexoraLogo, NexoraIcon } from "@/components/ui/nexora-logo";
 
@@ -150,27 +150,6 @@ export default async function Home() {
         {/* Trust bar */}
         <TrustBar />
 
-        {/* Inline social proof */}
-        <div style={{
-          display: "flex", gap: "clamp(16px, 4vw, 40px)", justifyContent: "center", flexWrap: "wrap",
-          marginTop: 32,
-        }}>
-          {[
-            { value: "500+", label: "sales teams" },
-            { value: "2M+",  label: "emails sent" },
-          ].map((s, i) => (
-            <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 18 }}>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-                <span style={{ fontSize: 15, fontWeight: 600, color: "#fff", fontFamily: "var(--font-space-grotesk)" }}>
-                  {s.value}
-                </span>
-                <span style={{ fontSize: 13, color: "rgba(255,255,255,0.45)" }}>{s.label}</span>
-              </div>
-              {i < 1 && <span style={{ color: "rgba(255,255,255,0.12)" }}>|</span>}
-            </div>
-          ))}
-        </div>
-
         {/* Quality tagline */}
         <div style={{ marginTop: 28, textAlign: "center" }}>
           <p style={{
@@ -238,9 +217,9 @@ export default async function Home() {
               <div key={t.title} style={{
                 flexShrink: 0,
                 width: 280,
-                padding: "22px 22px 20px",
+                padding: "26px 24px 24px",
                 backgroundColor: "#0E0E18",
-                border: "1px solid rgba(255,255,255,0.08)",
+                border: "1px solid rgba(255,255,255,0.06)",
                 borderRadius: 16,
               }}>
                 <div style={{
@@ -260,7 +239,7 @@ export default async function Home() {
                 }}>
                   {t.title}
                 </p>
-                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.5)", lineHeight: 1.5 }}>
+                <p style={{ fontSize: 13, color: "rgba(255,255,255,0.45)", lineHeight: 1.6 }}>
                   {t.sub}
                 </p>
               </div>
@@ -271,7 +250,7 @@ export default async function Home() {
 
       {/* ─── HOW IT WORKS ─────────────────────────────────────────── */}
       <section id="how" style={{
-        padding: "clamp(72px, 10vw, 120px) clamp(20px, 4vw, 56px)",
+        padding: "clamp(80px, 11vw, 132px) clamp(20px, 4vw, 56px)",
         maxWidth: 1100, margin: "0 auto",
         position: "relative", zIndex: 1,
       }}>
@@ -355,48 +334,6 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* ─── STATS ──────────────────────────────────────────────────── */}
-      <section style={{
-        padding: "clamp(64px, 9vw, 112px) clamp(20px, 4vw, 56px)",
-        position: "relative", zIndex: 1,
-        borderTop: "1px solid rgba(255,255,255,0.06)",
-      }}>
-        <div style={{
-          maxWidth: 1100, margin: "0 auto",
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-          gap: "clamp(24px, 4vw, 48px)",
-        }}>
-          {[
-            { value: "2M+",  label: "Emails generated" },
-            { value: "47%",  label: "Avg open rate" },
-            { value: "500+", label: "Sales teams" },
-            { value: "60s",  label: "Per campaign" },
-          ].map((s) => (
-            <div key={s.label}>
-              <div style={{
-                fontSize: "clamp(44px, 6.5vw, 88px)",
-                fontWeight: 600,
-                color: "#fff",
-                fontFamily: "var(--font-space-grotesk)",
-                lineHeight: 0.95,
-                letterSpacing: "-0.04em",
-                marginBottom: 10,
-              }}>
-                {s.value}
-              </div>
-              <div style={{
-                fontSize: 13,
-                color: "rgba(255,255,255,0.45)",
-                fontFamily: "var(--font-outfit)",
-              }}>
-                {s.label}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* ─── PRICING ────────────────────────────────────────────────── */}
       <section id="pricing" style={{
         padding: "clamp(72px, 10vw, 120px) clamp(20px, 4vw, 56px)",
@@ -429,8 +366,8 @@ export default async function Home() {
             ].map((plan) => (
               <div key={plan.name} style={{
                 backgroundColor: "#0E0E18",
-                border: `1px solid ${plan.highlight ? "rgba(255,82,0,0.45)" : "rgba(255,255,255,0.08)"}`,
-                borderRadius: 16, padding: "28px 24px",
+                border: `1px solid ${plan.highlight ? "rgba(255,82,0,0.4)" : "rgba(255,255,255,0.06)"}`,
+                borderRadius: 16, padding: "32px 26px",
                 position: "relative",
               }}>
                 {plan.tag && (
@@ -473,11 +410,17 @@ export default async function Home() {
               </div>
             ))}
           </div>
+
+          {/* Security trust line */}
+          <p style={{
+            textAlign: "center", marginTop: 24,
+            fontSize: 12, color: "rgba(255,255,255,0.28)",
+            fontFamily: "var(--font-outfit)",
+          }}>
+            Payments secured by Stripe &middot; Data encrypted at rest &middot; Cancel anytime
+          </p>
         </div>
       </section>
-
-      {/* ─── TESTIMONIALS + TRUSTED BY ──────────────────────────────── */}
-      <Testimonials />
 
       {/* ─── FAQ ────────────────────────────────────────────────────── */}
       <FAQ />
@@ -503,8 +446,8 @@ export default async function Home() {
           }}>
             Ready to fill your pipeline?
           </h2>
-          <p style={{ fontSize: 16, color: "rgba(255,255,255,0.5)", marginBottom: 32, lineHeight: 1.6 }}>
-            Join sales teams generating hundreds of hyper-personalized cold emails every day.
+          <p style={{ fontSize: 16, color: "rgba(255,255,255,0.5)", marginBottom: 32, lineHeight: 1.65 }}>
+            Stop sending generic emails. Start conversations that actually convert.
           </p>
           <Link href="/signup" style={{
             display: "inline-flex", alignItems: "center", gap: 8,
@@ -545,12 +488,32 @@ export default async function Home() {
             <Link href="/signup" style={{ fontSize: 12.5, color: "rgba(255,255,255,0.35)", textDecoration: "none" }}>Sign up</Link>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 20, flexWrap: "wrap", borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: 16 }}>
-          {[["Privacy", "/privacy"], ["Terms", "/terms"], ["Cookies", "/cookies"], ["Contact", "/contact"]].map(([label, href]) => (
-            <Link key={label} href={href} style={{ fontSize: 12, color: "rgba(255,255,255,0.28)", textDecoration: "none" }}>
-              {label}
-            </Link>
-          ))}
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          flexWrap: "wrap", gap: 12,
+          borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: 16,
+        }}>
+          <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+            {[["Privacy", "/privacy"], ["Terms", "/terms"], ["Cookies", "/cookies"], ["Contact", "/contact"]].map(([label, href]) => (
+              <Link key={label} href={href} style={{ fontSize: 12, color: "rgba(255,255,255,0.28)", textDecoration: "none" }}>
+                {label}
+              </Link>
+            ))}
+          </div>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.22)", fontFamily: "var(--font-outfit)", margin: 0 }}>
+            Built by{" "}
+            <a href="https://github.com/f4r1na" target="_blank" rel="noopener noreferrer" style={{ color: "rgba(255,255,255,0.38)", textDecoration: "none" }}>
+              Gustavo
+            </a>
+            {" "}— 17, solo founder, pre-college &middot;{" "}
+            <a href="https://github.com/f4r1na" target="_blank" rel="noopener noreferrer" style={{ color: "rgba(255,255,255,0.32)", textDecoration: "none" }}>
+              GitHub
+            </a>
+            {" "}&middot;{" "}
+            <a href="https://x.com/farinaguga" target="_blank" rel="noopener noreferrer" style={{ color: "rgba(255,255,255,0.32)", textDecoration: "none" }}>
+              Twitter
+            </a>
+          </p>
         </div>
       </footer>
     </div>

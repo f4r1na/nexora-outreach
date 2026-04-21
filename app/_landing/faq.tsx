@@ -11,7 +11,7 @@ const FAQS = [
   },
   {
     q: "Will my emails look spammy?",
-    a: "No. Every email is personalized using real research about each lead. Open rates average 47%.",
+    a: "No. Every email is personalized using real research about each lead — company context, role, and signals like hiring activity or recent news.",
   },
   {
     q: "What if I want to review before sending?",
@@ -19,11 +19,11 @@ const FAQS = [
   },
   {
     q: "How does billing work?",
-    a: "You start with 50 free emails. After that, plans start at $19/month. Cancel anytime.",
+    a: "You start with 10 free emails. After that, plans start at $19/month. Cancel anytime — no lock-in.",
   },
   {
     q: "Is my Gmail account safe?",
-    a: "Yes. We use official Gmail OAuth. We never store your password.",
+    a: "Yes. We use official Gmail OAuth. We never store your password and tokens are encrypted server-side.",
   },
 ];
 
@@ -32,19 +32,19 @@ export default function FAQ() {
 
   return (
     <section style={{
-      padding: "clamp(72px, 10vw, 120px) clamp(20px, 4vw, 56px)",
+      padding: "clamp(80px, 10vw, 128px) clamp(20px, 4vw, 56px)",
       position: "relative", zIndex: 1,
       borderTop: "1px solid rgba(255,255,255,0.06)",
     }}>
       <div style={{ maxWidth: 760, margin: "0 auto" }}>
-        <div style={{ marginBottom: 40, textAlign: "center" }}>
+        <div style={{ marginBottom: 48, textAlign: "center" }}>
           <p style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", color: "#F59E0B", textTransform: "uppercase", marginBottom: 12 }}>
             FAQ
           </p>
           <h2 style={{
             fontSize: "clamp(30px, 4.5vw, 48px)",
             fontWeight: 600, fontFamily: "var(--font-space-grotesk)",
-            letterSpacing: "-0.03em", lineHeight: 1.05,
+            letterSpacing: "-0.025em", lineHeight: 1.08,
           }}>
             Questions, answered.
           </h2>
@@ -58,7 +58,7 @@ export default function FAQ() {
                 key={f.q}
                 style={{
                   backgroundColor: "#0E0E18",
-                  border: `1px solid ${isOpen ? "rgba(255,82,0,0.25)" : "rgba(255,255,255,0.08)"}`,
+                  border: `1px solid ${isOpen ? "rgba(255,82,0,0.22)" : "rgba(255,255,255,0.06)"}`,
                   borderRadius: 14,
                   overflow: "hidden",
                   transition: "border-color 0.2s ease",
@@ -71,7 +71,7 @@ export default function FAQ() {
                     width: "100%",
                     display: "flex", alignItems: "center", justifyContent: "space-between",
                     gap: 16,
-                    padding: "18px 22px",
+                    padding: "20px 24px",
                     background: "none", border: "none", cursor: "pointer",
                     color: "#fff",
                     fontFamily: "var(--font-outfit)",
@@ -82,7 +82,7 @@ export default function FAQ() {
                   <span>{f.q}</span>
                   <Plus
                     size={16}
-                    color="rgba(255,255,255,0.55)"
+                    color="rgba(255,255,255,0.45)"
                     style={{
                       flexShrink: 0,
                       transform: isOpen ? "rotate(45deg)" : "rotate(0deg)",
@@ -100,9 +100,10 @@ export default function FAQ() {
                       style={{ overflow: "hidden" }}
                     >
                       <p style={{
-                        padding: "0 22px 20px",
-                        fontSize: 14, color: "rgba(255,255,255,0.6)",
-                        lineHeight: 1.65,
+                        padding: "0 24px 22px",
+                        fontSize: 14, color: "rgba(255,255,255,0.58)",
+                        lineHeight: 1.7,
+                        fontFamily: "var(--font-outfit)",
                       }}>
                         {f.a}
                       </p>
