@@ -9,15 +9,11 @@ const KEY = "nexora.onboarding.v1";
 const EASE = [0.4, 0, 0.2, 1] as const;
 
 type State = { profile: boolean; campaign: boolean; gmail: boolean; dismissed: boolean };
-
 const DEFAULT: State = { profile: false, campaign: false, gmail: false, dismissed: false };
 
-export default function WelcomeCard({
-  hasCompanyProfile,
-}: {
-  hasCompanyProfile: boolean;
-}) {
+export default function WelcomeCard({ hasCompanyProfile }: { hasCompanyProfile: boolean }) {
   const [state, setState] = useState<State | null>(null);
+  const [hovered, setHovered] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -66,6 +62,55 @@ export default function WelcomeCard({
     },
   ];
 
+  const renderCard = (s: typeof steps[number]) => {
+    const isHovered = hovered === s.key && !s.done;
+    return (
+      <div
+        onMouseEnter={() => !s.done && setHovered(s.key)}
+        onMouseLeave={() => setHovered(null)}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          textAlign: "center",
+          padding: "20px 16px 18px",
+          borderRadius: 12,
+          width: "100%",
+          backgroundColor: s.done
+            ? "rgba(74,222,128,0.04)"
+            : isHovered
+              ? "rgba(255,82,0,0.08)"
+              : "rgba(255,255,255,0.02)",
+          border: `1px solid ${s.done ? "rgba(74,222,128,0.12)" : "rgba(255,255,255,0.04)"}`,
+          boxShadow: isHovered ? "0 0 28px rgba(255,82,0,0.08)" : "none",
+          transition: "background-color 200ms ease, box-shadow 200ms ease",
+        }}
+      >
+        <div style={{
+          width: 36, height: 36, borderRadius: 10, marginBottom: 12,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          backgroundColor: s.done ? "rgba(74,222,128,0.10)" : "rgba(255,82,0,0.08)",
+          border: `1px solid ${s.done ? "rgba(74,222,128,0.20)" : "rgba(255,82,0,0.16)"}`,
+          flexShrink: 0,
+        }}>
+          {s.done ? <Check size={15} color="#4ade80" /> : <s.Icon size={15} color="#FF5200" />}
+        </div>
+        <div style={{
+          fontSize: 13, fontWeight: 500, lineHeight: 1.35,
+          color: s.done ? "rgba(255,255,255,0.45)" : "#fff",
+          fontFamily: "var(--font-outfit)",
+          textDecoration: s.done ? "line-through" : "none",
+          marginBottom: 6,
+        }}>
+          {s.title}
+        </div>
+        <div style={{ fontSize: 11.5, color: "rgba(255,255,255,0.38)", lineHeight: 1.5 }}>
+          {s.desc}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <AnimatePresence>
       <motion.div
@@ -76,10 +121,10 @@ export default function WelcomeCard({
         style={{
           maxWidth: 820,
           margin: "0 auto 24px",
-          padding: "22px 24px",
-          backgroundColor: "rgba(255,82,0,0.04)",
-          border: "1px solid rgba(255,82,0,0.22)",
-          borderRadius: 16,
+          padding: "24px 22px 20px",
+          backgroundColor: "rgba(255,82,0,0.03)",
+          border: "1px solid rgba(255,82,0,0.16)",
+          borderRadius: 18,
           position: "relative",
           backdropFilter: "blur(12px)",
           WebkitBackdropFilter: "blur(12px)",
@@ -101,67 +146,34 @@ export default function WelcomeCard({
           <X size={14} />
         </button>
 
-        <div style={{ marginBottom: 18 }}>
+        <div style={{ marginBottom: 20, textAlign: "center" }}>
           <p style={{
-            fontSize: 11, fontWeight: 500, letterSpacing: "0.1em",
-            color: "#F59E0B", textTransform: "uppercase", marginBottom: 8,
+            fontSize: 10, fontWeight: 500, letterSpacing: "0.12em",
+            color: "#F59E0B", textTransform: "uppercase", marginBottom: 7,
           }}>
             Welcome to Nexora
           </p>
           <h3 style={{
-            fontSize: 19, fontWeight: 600,
+            fontSize: 17, fontWeight: 600,
             fontFamily: "var(--font-space-grotesk)",
-            letterSpacing: "-0.02em",
+            letterSpacing: "0.04em",
+            textTransform: "uppercase",
             color: "#fff",
+            margin: 0,
           }}>
             Here&apos;s how to get started
           </h3>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", gap: 10 }}>
           {steps.map((s) => {
-            const Body = (
-              <div
-                className="nx-onboard-row"
-                style={{
-                  display: "flex", alignItems: "center", gap: 12,
-                  padding: "12px 14px",
-                  borderRadius: 10,
-                  backgroundColor: s.done ? "rgba(74,222,128,0.05)" : "rgba(255,255,255,0.02)",
-                  border: `1px solid ${s.done ? "rgba(74,222,128,0.15)" : "rgba(255,255,255,0.06)"}`,
-                  transition: "background-color 200ms ease, border-color 200ms ease",
-                }}
-              >
-                <div style={{
-                  width: 28, height: 28, borderRadius: 8,
-                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                  backgroundColor: s.done ? "rgba(74,222,128,0.12)" : "rgba(255,82,0,0.1)",
-                  border: `1px solid ${s.done ? "rgba(74,222,128,0.28)" : "rgba(255,82,0,0.22)"}`,
-                }}>
-                  {s.done
-                    ? <Check size={14} color="#4ade80" />
-                    : <s.Icon size={14} color="#FF5200" />}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    fontSize: 13.5, fontWeight: 500,
-                    color: s.done ? "rgba(255,255,255,0.55)" : "#fff",
-                    fontFamily: "var(--font-outfit)",
-                    textDecoration: s.done ? "line-through" : "none",
-                  }}>
-                    {s.title}
-                  </div>
-                  <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 2 }}>
-                    {s.desc}
-                  </div>
-                </div>
-              </div>
-            );
-            if (s.done) return <div key={s.key}>{Body}</div>;
+            if (s.done) {
+              return <div key={s.key} style={{ flex: 1 }}>{renderCard(s)}</div>;
+            }
             if (s.href) {
               return (
-                <Link key={s.key} href={s.href} style={{ textDecoration: "none" }}>
-                  {Body}
+                <Link key={s.key} href={s.href} style={{ flex: 1, textDecoration: "none" }}>
+                  {renderCard(s)}
                 </Link>
               );
             }
@@ -170,9 +182,9 @@ export default function WelcomeCard({
                 key={s.key}
                 type="button"
                 onClick={() => save({ ...state, campaign: true })}
-                style={{ background: "none", border: "none", padding: 0, textAlign: "left", cursor: "pointer", width: "100%" }}
+                style={{ flex: 1, background: "none", border: "none", padding: 0, cursor: "pointer" }}
               >
-                {Body}
+                {renderCard(s)}
               </button>
             );
           })}
