@@ -156,9 +156,8 @@ export default async function Home() {
           marginTop: 32,
         }}>
           {[
-            { value: "500+",  label: "sales teams" },
-            { value: "2M+",   label: "emails sent" },
-            { value: "47%",   label: "avg open rate" },
+            { value: "500+", label: "sales teams" },
+            { value: "2M+",  label: "emails sent" },
           ].map((s, i) => (
             <div key={s.label} style={{ display: "flex", alignItems: "center", gap: 18 }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
@@ -167,9 +166,36 @@ export default async function Home() {
                 </span>
                 <span style={{ fontSize: 13, color: "rgba(255,255,255,0.45)" }}>{s.label}</span>
               </div>
-              {i < 2 && <span style={{ color: "rgba(255,255,255,0.12)" }}>|</span>}
+              {i < 1 && <span style={{ color: "rgba(255,255,255,0.12)" }}>|</span>}
             </div>
           ))}
+        </div>
+
+        {/* Quality tagline */}
+        <div style={{ marginTop: 28, textAlign: "center" }}>
+          <p style={{
+            fontSize: 15, fontWeight: 500,
+            color: "#FF5200",
+            fontFamily: "var(--font-outfit)",
+            marginBottom: 14,
+          }}>
+            Built for founders who care about quality over quantity.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {[
+              "Every email backed by real signals.",
+              "Every lead scored for fit.",
+              "Every campaign learns from the last.",
+            ].map((line) => (
+              <p key={line} style={{
+                fontSize: 13, color: "rgba(255,255,255,0.38)",
+                fontFamily: "var(--font-outfit)",
+                margin: 0,
+              }}>
+                {line}
+              </p>
+            ))}
+          </div>
         </div>
       </section>
 
