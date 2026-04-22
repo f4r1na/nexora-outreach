@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Outfit } from "next/font/google";
 import "./globals.css";
+import Providers from "./providers";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -26,8 +27,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} ${outfit.variable}`}>
-      <body>{children}</body>
+    <html lang="en" className={`${spaceGrotesk.variable} ${outfit.variable}`} suppressHydrationWarning>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

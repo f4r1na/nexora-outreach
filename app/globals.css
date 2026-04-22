@@ -34,6 +34,20 @@
   --border-strong: rgba(255,255,255,0.10);
 }
 
+/* ── Light mode overrides ────────────────────────────────────────────────────── */
+.light {
+  --black:    #f4f4fb;
+  --black-2:  #eaeaf4;
+  --black-3:  #e0e0ee;
+  --black-4:  #d6d6e8;
+  --border: rgba(0,0,0,0.07);
+  --border-strong: rgba(0,0,0,0.12);
+}
+
+.light body {
+  color: #111;
+}
+
 /* ── Base ────────────────────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 
