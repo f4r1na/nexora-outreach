@@ -15,9 +15,10 @@ interface NavbarProps {
 type NavItem = { label: string; href: string; exact?: boolean };
 
 const NAV: NavItem[] = [
-  { label: "Agent",     href: "/dashboard",            exact: true },
-  { label: "Campaigns", href: "/dashboard/campaigns"               },
-  { label: "Inbox",     href: "/dashboard/inbox"                   },
+  { label: "Agent",       href: "/dashboard",                exact: true },
+  { label: "Campaigns",   href: "/dashboard/campaigns"                   },
+  { label: "Inbox",       href: "/dashboard/inbox"                       },
+  { label: "Preferences", href: "/dashboard/preferences"                 },
 ];
 
 const EASE = [0.23, 1, 0.32, 1] as const;
