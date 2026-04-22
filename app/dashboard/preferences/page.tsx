@@ -7,7 +7,6 @@ import WritingStyle from "./components/writing-style";
 import CampaignDefaults from "./components/campaign-defaults";
 import IntelligencePrefs from "./components/intelligence-prefs";
 import EmailPersonalization from "./components/email-personalization";
-import ThemeToggle from "./components/theme-toggle";
 
 const cardStyle: React.CSSProperties = {
   backgroundColor: "#0e0e18",
@@ -126,10 +125,6 @@ export default function PreferencesPage() {
 
         <Section label="Email Personalization">
           <EmailPersonalization />
-        </Section>
-
-        <Section label="Theme">
-          <ThemeToggle />
         </Section>
 
       </div>

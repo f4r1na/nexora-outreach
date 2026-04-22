@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { PageWrapper } from "../_components/motion";
 import { Loader2, ChevronDown, Trash2, RefreshCw, Sparkles, Plus, Inbox } from "lucide-react";
@@ -572,6 +573,22 @@ export default function InboxPage() {
           </button>
         </div>
       </header>
+
+      {/* Sub-tabs */}
+      <div style={{ display: "flex", padding: "0 32px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+        <div style={{ position: "relative" }}>
+          <span style={{ display: "block", padding: "10px 16px", fontSize: 12, fontFamily: "var(--font-outfit)", color: "#ddd" }}>
+            Messages
+          </span>
+          <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 1, backgroundColor: "#FF5200" }} />
+        </div>
+        <Link
+          href="/dashboard/inbox/meetings"
+          style={{ padding: "10px 16px", fontSize: 12, fontFamily: "var(--font-outfit)", color: "#484848", textDecoration: "none" }}
+        >
+          Meetings
+        </Link>
+      </div>
 
       <main style={{ flex: 1, padding: "24px 32px 64px" }}>
         {/* Banners */}
