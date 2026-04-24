@@ -58,6 +58,14 @@ export default async function CampaignDetailPage({ params, searchParams }: Props
 
   const allLeads = leads ?? [];
   const plan = sub?.plan ?? "free";
+
+  const signalProgress = {
+    total: allLeads.length,
+    queued: allLeads.filter((l) => l.signal_status === "queued").length,
+    processing: allLeads.filter((l) => l.signal_status === "processing").length,
+    done: allLeads.filter((l) => l.signal_status === "done").length,
+    failed: allLeads.filter((l) => l.signal_status === "failed").length,
+  };
   const gmailEmail = gmailConn?.gmail_email ?? null;
   const isSent = campaign.status === "complete";
   const createdDate = new Date(campaign.created_at).toLocaleDateString("en-US", {
@@ -191,7 +199,11 @@ export default async function CampaignDetailPage({ params, searchParams }: Props
 
         {/* Leads tab */}
         {activeTab === "leads" && (
-          <LeadsTab leads={allLeads as Parameters<typeof LeadsTab>[0]["leads"]} />
+          <LeadsTab
+            leads={allLeads as Parameters<typeof LeadsTab>[0]["leads"]}
+            campaignId={id}
+            signalProgress={signalProgress}
+          />
         )}
 
         {/* Follow-ups tab */}

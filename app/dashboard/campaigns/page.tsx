@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import CampaignsTable from "./_components/campaigns-table";
 import { StaggerList, StaggerItem, CountUp } from "../_components/motion";
-import { Plus, Mail } from "lucide-react";
+import { Plus, Mail, Upload } from "lucide-react";
 
 export default async function CampaignsPage() {
   const supabase = await createClient();
@@ -64,22 +64,41 @@ export default async function CampaignsPage() {
             {allCampaigns.length} total
           </p>
         </div>
-        <Link href="/dashboard/campaigns/new" className="btn-primary" style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 7,
-          padding: "8px 16px",
-          backgroundColor: "#FF5200",
-          color: "#fff",
-          borderRadius: 7,
-          fontSize: 12,
-          fontWeight: 500,
-          fontFamily: "var(--font-outfit)",
-          textDecoration: "none",
-        }}>
-          <Plus size={11} strokeWidth={2.5} aria-hidden="true" />
-          New Campaign
-        </Link>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Link href="/dashboard/campaigns/import" style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 7,
+            padding: "8px 14px",
+            backgroundColor: "transparent",
+            color: "rgba(255,255,255,0.45)",
+            borderRadius: 7,
+            fontSize: 12,
+            fontWeight: 500,
+            fontFamily: "var(--font-outfit)",
+            textDecoration: "none",
+            border: "1px solid rgba(255,255,255,0.1)",
+          }}>
+            <Upload size={11} strokeWidth={2} aria-hidden="true" />
+            Import CSV
+          </Link>
+          <Link href="/dashboard/campaigns/new" className="btn-primary" style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 7,
+            padding: "8px 16px",
+            backgroundColor: "#FF5200",
+            color: "#fff",
+            borderRadius: 7,
+            fontSize: 12,
+            fontWeight: 500,
+            fontFamily: "var(--font-outfit)",
+            textDecoration: "none",
+          }}>
+            <Plus size={11} strokeWidth={2.5} aria-hidden="true" />
+            New Campaign
+          </Link>
+        </div>
       </header>
 
       <main style={{ flex: 1, padding: "28px 32px 80px" }}>

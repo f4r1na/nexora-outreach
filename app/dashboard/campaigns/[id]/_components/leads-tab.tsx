@@ -3,6 +3,15 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import LeadPanel, { Lead } from "./lead-panel";
+import SignalProgressBanner from "./signal-progress-banner";
+
+type ProgressCounts = {
+  total: number;
+  queued: number;
+  processing: number;
+  done: number;
+  failed: number;
+};
 
 function getSignalDot(lead: Lead): { color: string; title: string } {
   const s = lead.signal_status;
@@ -17,7 +26,15 @@ function getSignalDot(lead: Lead): { color: string; title: string } {
   return { color: "#4ade80", title: "Fresh signals" };
 }
 
-export default function LeadsTab({ leads }: { leads: Lead[] }) {
+export default function LeadsTab({
+  leads,
+  campaignId,
+  signalProgress,
+}: {
+  leads: Lead[];
+  campaignId: string;
+  signalProgress: ProgressCounts;
+}) {
   const router = useRouter();
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -104,6 +121,14 @@ export default function LeadsTab({ leads }: { leads: Lead[] }) {
 
   return (
     <>
+      {/* Signal detection progress (CSV import flow) */}
+      {(signalProgress.queued > 0 || signalProgress.processing > 0) && (
+        <SignalProgressBanner
+          campaignId={campaignId}
+          initialProgress={signalProgress}
+        />
+      )}
+
       {/* Enrichment banner */}
       {enriching && (
         <div
