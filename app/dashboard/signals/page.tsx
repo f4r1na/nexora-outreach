@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Lock, Radio, Trash2, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Lock, Radio, Trash2, Loader2, ExternalLink, X } from "lucide-react";
 import { PageWrapper } from "../_components/motion";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -16,6 +16,16 @@ type SignalData = {
   personalization_hooks: string[];
 };
 
+type DiscreteSignal = {
+  id: string;
+  lead_id: string;
+  source: string;
+  source_url: string | null;
+  date: string | null;
+  date_iso: string | null;
+  strength: string;
+};
+
 type SignalLead = {
   id: string;
   campaign_id: string;
@@ -26,6 +36,7 @@ type SignalLead = {
   email: string | null;
   signal_data: SignalData;
   created_at: string;
+  discrete_signals?: DiscreteSignal[];
 };
 
 type Campaign = {
@@ -34,12 +45,67 @@ type Campaign = {
   created_at: string;
 };
 
+type Confidence = "high" | "medium" | "low";
+
+// Confidence = AI strength × date-decay. With current data most signals will
+// score "high" because Haiku doesn't return per-signal dates yet (date_iso
+// defaults to today). The math is correct; the inputs will firm up when the
+// extraction prompt is enriched.
+function ageInDays(date_iso: string | null): number {
+  if (!date_iso) return 0;
+  const t = new Date(date_iso).getTime();
+  if (Number.isNaN(t)) return 0;
+  return Math.max(0, Math.floor((Date.now() - t) / (1000 * 60 * 60 * 24)));
+}
+
+function decayFactor(days: number): number {
+  if (days <= 30) return 1.0;
+  if (days <= 60) return 0.8;
+  if (days <= 90) return 0.6;
+  return 0;
+}
+
+function strengthScore(s: string): number {
+  if (s === "high") return 1.0;
+  if (s === "medium") return 0.75;
+  return 0.5;
+}
+
+function computeConfidence(s: DiscreteSignal): { level: Confidence; pct: number } {
+  const pct = Math.round(strengthScore(s.strength) * decayFactor(ageInDays(s.date_iso)) * 100);
+  const level: Confidence = pct > 90 ? "high" : pct > 70 ? "medium" : "low";
+  return { level, pct };
+}
+
+const CONF_COLOR: Record<Confidence, { bg: string; border: string; text: string }> = {
+  high: { bg: "rgba(74,222,128,0.1)", border: "rgba(74,222,128,0.3)", text: "#4ade80" },
+  medium: { bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.3)", text: "#f59e0b" },
+  low: { bg: "rgba(239,68,68,0.1)", border: "rgba(239,68,68,0.3)", text: "#f87171" },
+};
+
 
 // ─── Signal Card ──────────────────────────────────────────────────────────────
 
 function SignalCard({ lead }: { lead: SignalLead }) {
   const [expanded, setExpanded] = useState(false);
+  const [discreteSignals, setDiscreteSignals] = useState<DiscreteSignal[]>(
+    lead.discrete_signals ?? []
+  );
+  const [discardingId, setDiscardingId] = useState<string | null>(null);
   const sd = lead.signal_data;
+
+  const handleDiscard = async (id: string) => {
+    setDiscardingId(id);
+    const prev = discreteSignals;
+    setDiscreteSignals((s) => s.filter((x) => x.id !== id));
+    const res = await fetch("/api/signals/discard", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ signal_id: id, discarded: true }),
+    });
+    if (!res.ok) setDiscreteSignals(prev);
+    setDiscardingId(null);
+  };
 
   return (
     <div style={{
@@ -164,6 +230,105 @@ function SignalCard({ lead }: { lead: SignalLead }) {
                   <li key={i} style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", fontFamily: "var(--font-outfit)", lineHeight: 1.55, marginBottom: 3 }}>{s}</li>
                 ))}
               </ul>
+            </div>
+          )}
+
+          {discreteSignals.length > 0 && (
+            <div>
+              <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6, fontFamily: "var(--font-outfit)" }}>
+                Verified Signals · {discreteSignals.length}
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {discreteSignals.map((s) => {
+                  const { level, pct } = computeConfidence(s);
+                  const c = CONF_COLOR[level];
+                  return (
+                    <div
+                      key={s.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        padding: "8px 10px",
+                        borderRadius: 8,
+                        backgroundColor: "rgba(255,255,255,0.02)",
+                        border: "1px solid rgba(255,255,255,0.06)",
+                      }}
+                    >
+                      <span
+                        title={`Confidence ${pct}% (strength=${s.strength}, age=${ageInDays(s.date_iso)}d)`}
+                        style={{
+                          fontSize: 9.5, fontWeight: 700, padding: "2px 7px",
+                          borderRadius: 999, backgroundColor: c.bg,
+                          border: `1px solid ${c.border}`, color: c.text,
+                          fontFamily: "var(--font-outfit)", textTransform: "uppercase",
+                          letterSpacing: "0.05em", flexShrink: 0,
+                        }}
+                      >
+                        {level}
+                      </span>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", fontFamily: "var(--font-outfit)", margin: 0 }}>
+                          {s.source}
+                        </p>
+                        {s.date && (
+                          <p style={{ fontSize: 10.5, color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-outfit)", margin: 0, fontVariantNumeric: "tabular-nums" }}>
+                            {s.date}
+                          </p>
+                        )}
+                      </div>
+                      {s.source_url ? (
+                        <a
+                          href={s.source_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{
+                            display: "inline-flex", alignItems: "center", gap: 4,
+                            padding: "4px 9px", borderRadius: 6, fontSize: 11,
+                            color: "#FF5200",
+                            backgroundColor: "rgba(255,82,0,0.08)",
+                            border: "1px solid rgba(255,82,0,0.2)",
+                            textDecoration: "none", fontFamily: "var(--font-outfit)",
+                          }}
+                        >
+                          <ExternalLink size={11} strokeWidth={2} aria-hidden="true" />
+                          Verify
+                        </a>
+                      ) : (
+                        <span
+                          title="No source URL captured for this signal"
+                          style={{
+                            display: "inline-flex", alignItems: "center", gap: 4,
+                            padding: "4px 9px", borderRadius: 6, fontSize: 11,
+                            color: "rgba(255,255,255,0.25)",
+                            border: "1px solid rgba(255,255,255,0.06)",
+                            fontFamily: "var(--font-outfit)",
+                          }}
+                        >
+                          <ExternalLink size={11} strokeWidth={2} aria-hidden="true" />
+                          Verify
+                        </span>
+                      )}
+                      <button
+                        onClick={() => handleDiscard(s.id)}
+                        disabled={discardingId === s.id}
+                        aria-label="Discard signal"
+                        style={{
+                          display: "inline-flex", alignItems: "center", justifyContent: "center",
+                          width: 24, height: 24, borderRadius: 6,
+                          backgroundColor: "transparent",
+                          border: "1px solid rgba(255,255,255,0.08)",
+                          color: "rgba(255,255,255,0.4)",
+                          cursor: discardingId === s.id ? "not-allowed" : "pointer",
+                          opacity: discardingId === s.id ? 0.5 : 1,
+                        }}
+                      >
+                        <X size={11} strokeWidth={2.2} aria-hidden="true" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>

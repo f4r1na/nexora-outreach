@@ -50,12 +50,34 @@ export async function GET() {
       campaignMap[c.id] = c.name;
     }
 
-    const signals = (leads ?? [])
-      .filter((l) => l.signal_data && Object.keys(l.signal_data).length > 0)
-      .map((l) => ({
-        ...l,
-        campaign_name: campaignMap[l.campaign_id] ?? "Unknown Campaign",
-      }));
+    const leadList = (leads ?? []).filter(
+      (l) => l.signal_data && Object.keys(l.signal_data).length > 0
+    );
+    const leadIds = leadList.map((l) => l.id);
+
+    // Discrete signals (additive), filtered to last 90 days and not-discarded.
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
+    const { data: discrete } = leadIds.length
+      ? await db
+          .from("signals")
+          .select("id, lead_id, source, source_url, date, date_iso, strength")
+          .in("lead_id", leadIds)
+          .eq("discarded", false)
+          .or(`date_iso.gte.${ninetyDaysAgo},date_iso.is.null`)
+      : { data: [] as { id: string; lead_id: string; source: string; source_url: string | null; date: string | null; date_iso: string | null; strength: string }[] };
+
+    const byLead: Record<string, typeof discrete> = {};
+    for (const s of discrete ?? []) {
+      (byLead[s.lead_id] ??= []).push(s);
+    }
+
+    const signals = leadList.map((l) => ({
+      ...l,
+      campaign_name: campaignMap[l.campaign_id] ?? "Unknown Campaign",
+      discrete_signals: byLead[l.id] ?? [],
+    }));
 
     return NextResponse.json({ signals, campaigns });
   } catch (err: unknown) {
