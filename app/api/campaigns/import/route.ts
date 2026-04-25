@@ -1,186 +1,175 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { createClient as createServiceClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-function getServiceClient() {
-  return createServiceClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  );
-}
+type Field = "first_name" | "last_name" | "email" | "company" | "title" | "ignore";
 
-function parseCSV(text: string): string[][] {
-  const rows: string[][] = [];
-  for (const line of text.split(/\r?\n/)) {
-    if (!line.trim()) continue;
-    const cols: string[] = [];
-    let cur = "";
-    let inQuote = false;
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i];
-      if (ch === '"') {
-        if (inQuote && line[i + 1] === '"') { cur += '"'; i++; }
-        else inQuote = !inQuote;
-      } else if (ch === "," && !inQuote) {
-        cols.push(cur.trim());
-        cur = "";
-      } else {
-        cur += ch;
-      }
-    }
-    cols.push(cur.trim());
-    rows.push(cols);
-  }
-  return rows;
-}
-
-function normalizeHeader(h: string) {
-  return h.toLowerCase().replace(/[^a-z0-9]/g, "_");
-}
+const VALID_FIELDS: Field[] = ["first_name", "last_name", "email", "company", "title", "ignore"];
+const MAX_ROWS = 5000;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const db = getServiceClient();
+  let body: {
+    fileName?: string;
+    headers?: unknown;
+    rows?: unknown;
+    mapping?: unknown;
+  };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
 
-  const { data: sub } = await db
+  const { fileName, headers, rows, mapping } = body;
+
+  if (!Array.isArray(headers) || !Array.isArray(rows) || !Array.isArray(mapping)) {
+    return NextResponse.json({ error: "Invalid CSV payload" }, { status: 400 });
+  }
+  if (mapping.length !== headers.length) {
+    return NextResponse.json({ error: "Mapping length mismatch" }, { status: 400 });
+  }
+  if (rows.length === 0) {
+    return NextResponse.json({ error: "CSV has no rows" }, { status: 400 });
+  }
+  if (rows.length > MAX_ROWS) {
+    return NextResponse.json({ error: `CSV exceeds ${MAX_ROWS} rows` }, { status: 400 });
+  }
+
+  const map = mapping as Field[];
+  if (!map.every((m) => VALID_FIELDS.includes(m))) {
+    return NextResponse.json({ error: "Invalid mapping field" }, { status: 400 });
+  }
+  for (const required of ["first_name", "last_name", "email"] as Field[]) {
+    if (!map.includes(required)) {
+      return NextResponse.json({ error: `Missing required column: ${required}` }, { status: 400 });
+    }
+  }
+
+  const idx: Record<Field, number> = {
+    first_name: map.indexOf("first_name"),
+    last_name: map.indexOf("last_name"),
+    email: map.indexOf("email"),
+    company: map.indexOf("company"),
+    title: map.indexOf("title"),
+    ignore: -1,
+  };
+
+  // Plan / credits
+  const { data: sub } = await supabase
     .from("subscriptions")
-    .select("plan, credits_used, credits_limit")
+    .select("credits_used, credits_limit")
     .eq("user_id", user.id)
     .single();
 
-  const plan = sub?.plan ?? "free";
-  if (plan !== "pro" && plan !== "agency") {
-    return NextResponse.json(
-      { error: "CSV import with signal detection requires a Pro or Agency plan." },
-      { status: 403 }
-    );
-  }
+  const creditsUsed: number = sub?.credits_used ?? 0;
+  const creditsLimit: number = sub?.credits_limit ?? 10;
+  const remaining = creditsLimit - creditsUsed;
 
-  const formData = await req.formData();
-  const file = formData.get("file") as File | null;
-  const campaignName = (formData.get("name") as string | null)?.trim() || null;
-
-  if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
-
-  const text = await file.text();
-  const rows = parseCSV(text);
-  if (rows.length < 2) {
-    return NextResponse.json(
-      { error: "CSV must have a header row and at least one data row" },
-      { status: 400 }
-    );
-  }
-
-  const headers = rows[0].map(normalizeHeader);
-  const col = (name: string): number => {
-    const aliases: Record<string, string[]> = {
-      first_name: ["first_name", "firstname", "first"],
-      last_name:  ["last_name", "lastname", "last"],
-      email:      ["email", "email_address"],
-      company:    ["company", "company_name", "organization"],
-      role:       ["role", "title", "job_title", "position"],
-    };
-    for (const alias of aliases[name] ?? [name]) {
-      const i = headers.indexOf(alias);
-      if (i !== -1) return i;
-    }
-    return -1;
-  };
-
-  if (col("email") === -1) {
-    return NextResponse.json(
-      { error: "CSV must have an 'email' column" },
-      { status: 400 }
-    );
-  }
-
-  type LeadInsert = {
-    user_id: string;
-    campaign_id: string;
+  // Build & validate leads
+  const seen = new Set<string>();
+  const leadsToInsert: {
     first_name: string;
-    email: string;
     company: string | null;
     role: string | null;
-    signal_status: string;
-  };
+    email: string;
+    custom_note: null;
+  }[] = [];
+  let skipped = 0;
 
-  const dataRows = rows.slice(1);
-  const leads: Omit<LeadInsert, "campaign_id">[] = [];
+  for (const rawRow of rows as unknown[]) {
+    if (!Array.isArray(rawRow)) {
+      skipped++;
+      continue;
+    }
+    const row = rawRow as string[];
+    const first = (row[idx.first_name] ?? "").toString().trim();
+    const last = (row[idx.last_name] ?? "").toString().trim();
+    const email = (row[idx.email] ?? "").toString().trim().toLowerCase();
+    const company = idx.company >= 0 ? (row[idx.company] ?? "").toString().trim() : "";
+    const title = idx.title >= 0 ? (row[idx.title] ?? "").toString().trim() : "";
 
-  for (const row of dataRows) {
-    const email = row[col("email")]?.toLowerCase().trim();
-    if (!email || !email.includes("@")) continue;
+    if (!first || !email || !EMAIL_RE.test(email)) {
+      skipped++;
+      continue;
+    }
+    if (seen.has(email)) {
+      skipped++;
+      continue;
+    }
+    seen.add(email);
 
-    const firstName = [
-      col("first_name") >= 0 ? row[col("first_name")] ?? "" : "",
-      col("last_name") >= 0 ? row[col("last_name")] ?? "" : "",
-    ].filter(Boolean).join(" ").trim() || "Unknown";
-
-    leads.push({
-      user_id: user.id,
-      first_name: firstName,
+    leadsToInsert.push({
+      first_name: last ? `${first} ${last}` : first,
+      company: company || null,
+      role: title || null,
       email,
-      company: col("company") >= 0 ? row[col("company")]?.trim() || null : null,
-      role: col("role") >= 0 ? row[col("role")]?.trim() || null : null,
-      signal_status: "queued",
+      custom_note: null,
     });
   }
 
-  if (leads.length === 0) {
+  if (leadsToInsert.length === 0) {
+    return NextResponse.json({ error: "No valid leads found in CSV" }, { status: 400 });
+  }
+
+  if (leadsToInsert.length > remaining) {
     return NextResponse.json(
-      { error: "No valid leads found (email column is empty or malformed)" },
-      { status: 400 }
+      {
+        error: `CSV has ${leadsToInsert.length} leads but only ${remaining} credits remain. Upgrade your plan or import a smaller file.`,
+      },
+      { status: 402 }
     );
   }
 
-  const name =
-    campaignName ||
-    file.name.replace(/\.csv$/i, "").trim() ||
-    "Imported Campaign";
-
-  const { data: campaign, error: campErr } = await db
+  // Create campaign
+  const baseName = (fileName ?? "Imported leads").toString().replace(/\.csv$/i, "").trim() || "Imported leads";
+  const { data: campaign, error: campaignError } = await supabase
     .from("campaigns")
     .insert({
       user_id: user.id,
-      name,
+      name: `${baseName} (CSV import)`,
+      tone: "Professional",
       status: "draft",
-      lead_count: leads.length,
-      tone: "professional",
+      lead_count: leadsToInsert.length,
     })
-    .select("id")
+    .select()
     .single();
 
-  if (campErr || !campaign) {
+  if (campaignError || !campaign) {
     return NextResponse.json({ error: "Failed to create campaign" }, { status: 500 });
   }
 
-  const withCampaignId: LeadInsert[] = leads.map((l) => ({
-    ...l,
-    campaign_id: campaign.id,
-  }));
+  // Insert leads
+  const { error: insertError } = await supabase
+    .from("leads")
+    .insert(leadsToInsert.map((l) => ({ ...l, campaign_id: campaign.id })));
 
-  const BATCH = 500;
-  for (let i = 0; i < withCampaignId.length; i += BATCH) {
-    const { error: insertErr } = await db
-      .from("leads")
-      .insert(withCampaignId.slice(i, i + BATCH));
-    if (insertErr) {
-      console.error(
-        JSON.stringify({
-          step: "csv_import_insert_error",
-          error: insertErr.message,
-          offset: i,
-        })
-      );
-    }
+  if (insertError) {
+    await supabase.from("campaigns").delete().eq("id", campaign.id).eq("user_id", user.id);
+    return NextResponse.json({ error: "Failed to insert leads" }, { status: 500 });
   }
 
-  return NextResponse.json({ campaignId: campaign.id, leadCount: leads.length });
+  // Increment credits
+  await supabase
+    .from("subscriptions")
+    .upsert(
+      {
+        user_id: user.id,
+        credits_used: creditsUsed + leadsToInsert.length,
+        credits_limit: creditsLimit,
+      },
+      { onConflict: "user_id" }
+    );
+
+  return NextResponse.json({
+    campaignId: campaign.id,
+    imported: leadsToInsert.length,
+    skipped,
+  });
 }
