@@ -9,7 +9,11 @@
       "Bash(git commit *)",
       "Bash(git push *)",
       "Bash(npm install *)",
-      "Bash(npx tsc *)"
+      "Bash(npx tsc *)",
+      "Bash(node -e \"require\\('sharp'\\); console.log\\('sharp ok'\\)\")",
+      "Bash(node -e \"require\\('canvas'\\); console.log\\('canvas ok'\\)\")",
+      "Bash(node gen-favicon.mjs)",
+      "Bash(xargs grep *)"
     ]
   }
 }

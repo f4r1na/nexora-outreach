@@ -19,7 +19,9 @@ export type Signal = {
   type: string;
   text: string;
   source: string;
+  source_url: string;
   date: string;
+  date_iso: string;
   strength: string;
 };
 
@@ -36,6 +38,7 @@ export type SignalData = {
   intelligence_score: number;
   last_updated: string;
   company_intel: CompanyIntel;
+  discarded: string[];
 };
 
 export type Lead = {

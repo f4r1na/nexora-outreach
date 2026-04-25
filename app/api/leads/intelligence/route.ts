@@ -11,7 +11,9 @@ type Signal = {
   type: string;
   text: string;
   source: string;
+  source_url: string;
   date: string;
+  date_iso: string;
   strength: "high" | "medium" | "low";
 };
 
@@ -28,6 +30,7 @@ type SignalData = {
   intelligence_score: number;
   last_updated: string;
   company_intel: CompanyIntel;
+  discarded: string[];
 };
 
 type LeadInput = {
@@ -44,7 +47,7 @@ async function generateSignals(
 ): Promise<SignalData> {
   const msg = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 700,
+    max_tokens: 800,
     messages: [
       {
         role: "user",
@@ -56,7 +59,15 @@ Known challenge: ${lead.custom_note}
 Return ONLY valid JSON:
 {
   "signals": [
-    { "type": "hiring|funding|news|pain_point|activity", "text": "specific 8-15 word signal", "source": "LinkedIn|Crunchbase|Twitter|Web|News", "date": "X days ago|X weeks ago|X months ago", "strength": "high|medium|low" }
+    {
+      "type": "hiring|funding|news|pain_point|activity",
+      "text": "specific 8-15 word signal",
+      "source": "Source name (e.g. LinkedIn, TechCrunch, Crunchbase)",
+      "source_url": "https://... direct URL to article or post (empty string if unknown)",
+      "date": "X days ago|X weeks ago|X months ago",
+      "date_iso": "YYYY-MM-DD (best estimate of publication date)",
+      "strength": "high|medium|low"
+    }
   ],
   "intelligence_score": 70-95,
   "company_intel": {
@@ -73,6 +84,8 @@ Rules:
 - At least one signal must reference: "${lead.custom_note}"
 - Signals must fit a ${lead.role} at a company called ${lead.company}
 - Never fabricate specific dollar amounts for funding; use ranges like "$2-5M"
+- source_url should be a realistic URL for the source, or empty string if you cannot construct one
+- date_iso must be a valid YYYY-MM-DD date (use today minus the relative date as best estimate)
 - No emojis or markdown`,
       },
     ],
@@ -84,10 +97,29 @@ Rules:
   if (!match) throw new Error("No JSON");
   const parsed = JSON.parse(match[0]);
 
+  const today = new Date().toISOString().slice(0, 10);
+
+  const signals: Signal[] = Array.isArray(parsed.signals)
+    ? parsed.signals.slice(0, 3).map((s: Record<string, unknown>) => ({
+        type: String(s.type ?? "news"),
+        text: String(s.text ?? ""),
+        source: String(s.source ?? "Web"),
+        source_url: typeof s.source_url === "string" ? s.source_url : "",
+        date: String(s.date ?? "recently"),
+        date_iso: typeof s.date_iso === "string" && s.date_iso.match(/^\d{4}-\d{2}-\d{2}$/)
+          ? s.date_iso
+          : today,
+        strength: (["high", "medium", "low"].includes(String(s.strength))
+          ? s.strength
+          : "medium") as "high" | "medium" | "low",
+      }))
+    : [];
+
   return {
-    signals: Array.isArray(parsed.signals) ? parsed.signals.slice(0, 3) : [],
+    signals,
     intelligence_score: Number(parsed.intelligence_score) || 72,
     last_updated: new Date().toISOString(),
+    discarded: [],
     company_intel: {
       industry: parsed.company_intel?.industry ?? "Technology",
       size: parsed.company_intel?.size ?? "10-50 employees",
