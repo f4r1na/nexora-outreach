@@ -25,6 +25,69 @@ type LeadRow = {
   email: string | null;
 };
 
+type SignalRow = {
+  lead_id: string;
+  campaign_id: string;
+  source: string;
+  source_url: string | null;
+  date: string | null;
+  date_iso: string | null;
+  strength: string;
+};
+
+const URL_RE = /\bhttps?:\/\/[^\s<>"')]+/i;
+
+// Best-effort: derive a source label from the text content.
+function inferSource(text: string): string {
+  const t = text.toLowerCase();
+  if (t.includes("linkedin")) return "LinkedIn";
+  if (t.includes("github")) return "GitHub";
+  if (t.includes("twitter") || t.includes("x.com")) return "Twitter";
+  if (t.includes("crunchbase") || t.includes("funding") || t.includes("raised")) return "funding";
+  if (t.includes("hiring") || t.includes("job")) return "hiring";
+  if (t.includes("launch") || t.includes("release") || t.includes("product")) return "product";
+  if (t.includes("news") || t.includes("article") || t.includes("press")) return "news";
+  return "research";
+}
+
+// Extract discrete signal rows from the rich research blob written to leads.signal_data.
+// Pulls each entry from `recent_signals[]` (and falls back to `personalization_hooks[]`),
+// deriving source / source_url / date_iso heuristically.
+function extractSignals(
+  signalData: SignalData,
+  lead: { id: string; campaign_id: string }
+): SignalRow[] {
+  const today = new Date().toISOString().slice(0, 10);
+  const items: string[] = [
+    ...(Array.isArray(signalData.recent_signals) ? signalData.recent_signals : []),
+    ...(Array.isArray(signalData.personalization_hooks) ? signalData.personalization_hooks : []),
+  ]
+    .map((s) => (typeof s === "string" ? s.trim() : ""))
+    .filter((s) => s.length >= 10);
+
+  const out: SignalRow[] = [];
+  const seenKey = new Set<string>();
+  for (const text of items) {
+    const source = inferSource(text);
+    const urlMatch = text.match(URL_RE);
+    const source_url = urlMatch ? urlMatch[0] : null;
+    const date_iso = today;
+    const key = `${source}|${date_iso}`;
+    if (seenKey.has(key)) continue;
+    seenKey.add(key);
+    out.push({
+      lead_id: lead.id,
+      campaign_id: lead.campaign_id,
+      source,
+      source_url,
+      date: date_iso,
+      date_iso,
+      strength: "medium",
+    });
+  }
+  return out;
+}
+
 function getDb() {
   return createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -102,6 +165,9 @@ export async function POST(req: NextRequest) {
 
   const CONCURRENCY = 15;
   let successCount = 0;
+  let signalsExtracted = 0;
+  let signalsInserted = 0;
+  let signalsDuplicate = 0;
   const creditsByCampaign: Record<string, number> = {};
 
   for (let i = 0; i < leads.length; i += CONCURRENCY) {
@@ -121,6 +187,43 @@ export async function POST(req: NextRequest) {
           successCount++;
           creditsByCampaign[lead.campaign_id] =
             (creditsByCampaign[lead.campaign_id] ?? 0) + 1;
+
+          // Additive: also write discrete signal rows. Failures here must not
+          // affect lead status or credit accounting.
+          try {
+            const extracted = extractSignals(signalData, lead);
+            signalsExtracted += extracted.length;
+            if (extracted.length > 0) {
+              const { data: inserted, error: signalErr } = await db
+                .from("signals")
+                .upsert(extracted, {
+                  onConflict: "lead_id,source,date_iso",
+                  ignoreDuplicates: true,
+                })
+                .select("id");
+              if (signalErr) {
+                console.error(
+                  JSON.stringify({
+                    step: "cron_signals_insert_error",
+                    lead_id: lead.id,
+                    error: signalErr.message,
+                  })
+                );
+              } else {
+                const insertedCount = inserted?.length ?? 0;
+                signalsInserted += insertedCount;
+                signalsDuplicate += extracted.length - insertedCount;
+              }
+            }
+          } catch (err: unknown) {
+            console.error(
+              JSON.stringify({
+                step: "cron_signals_extract_error",
+                lead_id: lead.id,
+                error: err instanceof Error ? err.message : String(err),
+              })
+            );
+          }
         } else {
           await db
             .from("leads")
@@ -165,7 +268,22 @@ export async function POST(req: NextRequest) {
   }
 
   console.log(
-    JSON.stringify({ step: "cron_done", total: leads.length, success: successCount })
+    JSON.stringify({
+      step: "cron_done",
+      total: leads.length,
+      success: successCount,
+      signals_extracted: signalsExtracted,
+      signals_inserted: signalsInserted,
+      signals_duplicate: signalsDuplicate,
+    })
   );
-  return NextResponse.json({ processed: leads.length, success: successCount });
+  return NextResponse.json({
+    processed: leads.length,
+    success: successCount,
+    signals: {
+      extracted: signalsExtracted,
+      inserted: signalsInserted,
+      duplicate: signalsDuplicate,
+    },
+  });
 }
