@@ -5,14 +5,15 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 
-type Field = "first_name" | "last_name" | "email" | "company" | "title" | "ignore";
+type Field = "first_name" | "last_name" | "email" | "company" | "title" | "subject" | "ignore";
 
 const FIELDS: { key: Field; label: string; required: boolean }[] = [
   { key: "first_name", label: "First name", required: true },
-  { key: "last_name", label: "Last name", required: true },
+  { key: "last_name", label: "Last name", required: false },
   { key: "email", label: "Email", required: true },
   { key: "company", label: "Company", required: false },
   { key: "title", label: "Title", required: false },
+  { key: "subject", label: "Subject", required: false },
   { key: "ignore", label: "Ignore column", required: false },
 ];
 
@@ -65,11 +66,12 @@ function parseCsv(text: string): { headers: string[]; rows: string[][] } {
 
 function autoMap(header: string): Field {
   const h = header.toLowerCase().replace(/[\s_-]+/g, "");
-  if (["firstname", "fname", "given", "givenname"].includes(h)) return "first_name";
+  if (["firstname", "fname", "given", "givenname", "name", "fullname"].includes(h)) return "first_name";
   if (["lastname", "lname", "surname", "familyname"].includes(h)) return "last_name";
   if (["email", "emailaddress", "mail"].includes(h)) return "email";
   if (["company", "companyname", "organization", "org"].includes(h)) return "company";
   if (["title", "jobtitle", "role", "position"].includes(h)) return "title";
+  if (["subject", "emailsubject", "subjectline"].includes(h)) return "subject";
   return "ignore";
 }
 
@@ -131,7 +133,7 @@ function CsvImportContent() {
     setMapping(h.map(autoMap));
   };
 
-  const requiredOk = (["first_name", "last_name", "email"] as Field[]).every((f) =>
+  const requiredOk = (["first_name", "email"] as Field[]).every((f) =>
     mapping.includes(f)
   );
 
@@ -292,7 +294,7 @@ function CsvImportContent() {
                 Drop your CSV here
               </p>
               <p style={{ fontSize: 12.5, color: "rgba(255,255,255,0.4)", fontFamily: "var(--font-outfit)" }}>
-                or click to browse — first_name, last_name, email required
+                or click to browse — first_name and email required
               </p>
             </div>
             <input
@@ -484,7 +486,7 @@ function CsvImportContent() {
                   borderRadius: 8,
                 }}
               >
-                Map all required fields: first_name, last_name, email.
+                Map all required fields: first_name and email.
               </p>
             )}
 

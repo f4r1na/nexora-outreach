@@ -4,9 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type Field = "first_name" | "last_name" | "email" | "company" | "title" | "ignore";
+type Field = "first_name" | "last_name" | "email" | "company" | "title" | "subject" | "ignore";
 
-const VALID_FIELDS: Field[] = ["first_name", "last_name", "email", "company", "title", "ignore"];
+const VALID_FIELDS: Field[] = ["first_name", "last_name", "email", "company", "title", "subject", "ignore"];
 const MAX_ROWS = 5000;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
   if (!map.every((m) => VALID_FIELDS.includes(m))) {
     return NextResponse.json({ error: "Invalid mapping field" }, { status: 400 });
   }
-  for (const required of ["first_name", "last_name", "email"] as Field[]) {
+  for (const required of ["first_name", "email"] as Field[]) {
     if (!map.includes(required)) {
       return NextResponse.json({ error: `Missing required column: ${required}` }, { status: 400 });
     }
@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
     email: map.indexOf("email"),
     company: map.indexOf("company"),
     title: map.indexOf("title"),
+    subject: map.indexOf("subject"),
     ignore: -1,
   };
 
@@ -80,6 +81,7 @@ export async function POST(req: NextRequest) {
     role: string | null;
     email: string;
     custom_note: null;
+    generated_subject: string | null;
   }[] = [];
   let skipped = 0;
 
@@ -90,10 +92,11 @@ export async function POST(req: NextRequest) {
     }
     const row = rawRow as string[];
     const first = (row[idx.first_name] ?? "").toString().trim();
-    const last = (row[idx.last_name] ?? "").toString().trim();
+    const last = idx.last_name >= 0 ? (row[idx.last_name] ?? "").toString().trim() : "";
     const email = (row[idx.email] ?? "").toString().trim().toLowerCase();
     const company = idx.company >= 0 ? (row[idx.company] ?? "").toString().trim() : "";
     const title = idx.title >= 0 ? (row[idx.title] ?? "").toString().trim() : "";
+    const subject = idx.subject >= 0 ? (row[idx.subject] ?? "").toString().trim() : "";
 
     if (!first || !email || !EMAIL_RE.test(email)) {
       skipped++;
@@ -111,6 +114,7 @@ export async function POST(req: NextRequest) {
       role: title || null,
       email,
       custom_note: null,
+      generated_subject: subject || null,
     });
   }
 
