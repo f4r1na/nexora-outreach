@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 
-type Field = "first_name" | "last_name" | "email" | "company" | "title" | "subject" | "ignore";
+type Field = "first_name" | "last_name" | "email" | "company" | "title" | "subject" | "body" | "ignore";
 
 const FIELDS: { key: Field; label: string; required: boolean }[] = [
   { key: "first_name", label: "First name", required: true },
@@ -14,6 +14,7 @@ const FIELDS: { key: Field; label: string; required: boolean }[] = [
   { key: "company", label: "Company", required: false },
   { key: "title", label: "Title", required: false },
   { key: "subject", label: "Subject", required: false },
+  { key: "body", label: "Body", required: false },
   { key: "ignore", label: "Ignore column", required: false },
 ];
 
@@ -72,6 +73,7 @@ function autoMap(header: string): Field {
   if (["company", "companyname", "organization", "org"].includes(h)) return "company";
   if (["title", "jobtitle", "role", "position"].includes(h)) return "title";
   if (["subject", "emailsubject", "subjectline"].includes(h)) return "subject";
+  if (["body", "emailbody", "message", "content"].includes(h)) return "body";
   return "ignore";
 }
 

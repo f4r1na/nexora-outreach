@@ -4,9 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-type Field = "first_name" | "last_name" | "email" | "company" | "title" | "subject" | "ignore";
+type Field = "first_name" | "last_name" | "email" | "company" | "title" | "subject" | "body" | "ignore";
 
-const VALID_FIELDS: Field[] = ["first_name", "last_name", "email", "company", "title", "subject", "ignore"];
+const VALID_FIELDS: Field[] = ["first_name", "last_name", "email", "company", "title", "subject", "body", "ignore"];
 const MAX_ROWS = 5000;
 const EMAIL_RE = /^\S+@\S+\.\S+$/;
 
@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
     company: map.indexOf("company"),
     title: map.indexOf("title"),
     subject: map.indexOf("subject"),
+    body: map.indexOf("body"),
     ignore: -1,
   };
 
@@ -83,6 +84,7 @@ export async function POST(req: NextRequest) {
     email: string;
     custom_note: null;
     generated_subject: string | null;
+    generated_body: string | null;
   }[] = [];
   let skippedNoEmail = 0;
   let skippedBadEmail = 0;
@@ -107,6 +109,7 @@ export async function POST(req: NextRequest) {
     const company = cell(row, idx.company);
     const title = cell(row, idx.title);
     const subject = cell(row, idx.subject);
+    const bodyText = cell(row, idx.body);
 
     if (!email) {
       skippedNoEmail++;
@@ -129,6 +132,7 @@ export async function POST(req: NextRequest) {
       email,
       custom_note: null,
       generated_subject: subject || null,
+      generated_body: bodyText || null,
     });
   }
 
