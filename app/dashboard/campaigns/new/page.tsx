@@ -7,10 +7,12 @@ import { toast } from "sonner";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+type Path = null | "wizard" | "csv";
 type Msg = { id: string; role: "ai" | "user"; text: string };
 type ActivityStep = { id: string; text: string; variant: "orange" | "amber" | "green" };
 type Answers = { targetAudience: string; goal: string; leadCount: string; location: string; sendMode: string };
 type LaunchResult = { campaignId: string; leadCount: number; hot: number; warm: number; cold: number };
+type PreviewRow = string[];
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -99,6 +101,44 @@ function getLeadStats(leadCountAnswer: string) {
   return { total, hot, warm, cold };
 }
 
+// ── CSV helpers ───────────────────────────────────────────────────────────────
+
+function parseCSVPreview(text: string, maxRows = 6): { headers: string[]; rows: PreviewRow[] } {
+  const lines = text.split(/\r?\n/).filter((l) => l.trim());
+  if (lines.length === 0) return { headers: [], rows: [] };
+
+  const parseLine = (line: string): string[] => {
+    const cols: string[] = [];
+    let cur = "";
+    let inQuote = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQuote && line[i + 1] === '"') { cur += '"'; i++; }
+        else inQuote = !inQuote;
+      } else if (ch === "," && !inQuote) {
+        cols.push(cur.trim());
+        cur = "";
+      } else {
+        cur += ch;
+      }
+    }
+    cols.push(cur.trim());
+    return cols;
+  };
+
+  return {
+    headers: parseLine(lines[0]),
+    rows: lines.slice(1, maxRows).map(parseLine),
+  };
+}
+
+function hasEmailColumn(headers: string[]): boolean {
+  return headers.some((h) =>
+    ["email", "email_address"].includes(h.toLowerCase().replace(/[^a-z0-9]/g, "_"))
+  );
+}
+
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
 function IconX() {
@@ -130,6 +170,485 @@ function IconCheck() {
     <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
       <path d="M3 8l4 4 6-7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  );
+}
+
+// ── Shared Header ─────────────────────────────────────────────────────────────
+
+function SharedHeader({ path, onBack }: { path: Path; onBack: () => void }) {
+  return (
+    <header
+      style={{
+        padding: "0 28px",
+        height: 64,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+        backgroundColor: "rgba(6,6,6,0.9)",
+        backdropFilter: "blur(12px)",
+        position: "sticky",
+        top: 0,
+        zIndex: 30,
+        flexShrink: 0,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        {path === null ? (
+          <Link
+            href="/dashboard"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              color: "rgba(255,255,255,0.4)",
+              fontSize: 13,
+              fontFamily: "var(--font-outfit)",
+              textDecoration: "none",
+              padding: "6px 10px",
+              borderRadius: 7,
+              border: "1px solid rgba(255,255,255,0.07)",
+            }}
+          >
+            <IconArrowLeft />
+            Back
+          </Link>
+        ) : (
+          <button
+            onClick={onBack}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              color: "rgba(255,255,255,0.4)",
+              fontSize: 13,
+              fontFamily: "var(--font-outfit)",
+              background: "none",
+              padding: "6px 10px",
+              borderRadius: 7,
+              border: "1px solid rgba(255,255,255,0.07)",
+              cursor: "pointer",
+            }}
+          >
+            <IconArrowLeft />
+            Back
+          </button>
+        )}
+        <span style={{ color: "rgba(255,255,255,0.1)", fontSize: 16 }}>/</span>
+        <span style={{ fontSize: 15, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)" }}>
+          Campaign Wizard
+        </span>
+      </div>
+      <Link
+        href="/dashboard"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          width: 32,
+          height: 32,
+          borderRadius: 8,
+          border: "1px solid rgba(255,255,255,0.08)",
+          backgroundColor: "rgba(255,255,255,0.02)",
+          color: "rgba(255,255,255,0.35)",
+        }}
+        aria-label="Close wizard"
+      >
+        <IconX />
+      </Link>
+    </header>
+  );
+}
+
+// ── Choice Screen ─────────────────────────────────────────────────────────────
+
+function ChoiceScreen({ onSelect }: { onSelect: (path: "wizard" | "csv") => void }) {
+  return (
+    <div
+      style={{
+        flex: 1,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "40px 24px",
+      }}
+    >
+      <div>
+        <p
+          style={{
+            fontSize: 13,
+            color: "rgba(255,255,255,0.3)",
+            fontFamily: "var(--font-outfit)",
+            textAlign: "center",
+            marginBottom: 28,
+            letterSpacing: "0.05em",
+            textTransform: "uppercase",
+          }}
+        >
+          How do you want to start?
+        </p>
+        <div style={{ display: "flex", gap: 16 }}>
+          {[
+            {
+              key: "wizard" as const,
+              title: "Start from scratch",
+              subtitle: "Answer 5 questions, we'll find the right audience",
+              icon: (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M12 2v2M12 20v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M2 12h2M20 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                </svg>
+              ),
+            },
+            {
+              key: "csv" as const,
+              title: "Import CSV",
+              subtitle: "Upload your existing lead list",
+              icon: (
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+                </svg>
+              ),
+            },
+          ].map(({ key, title, subtitle, icon }) => (
+            <button
+              key={key}
+              onClick={() => onSelect(key)}
+              style={{
+                width: 240,
+                padding: "28px 24px",
+                backgroundColor: "#0e0e0e",
+                border: "1px solid rgba(255,255,255,0.09)",
+                borderRadius: 14,
+                textAlign: "left",
+                cursor: "pointer",
+                transition: "border-color 0.15s, background-color 0.15s",
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,82,0,0.45)";
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor = "rgba(255,82,0,0.04)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.09)";
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor = "#0e0e0e";
+              }}
+            >
+              <div
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 10,
+                  backgroundColor: "rgba(255,82,0,0.1)",
+                  border: "1px solid rgba(255,82,0,0.2)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#FF5200",
+                  marginBottom: 16,
+                }}
+              >
+                {icon}
+              </div>
+              <p
+                style={{
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: "#fff",
+                  fontFamily: "var(--font-syne)",
+                  marginBottom: 6,
+                }}
+              >
+                {title}
+              </p>
+              <p
+                style={{
+                  fontSize: 12.5,
+                  color: "rgba(255,255,255,0.38)",
+                  fontFamily: "var(--font-outfit)",
+                  lineHeight: 1.5,
+                }}
+              >
+                {subtitle}
+              </p>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── CSV Import Content ────────────────────────────────────────────────────────
+
+function CsvImportContent() {
+  const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<{ headers: string[]; rows: PreviewRow[] } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [dragging, setDragging] = useState(false);
+
+  const loadFile = useCallback((f: File) => {
+    if (!f.name.toLowerCase().endsWith(".csv")) {
+      setError("Please upload a .csv file");
+      return;
+    }
+    setError(null);
+    setFile(f);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const p = parseCSVPreview(text);
+      if (!hasEmailColumn(p.headers)) {
+        setError("CSV must have an 'email' column. Found: " + (p.headers.join(", ") || "none"));
+        setFile(null);
+        setPreview(null);
+        return;
+      }
+      setPreview(p);
+    };
+    reader.readAsText(f);
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragging(false);
+      const f = e.dataTransfer.files[0];
+      if (f) loadFile(f);
+    },
+    [loadFile]
+  );
+
+  const handleConfirm = async () => {
+    if (!file || uploading) return;
+    setUploading(true);
+    setError(null);
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("name", file.name.replace(/\.csv$/i, "").trim());
+
+    try {
+      const res = await fetch("/api/campaigns/import", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Upload failed");
+        setUploading(false);
+        return;
+      }
+      router.push(`/dashboard/campaigns/${data.campaignId}?tab=leads`);
+    } catch {
+      setError("Upload failed. Please try again.");
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto" }}>
+      <style>{`@keyframes imp-spin { to { transform: rotate(360deg); } }`}</style>
+      <main style={{ maxWidth: 640, margin: "0 auto", padding: "48px 24px" }}>
+        <h2
+          style={{
+            fontSize: 22,
+            fontWeight: 500,
+            color: "#fff",
+            fontFamily: "var(--font-syne)",
+            marginBottom: 8,
+          }}
+        >
+          Import your leads
+        </h2>
+        <p
+          style={{
+            fontSize: 13,
+            color: "rgba(255,255,255,0.4)",
+            fontFamily: "var(--font-outfit)",
+            marginBottom: 32,
+            lineHeight: 1.6,
+          }}
+        >
+          Upload a CSV with columns: <strong style={{ color: "rgba(255,255,255,0.6)" }}>email</strong> (required),
+          first_name, last_name, company, title.
+          Signals will be detected automatically after import.
+        </p>
+
+        {!preview && (
+          <div
+            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={handleDrop}
+            onClick={() => inputRef.current?.click()}
+            style={{
+              border: `2px dashed ${dragging ? "rgba(255,82,0,0.6)" : "rgba(255,255,255,0.1)"}`,
+              borderRadius: 10,
+              padding: "56px 24px",
+              textAlign: "center",
+              cursor: "pointer",
+              backgroundColor: dragging ? "rgba(255,82,0,0.04)" : "rgba(255,255,255,0.015)",
+              transition: "border-color 0.15s, background-color 0.15s",
+            }}
+          >
+            <svg
+              width="32" height="32" viewBox="0 0 24 24" fill="none"
+              stroke="rgba(255,255,255,0.2)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+              style={{ margin: "0 auto 14px", display: "block" }}
+              aria-hidden="true"
+            >
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
+            </svg>
+            <p style={{ fontSize: 14, color: "rgba(255,255,255,0.55)", fontFamily: "var(--font-outfit)", marginBottom: 6 }}>
+              Drop your CSV here, or click to browse
+            </p>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.2)", fontFamily: "var(--font-outfit)" }}>
+              .csv files only
+            </p>
+            <input
+              ref={inputRef}
+              type="file"
+              accept=".csv"
+              style={{ display: "none" }}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) loadFile(f); }}
+            />
+          </div>
+        )}
+
+        {preview && (
+          <div>
+            <div
+              style={{
+                marginBottom: 16,
+                padding: "12px 16px",
+                backgroundColor: "rgba(34,197,94,0.07)",
+                border: "1px solid rgba(34,197,94,0.2)",
+                borderRadius: 8,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <p style={{ fontSize: 13, color: "#4ade80", fontFamily: "var(--font-outfit)" }}>
+                {file?.name} - columns detected
+              </p>
+              <button
+                onClick={() => { setFile(null); setPreview(null); setError(null); }}
+                style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-outfit)", background: "none", border: "none", cursor: "pointer" }}
+              >
+                Change file
+              </button>
+            </div>
+
+            <div
+              style={{
+                overflowX: "auto",
+                border: "1px solid rgba(255,255,255,0.07)",
+                borderRadius: 8,
+                marginBottom: 24,
+              }}
+            >
+              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12, fontFamily: "var(--font-outfit)" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                    {preview.headers.map((h) => (
+                      <th
+                        key={h}
+                        style={{
+                          padding: "10px 14px",
+                          textAlign: "left",
+                          color: "rgba(255,255,255,0.35)",
+                          fontWeight: 400,
+                          whiteSpace: "nowrap",
+                          textTransform: "uppercase",
+                          fontSize: 10,
+                          letterSpacing: "0.07em",
+                        }}
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {preview.rows.map((row, i) => (
+                    <tr key={i} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                      {row.map((cell, j) => (
+                        <td
+                          key={j}
+                          style={{
+                            padding: "10px 14px",
+                            color: "rgba(255,255,255,0.6)",
+                            whiteSpace: "nowrap",
+                            maxWidth: 200,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {cell || "-"}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <button
+              onClick={handleConfirm}
+              disabled={uploading}
+              style={{
+                width: "100%",
+                padding: "12px 20px",
+                borderRadius: 8,
+                border: "none",
+                backgroundColor: uploading ? "rgba(255,82,0,0.5)" : "#FF5200",
+                color: "#fff",
+                fontSize: 14,
+                fontWeight: 500,
+                fontFamily: "var(--font-outfit)",
+                cursor: uploading ? "not-allowed" : "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+              }}
+            >
+              {uploading ? (
+                <>
+                  <svg
+                    width="13" height="13" viewBox="0 0 24 24" fill="none"
+                    style={{ animation: "imp-spin 0.9s linear infinite" }}
+                    aria-hidden="true"
+                  >
+                    <path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                  </svg>
+                  Importing...
+                </>
+              ) : (
+                "Import and detect signals"
+              )}
+            </button>
+          </div>
+        )}
+
+        {error && (
+          <p
+            style={{
+              marginTop: 16,
+              fontSize: 12,
+              color: "#f87171",
+              fontFamily: "var(--font-outfit)",
+              padding: "10px 14px",
+              backgroundColor: "rgba(248,113,113,0.08)",
+              borderRadius: 7,
+              border: "1px solid rgba(248,113,113,0.2)",
+            }}
+          >
+            {error}
+          </p>
+        )}
+      </main>
+    </div>
   );
 }
 
@@ -170,7 +689,6 @@ function SummaryCard({
         transition: "border-top-color 0.4s",
       }}
     >
-      {/* Header */}
       <div style={{ marginBottom: 14 }}>
         <p style={{ fontSize: 14, fontWeight: 700, color: isDone ? "#22C55E" : "#FF5200", fontFamily: "var(--font-syne)", marginBottom: 3 }}>
           {isDone ? "Campaign launched!" : "Here's your campaign — ready to launch"}
@@ -182,7 +700,6 @@ function SummaryCard({
         </p>
       </div>
 
-      {/* Summary fields */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7, marginBottom: 16 }}>
         {[
           { label: "Target", value: answers.targetAudience },
@@ -294,7 +811,6 @@ function WizardContent() {
   const templateParam = searchParams.get("template");
   const q1Param = searchParams.get("q1");
 
-  // step: 0=initializing, 1-5=questions, 6=summary, 7=launching
   const [step, setStep] = useState(0);
   const [messages, setMessages] = useState<Msg[]>([]);
   const [activitySteps, setActivitySteps] = useState<ActivityStep[]>([]);
@@ -351,7 +867,6 @@ function WizardContent() {
     [addActivity]
   );
 
-  // Init: show Q1 after mount
   useEffect(() => {
     const t = setTimeout(() => {
       addMsg("ai", QUESTIONS[0].text);
@@ -391,7 +906,6 @@ function WizardContent() {
         }, 950);
         timerRefs.current.push(t);
       } else {
-        // Q5 done → show summary after activity steps finish
         const t = setTimeout(() => {
           setStep(6);
           setAnswering(false);
@@ -402,7 +916,6 @@ function WizardContent() {
     [step, answering, addMsg, scheduleActivity]
   );
 
-  // Template pre-fill
   useEffect(() => {
     if (!templateParam || templateFiredRef.current || step !== 1 || !optionsVisible) return;
     const MAP: Record<string, string> = {
@@ -421,7 +934,6 @@ function WizardContent() {
     }
   }, [templateParam, step, optionsVisible, handleAnswer]);
 
-  // ?q1= pre-fill (from agent interface campaign intent detection)
   useEffect(() => {
     if (!q1Param || templateFiredRef.current || step !== 1 || !optionsVisible) return;
     templateFiredRef.current = true;
@@ -514,7 +1026,6 @@ function WizardContent() {
 
   return (
     <>
-      {/* Animation styles */}
       <style>{`
         @keyframes wiz-fade-up {
           from { opacity: 0; transform: translateY(12px); }
@@ -563,79 +1074,16 @@ function WizardContent() {
         }
       `}</style>
 
-      {/* ── Header ── */}
-      <header
-        style={{
-          padding: "0 28px",
-          height: 64,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
-          backgroundColor: "rgba(6,6,6,0.9)",
-          backdropFilter: "blur(12px)",
-          position: "sticky",
-          top: 0,
-          zIndex: 30,
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <Link
-            href="/dashboard"
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              color: "rgba(255,255,255,0.4)",
-              fontSize: 13,
-              fontFamily: "var(--font-outfit)",
-              textDecoration: "none",
-              padding: "6px 10px",
-              borderRadius: 7,
-              border: "1px solid rgba(255,255,255,0.07)",
-              transition: "color 0.14s",
-            }}
-          >
-            <IconArrowLeft />
-            Back
-          </Link>
-          <span style={{ color: "rgba(255,255,255,0.1)", fontSize: 16 }}>/</span>
-          <span style={{ fontSize: 15, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)" }}>
-            Campaign Wizard
-          </span>
-        </div>
-        <Link
-          href="/dashboard"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            width: 32,
-            height: 32,
-            borderRadius: 8,
-            border: "1px solid rgba(255,255,255,0.08)",
-            backgroundColor: "rgba(255,255,255,0.02)",
-            color: "rgba(255,255,255,0.35)",
-            transition: "background-color 0.14s",
-          }}
-          aria-label="Close wizard"
-        >
-          <IconX />
-        </Link>
-      </header>
-
       {/* ── Body: split layout ── */}
       <div
         style={{
           flex: 1,
           display: "flex",
           minHeight: 0,
-          height: "calc(100vh - 64px)",
           overflow: "hidden",
         }}
       >
-        {/* ── LEFT: Conversation ── */}
+        {/* LEFT: Conversation */}
         <div
           style={{
             width: "60%",
@@ -646,7 +1094,7 @@ function WizardContent() {
             overflow: "hidden",
           }}
         >
-          {/* Progress dots + step label */}
+          {/* Progress dots */}
           <div
             style={{
               padding: "16px 28px 14px",
@@ -670,14 +1118,7 @@ function WizardContent() {
                 }}
               />
             ))}
-            <span
-              style={{
-                marginLeft: 6,
-                fontSize: 11,
-                color: "rgba(255,255,255,0.22)",
-                fontFamily: "var(--font-outfit)",
-              }}
-            >
+            <span style={{ marginLeft: 6, fontSize: 11, color: "rgba(255,255,255,0.22)", fontFamily: "var(--font-outfit)" }}>
               {step <= 5
                 ? `Step ${Math.max(step, 1)} of 5`
                 : step === 6
@@ -702,31 +1143,20 @@ function WizardContent() {
               <div
                 key={msg.id}
                 className="wiz-msg"
-                style={{
-                  display: "flex",
-                  justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
-                }}
+                style={{ display: "flex", justifyContent: msg.role === "user" ? "flex-end" : "flex-start" }}
               >
                 <div
                   style={{
                     maxWidth: "78%",
                     padding: "11px 16px",
-                    borderRadius:
-                      msg.role === "user" ? "18px 18px 5px 18px" : "5px 18px 18px 18px",
+                    borderRadius: msg.role === "user" ? "18px 18px 5px 18px" : "5px 18px 18px 18px",
                     backgroundColor: msg.role === "user" ? "rgba(255,82,0,0.13)" : "#0e0e0e",
-                    border:
-                      msg.role === "user"
-                        ? "1px solid rgba(255,82,0,0.22)"
-                        : "1px solid rgba(255,255,255,0.07)",
+                    border: msg.role === "user" ? "1px solid rgba(255,82,0,0.22)" : "1px solid rgba(255,255,255,0.07)",
                     fontSize: msg.role === "ai" ? 15 : 13.5,
                     fontWeight: msg.role === "ai" ? 600 : 400,
                     lineHeight: 1.55,
-                    color:
-                      msg.role === "user"
-                        ? "rgba(255,255,255,0.9)"
-                        : "rgba(255,255,255,0.82)",
-                    fontFamily:
-                      msg.role === "ai" ? "var(--font-syne)" : "var(--font-outfit)",
+                    color: msg.role === "user" ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.82)",
+                    fontFamily: msg.role === "ai" ? "var(--font-syne)" : "var(--font-outfit)",
                   }}
                 >
                   {msg.text}
@@ -780,20 +1210,11 @@ function WizardContent() {
                 </div>
 
                 {showTypeInput && (
-                  <div
-                    style={{
-                      marginTop: 12,
-                      display: "flex",
-                      gap: 8,
-                      animation: "wiz-fade-up 0.25s ease-out both",
-                    }}
-                  >
+                  <div style={{ marginTop: 12, display: "flex", gap: 8, animation: "wiz-fade-up 0.25s ease-out both" }}>
                     <input
                       value={typeInput}
                       onChange={(e) => setTypeInput(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && typeInput.trim()) handleAnswer(typeInput.trim());
-                      }}
+                      onKeyDown={(e) => { if (e.key === "Enter" && typeInput.trim()) handleAnswer(typeInput.trim()); }}
                       placeholder="Type your answer..."
                       autoFocus
                       className="nx-input"
@@ -826,7 +1247,7 @@ function WizardContent() {
               </div>
             )}
 
-            {/* Thinking dots between questions */}
+            {/* Thinking dots */}
             {answering && step <= 5 && (
               <div style={{ display: "flex", gap: 5, padding: "4px 0" }}>
                 {[0, 1, 2].map((i) => (
@@ -862,7 +1283,7 @@ function WizardContent() {
           </div>
         </div>
 
-        {/* ── RIGHT: Activity feed ── */}
+        {/* RIGHT: Activity feed */}
         <div
           style={{
             width: "40%",
@@ -873,7 +1294,6 @@ function WizardContent() {
             backgroundColor: "rgba(255,255,255,0.005)",
           }}
         >
-          {/* Feed header */}
           <div
             style={{
               padding: "16px 22px 13px",
@@ -881,22 +1301,11 @@ function WizardContent() {
               flexShrink: 0,
             }}
           >
-            <p
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: "rgba(255,255,255,0.2)",
-                fontFamily: "var(--font-outfit)",
-                margin: 0,
-              }}
-            >
+            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: "rgba(255,255,255,0.2)", fontFamily: "var(--font-outfit)", margin: 0 }}>
               Live Activity
             </p>
           </div>
 
-          {/* Feed items */}
           <div
             ref={activityRef}
             style={{
@@ -936,11 +1345,7 @@ function WizardContent() {
                   backgroundColor: "rgba(255,255,255,0.018)",
                   border: "1px solid rgba(255,255,255,0.05)",
                   borderLeft: `3px solid ${
-                    actStep.variant === "orange"
-                      ? "#FF5200"
-                      : actStep.variant === "amber"
-                      ? "#F59E0B"
-                      : "#22C55E"
+                    actStep.variant === "orange" ? "#FF5200" : actStep.variant === "amber" ? "#F59E0B" : "#22C55E"
                   }`,
                   fontSize: 11.5,
                   color: "rgba(255,255,255,0.52)",
@@ -963,9 +1368,26 @@ function WizardContent() {
 // ── Page export ────────────────────────────────────────────────────────────────
 
 export default function NewCampaignPage() {
+  const [path, setPath] = useState<Path>(null);
+
   return (
-    <Suspense fallback={null}>
-      <WizardContent />
-    </Suspense>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "calc(100vh - 60px)",
+        backgroundColor: "#060606",
+        overflow: "hidden",
+      }}
+    >
+      <SharedHeader path={path} onBack={() => setPath(null)} />
+      {path === null && <ChoiceScreen onSelect={setPath} />}
+      {path === "wizard" && (
+        <Suspense fallback={null}>
+          <WizardContent />
+        </Suspense>
+      )}
+      {path === "csv" && <CsvImportContent />}
+    </div>
   );
 }
