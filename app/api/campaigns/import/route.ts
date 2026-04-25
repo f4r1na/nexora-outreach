@@ -8,7 +8,7 @@ type Field = "first_name" | "last_name" | "email" | "company" | "title" | "subje
 
 const VALID_FIELDS: Field[] = ["first_name", "last_name", "email", "company", "title", "subject", "ignore"];
 const MAX_ROWS = 5000;
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_RE = /^\S+@\S+\.\S+$/;
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -73,7 +73,8 @@ export async function POST(req: NextRequest) {
   const creditsLimit: number = sub?.credits_limit ?? 10;
   const remaining = creditsLimit - creditsUsed;
 
-  // Build & validate leads
+  // Build & validate leads. Keep first occurrence of each email; skip later duplicates.
+  // No DB lookup — only validate format.
   const seen = new Set<string>();
   const leadsToInsert: {
     first_name: string;
@@ -83,33 +84,46 @@ export async function POST(req: NextRequest) {
     custom_note: null;
     generated_subject: string | null;
   }[] = [];
-  let skipped = 0;
+  let skippedNoEmail = 0;
+  let skippedBadEmail = 0;
+  let skippedDuplicate = 0;
+
+  const cell = (row: string[], i: number) => {
+    if (i < 0) return "";
+    const v = row[i];
+    // Strip BOM and zero-width spaces that survive CSV parsing
+    return (v ?? "").toString().replace(/[﻿​]/g, "").trim();
+  };
 
   for (const rawRow of rows as unknown[]) {
     if (!Array.isArray(rawRow)) {
-      skipped++;
+      skippedNoEmail++;
       continue;
     }
     const row = rawRow as string[];
-    const first = (row[idx.first_name] ?? "").toString().trim();
-    const last = idx.last_name >= 0 ? (row[idx.last_name] ?? "").toString().trim() : "";
-    const email = (row[idx.email] ?? "").toString().trim().toLowerCase();
-    const company = idx.company >= 0 ? (row[idx.company] ?? "").toString().trim() : "";
-    const title = idx.title >= 0 ? (row[idx.title] ?? "").toString().trim() : "";
-    const subject = idx.subject >= 0 ? (row[idx.subject] ?? "").toString().trim() : "";
+    const first = cell(row, idx.first_name);
+    const last = cell(row, idx.last_name);
+    const email = cell(row, idx.email).toLowerCase();
+    const company = cell(row, idx.company);
+    const title = cell(row, idx.title);
+    const subject = cell(row, idx.subject);
 
-    if (!first || !email || !EMAIL_RE.test(email)) {
-      skipped++;
+    if (!email) {
+      skippedNoEmail++;
+      continue;
+    }
+    if (!EMAIL_RE.test(email)) {
+      skippedBadEmail++;
       continue;
     }
     if (seen.has(email)) {
-      skipped++;
+      skippedDuplicate++;
       continue;
     }
     seen.add(email);
 
     leadsToInsert.push({
-      first_name: last ? `${first} ${last}` : first,
+      first_name: last ? `${first} ${last}`.trim() || email.split("@")[0] : first || email.split("@")[0],
       company: company || null,
       role: title || null,
       email,
@@ -118,8 +132,21 @@ export async function POST(req: NextRequest) {
     });
   }
 
+  const skipped = skippedNoEmail + skippedBadEmail + skippedDuplicate;
+
   if (leadsToInsert.length === 0) {
-    return NextResponse.json({ error: "No valid leads found in CSV" }, { status: 400 });
+    return NextResponse.json(
+      {
+        error: "No valid leads found in CSV",
+        details: {
+          totalRows: rows.length,
+          skippedNoEmail,
+          skippedBadEmail,
+          skippedDuplicate,
+        },
+      },
+      { status: 400 }
+    );
   }
 
   if (leadsToInsert.length > remaining) {
