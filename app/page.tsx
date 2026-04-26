@@ -359,10 +359,9 @@ export default async function Home() {
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14, alignItems: "start" }}>
             {[
-              { name: "Free",    price: "$0",  period: "/mo", credits: "10 emails / month",   highlight: false, tag: null           },
-              { name: "Starter", price: "$19", period: "/mo", credits: "300 emails / month",  highlight: false, tag: null           },
-              { name: "Pro",     price: "$49", period: "/mo", credits: "1,000 emails / month", highlight: true,  tag: "Most popular" },
-              { name: "Agency",  price: "$99", period: "/mo", credits: "Unlimited emails",    highlight: false, tag: null           },
+              { name: "Starter", price: "$19",    period: "/mo", credits: "300 emails / month",   highlight: false, tag: null           },
+              { name: "Pro",     price: "$69",    period: "/mo", credits: "1,000 emails / month", highlight: true,  tag: "Most popular" },
+              { name: "Scale",   price: "Custom", period: "",    credits: "$0.12-$0.15 per email", highlight: false, tag: null           },
             ].map((plan) => (
               <div key={plan.name} style={{
                 backgroundColor: "#0E0E18",
