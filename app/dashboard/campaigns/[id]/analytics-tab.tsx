@@ -12,6 +12,7 @@ type CampaignStats = {
   open_rate: number;
   click_rate: number;
   reply_rate: number;
+  cost_per_reply: number | null;
 };
 
 function RateBar({ label, value, color }: { label: string; value: number; color: string }) {
@@ -81,9 +82,10 @@ export default function AnalyticsTab({
             open_rate: match.open_rate,
             click_rate: match.click_rate,
             reply_rate: match.reply_rate,
+            cost_per_reply: match.cost_per_reply,
           });
         } else {
-          setStats({ sent: 0, opened: 0, clicked: 0, replied: 0, open_rate: 0, click_rate: 0, reply_rate: 0 });
+          setStats({ sent: 0, opened: 0, clicked: 0, replied: 0, open_rate: 0, click_rate: 0, reply_rate: 0, cost_per_reply: null });
         }
         setLoading(false);
       })
@@ -158,6 +160,7 @@ export default function AnalyticsTab({
         <StatBlock label="Opened" value={stats.opened} />
         <StatBlock label="Clicked" value={stats.clicked} />
         <StatBlock label="Replied" value={stats.replied} color="#4ade80" />
+        <StatBlock label="Cost / Reply" value={stats.cost_per_reply == null ? "—" : `$${stats.cost_per_reply.toFixed(2)}`} />
       </div>
 
       {/* Rate bars */}

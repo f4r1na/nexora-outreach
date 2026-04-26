@@ -24,6 +24,7 @@ type Stats = {
   open_rate: number;
   click_rate: number;
   reply_rate: number;
+  cost_per_reply: number | null;
 };
 
 type CampaignRow = {
@@ -208,12 +209,13 @@ export default function AnalyticsPage() {
             <CampaignIQCard sentCount={stats?.sent ?? 0} campaignCount={campaigns.length} />
 
             {/* Stat cards with count-up */}
-            <StaggerList style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 20 }}>
+            <StaggerList style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, marginBottom: 20 }}>
               {[
-                { label: "EMAILS SENT",  value: stats?.sent ?? 0, isNum: true },
-                { label: "OPEN RATE",    value: stats?.open_rate ?? 0, isNum: true, suffix: "%", sub: `${stats?.opened ?? 0} opens` },
-                { label: "CLICK RATE",   value: stats?.click_rate ?? 0, isNum: true, suffix: "%", sub: `${stats?.clicked ?? 0} clicks` },
-                { label: "REPLY RATE",   value: stats?.reply_rate ?? 0, isNum: true, suffix: "%", sub: `${stats?.replied ?? 0} replies` },
+                { label: "EMAILS SENT",   value: stats?.sent ?? 0, isNum: true },
+                { label: "OPEN RATE",     value: stats?.open_rate ?? 0, isNum: true, suffix: "%", sub: `${stats?.opened ?? 0} opens` },
+                { label: "CLICK RATE",    value: stats?.click_rate ?? 0, isNum: true, suffix: "%", sub: `${stats?.clicked ?? 0} clicks` },
+                { label: "REPLY RATE",    value: stats?.reply_rate ?? 0, isNum: true, suffix: "%", sub: `${stats?.replied ?? 0} replies` },
+                { label: "COST / REPLY",  value: stats?.cost_per_reply ?? 0, isNum: true, prefix: "$", sub: stats?.cost_per_reply == null ? "no replies yet" : `${stats?.replied ?? 0} replies` },
               ].map((card) => (
                 <StaggerItem key={card.label}>
                   <div className="stat-card" style={{
@@ -226,6 +228,7 @@ export default function AnalyticsPage() {
                       {card.label}
                     </div>
                     <div style={{ fontSize: 24, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)", lineHeight: 1, marginBottom: 4 }}>
+                      {card.prefix ?? ""}
                       <CountUp value={card.value} suffix={card.suffix ?? ""} duration={900} />
                     </div>
                     {card.sub && (

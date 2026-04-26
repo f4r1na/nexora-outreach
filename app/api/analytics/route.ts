@@ -1,6 +1,18 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createClient as createServiceClient } from "@supabase/supabase-js";
+import { PLANS, type PlanKey } from "@/lib/plans";
+
+function planPrice(plan: string | null | undefined): number {
+  if (!plan || plan === "free") return 0;
+  const p = PLANS[plan as Exclude<PlanKey, "free">];
+  return p?.price ?? 0;
+}
+
+function costPerReply(price: number, replied: number): number | null {
+  if (price <= 0 || replied <= 0) return null;
+  return Math.round((price / replied) * 100) / 100;
+}
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,6 +34,14 @@ export async function GET() {
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const db = getServiceClient();
+
+    const { data: subRow } = await db
+      .from("subscriptions")
+      .select("plan")
+      .eq("user_id", user.id)
+      .single();
+    const plan = subRow?.plan ?? "free";
+    const price = planPrice(plan);
 
     // Always load campaigns for this user (independent of events table)
     const { data: campaignRows } = await db
@@ -67,6 +87,7 @@ export async function GET() {
         open_rate: effectiveSent > 0 ? Math.round((c_opened / effectiveSent) * 100) : 0,
         click_rate: effectiveSent > 0 ? Math.round((c_clicked / effectiveSent) * 100) : 0,
         reply_rate: effectiveSent > 0 ? Math.round((c_replied / effectiveSent) * 100) : 0,
+        cost_per_reply: costPerReply(price, c_replied),
       };
     });
 
@@ -94,7 +115,10 @@ export async function GET() {
         open_rate: finalOpenRate,
         click_rate: finalClickRate,
         reply_rate: finalReplyRate,
+        cost_per_reply: costPerReply(price, replied),
       },
+      plan,
+      plan_price: price,
       campaigns,
       daily,
     });
