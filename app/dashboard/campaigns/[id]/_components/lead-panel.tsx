@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import TimingBadge from "@/app/dashboard/components/timing-badge";
 
 export type Signal = {
+  id: string;
   type: string;
   text: string;
   source: string;
@@ -78,6 +79,20 @@ function isStale(iso: string): boolean {
   return (Date.now() - new Date(iso).getTime()) / 86_400_000 > 7;
 }
 
+function getConfidence(sig: Signal): "HIGH" | "MEDIUM" | "LOW" {
+  const base = sig.strength === "high" ? 3 : sig.strength === "medium" ? 2 : 1;
+  const days = sig.date_iso
+    ? (Date.now() - new Date(sig.date_iso).getTime()) / 86_400_000
+    : 90;
+  const decay = days < 30 ? 0 : days < 90 ? 1 : 2;
+  const score = base - decay;
+  if (score >= 3) return "HIGH";
+  if (score >= 1) return "MEDIUM";
+  return "LOW";
+}
+
+const CONF_ORDER = { HIGH: 0, MEDIUM: 1, LOW: 2 } as const;
+
 function IntelChip({ label, value }: { label: string; value: string }) {
   return (
     <div
@@ -127,6 +142,9 @@ export default function LeadPanel({
   const [body, setBody] = useState("");
   const [copied, setCopied] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [signals, setSignals] = useState<Signal[]>([]);
+  const [sigLoading, setSigLoading] = useState(false);
+  const [discardedIds, setDiscardedIds] = useState<Set<string>>(new Set());
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -159,6 +177,22 @@ export default function LeadPanel({
     }).catch(() => {});
   }, [lead?.id, lead?.signal_status]);
 
+  useEffect(() => {
+    if (!lead?.id || lead.signal_status !== "done") {
+      setSignals([]);
+      setSigLoading(false);
+      setDiscardedIds(new Set());
+      return;
+    }
+    setSigLoading(true);
+    setDiscardedIds(new Set());
+    fetch(`/api/signals/discard?lead_id=${lead.id}`)
+      .then((r) => r.json())
+      .then((d) => setSignals(d.signals ?? []))
+      .catch(() => setSignals([]))
+      .finally(() => setSigLoading(false));
+  }, [lead?.id]);
+
   const handleCopy = () => {
     navigator.clipboard
       .writeText(`Subject: ${subject}\n\n${body}`)
@@ -180,6 +214,15 @@ export default function LeadPanel({
     if (!lead) return;
     toast("Lead skipped", { style: { color: "#888" } });
     onSkip(lead.id);
+  };
+
+  const handleDiscard = (signalId: string) => {
+    setDiscardedIds((prev) => new Set([...prev, signalId]));
+    fetch("/api/signals/discard", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ signal_id: signalId }),
+    }).catch(() => {});
   };
 
   const handleRefreshIntel = async () => {
@@ -211,7 +254,6 @@ export default function LeadPanel({
   const score = lead
     ? getScore(index, totalLeads)
     : { label: "cold" as const, color: "#6b7280" };
-  const signals = lead?.signal_data?.signals ?? [];
   const intel = lead?.signal_data?.company_intel;
   const needsRefresh =
     lead?.signal_data?.last_updated
@@ -220,7 +262,16 @@ export default function LeadPanel({
   const isPending =
     !lead?.signal_status ||
     lead.signal_status === "pending" ||
-    lead.signal_status === "researching";
+    lead.signal_status === "researching" ||
+    sigLoading;
+
+  const visibleSignals = signals
+    .filter((s) => {
+      if (!s.date_iso) return false;
+      return (Date.now() - new Date(s.date_iso).getTime()) / 86_400_000 < 90;
+    })
+    .filter((s) => !discardedIds.has(s.id))
+    .sort((a, b) => CONF_ORDER[getConfidence(a)] - CONF_ORDER[getConfidence(b)]);
 
   return (
     <>
@@ -528,7 +579,7 @@ export default function LeadPanel({
                   >
                     Why we picked them
                   </p>
-                  {needsRefresh && !refreshing && signals.length > 0 && (
+                  {needsRefresh && !refreshing && visibleSignals.length > 0 && (
                     <button
                       onClick={handleRefreshIntel}
                       style={{
@@ -585,53 +636,129 @@ export default function LeadPanel({
                       Researching signals...
                     </span>
                   </div>
-                ) : signals.length > 0 ? (
+                ) : visibleSignals.length > 0 ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    {signals.map((sig, i) => (
-                      <div key={i}>
-                        <p
-                          style={{
-                            fontSize: 12.5,
-                            color: "#aaa",
-                            fontFamily: "var(--font-outfit)",
-                            lineHeight: 1.5,
-                            marginBottom: 5,
-                          }}
-                        >
-                          {sig.text}
-                        </p>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 6,
-                          }}
-                        >
-                          <span
+                    {visibleSignals.map((sig) => {
+                      const conf = getConfidence(sig);
+                      const confColor =
+                        conf === "HIGH" ? "#4ade80" : conf === "MEDIUM" ? "#F59E0B" : "#555";
+                      return (
+                        <div key={sig.id}>
+                          <p
                             style={{
-                              fontSize: 9.5,
-                              padding: "1.5px 7px",
-                              borderRadius: 4,
-                              backgroundColor: "rgba(255,255,255,0.04)",
-                              border: "1px solid rgba(255,255,255,0.07)",
-                              color: "#555",
+                              fontSize: 12.5,
+                              color: "#aaa",
                               fontFamily: "var(--font-outfit)",
+                              lineHeight: 1.5,
+                              marginBottom: 6,
                             }}
                           >
-                            {sig.source}
-                          </span>
-                          <span
+                            {sig.text}
+                          </p>
+                          <div
                             style={{
-                              fontSize: 10,
-                              color: "#3a3a4a",
-                              fontFamily: "var(--font-outfit)",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 5,
+                              flexWrap: "wrap",
                             }}
                           >
-                            {sig.date}
-                          </span>
+                            <span
+                              style={{
+                                fontSize: 9.5,
+                                padding: "1.5px 7px",
+                                borderRadius: 4,
+                                backgroundColor: "rgba(255,255,255,0.04)",
+                                border: "1px solid rgba(255,255,255,0.07)",
+                                color: "#555",
+                                fontFamily: "var(--font-outfit)",
+                              }}
+                            >
+                              {sig.source}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: 10,
+                                color: "#3a3a4a",
+                                fontFamily: "var(--font-outfit)",
+                              }}
+                            >
+                              {sig.date}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: 9,
+                                padding: "1.5px 6px",
+                                borderRadius: 4,
+                                color: confColor,
+                                border: `1px solid ${confColor}44`,
+                                fontFamily: "var(--font-outfit)",
+                                letterSpacing: "0.05em",
+                              }}
+                            >
+                              {conf}
+                            </span>
+                            {sig.source_url ? (
+                              <a
+                                href={sig.source_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  fontSize: 10,
+                                  color: "#555",
+                                  backgroundColor: "transparent",
+                                  border: "1px solid rgba(255,255,255,0.07)",
+                                  borderRadius: 4,
+                                  padding: "1.5px 7px",
+                                  fontFamily: "var(--font-outfit)",
+                                  textDecoration: "none",
+                                }}
+                              >
+                                ↗ Verify
+                              </a>
+                            ) : (
+                              <button
+                                disabled
+                                title="Source not available"
+                                style={{
+                                  fontSize: 10,
+                                  color: "#2a2a36",
+                                  backgroundColor: "transparent",
+                                  border: "1px solid rgba(255,255,255,0.04)",
+                                  borderRadius: 4,
+                                  padding: "1.5px 7px",
+                                  cursor: "not-allowed",
+                                  fontFamily: "var(--font-outfit)",
+                                }}
+                              >
+                                ↗ Verify
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDiscard(sig.id)}
+                              title="Discard signal"
+                              style={{
+                                marginLeft: "auto",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                width: 18,
+                                height: 18,
+                                backgroundColor: "transparent",
+                                border: "none",
+                                color: "#3a3a4a",
+                                cursor: "pointer",
+                                padding: 0,
+                                borderRadius: 3,
+                                flexShrink: 0,
+                              }}
+                            >
+                              <X size={10} />
+                            </button>
+                          </div>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

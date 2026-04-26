@@ -13,6 +13,45 @@ function getServiceClient() {
   );
 }
 
+export async function GET(req: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const leadId = req.nextUrl.searchParams.get("lead_id");
+  if (!leadId) return NextResponse.json({ error: "lead_id required" }, { status: 400 });
+
+  const db = getServiceClient();
+
+  const { data: lead } = await db
+    .from("leads")
+    .select("campaign_id")
+    .eq("id", leadId)
+    .single();
+
+  if (!lead) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const { data: camp } = await db
+    .from("campaigns")
+    .select("id")
+    .eq("id", lead.campaign_id)
+    .eq("user_id", user.id)
+    .single();
+
+  if (!camp) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const { data: signals, error } = await db
+    .from("signals")
+    .select("id, type, text, source, source_url, date, date_iso, strength")
+    .eq("lead_id", leadId)
+    .eq("discarded", false)
+    .order("created_at", { ascending: false });
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  return NextResponse.json({ signals: signals ?? [] });
+}
+
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -36,6 +75,7 @@ export async function POST(req: NextRequest) {
     .select("id, campaign_id")
     .eq("id", signal_id)
     .single();
+
   if (!signal) return NextResponse.json({ error: "Signal not found" }, { status: 404 });
 
   const { data: camp } = await db
@@ -44,6 +84,7 @@ export async function POST(req: NextRequest) {
     .eq("id", signal.campaign_id)
     .eq("user_id", user.id)
     .single();
+
   if (!camp) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const { error } = await db
