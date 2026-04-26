@@ -5,6 +5,7 @@ import SendCampaignButton from "./send-button";
 import FollowUpsTab from "./follow-ups-tab";
 import AnalyticsTab from "./analytics-tab";
 import LeadsTab from "./_components/leads-tab";
+import FollowupConfig from "./_components/followup-config";
 import { ArrowLeft } from "lucide-react";
 
 type Props = {
@@ -33,7 +34,7 @@ export default async function CampaignDetailPage({ params, searchParams }: Props
   const [{ data: campaign }, { data: leads }, { data: sub }, { data: gmailConn }] = await Promise.all([
     supabase
       .from("campaigns")
-      .select("id, name, tone, status, lead_count, created_at")
+      .select("id, name, tone, status, lead_count, created_at, follow_up_delays, follow_ups_enabled")
       .eq("id", id)
       .eq("user_id", user.id)
       .single(),
@@ -119,6 +120,8 @@ export default async function CampaignDetailPage({ params, searchParams }: Props
             plan={plan}
             gmailEmail={gmailEmail}
             initialStatus={campaign.status ?? ""}
+            followUpDelays={(campaign.follow_up_delays ?? [3, 5, 7]) as [number, number, number]}
+            followUpsEnabled={campaign.follow_ups_enabled ?? true}
           />
           <a href={`/api/export?campaignId=${id}&format=csv`} style={{
             display: "flex", alignItems: "center", gap: 6,
@@ -194,6 +197,15 @@ export default async function CampaignDetailPage({ params, searchParams }: Props
                 <OverviewRow label="Created" value={createdDate} />
               </div>
             </div>
+
+            {(plan === "pro" || plan === "agency") && (
+              <FollowupConfig
+                campaignId={id}
+                initialDelays={(campaign.follow_up_delays ?? [3, 5, 7]) as [number, number, number]}
+                initialEnabled={campaign.follow_ups_enabled ?? true}
+                locked={isSent}
+              />
+            )}
           </div>
         )}
 

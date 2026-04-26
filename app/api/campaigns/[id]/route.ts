@@ -15,6 +15,51 @@ function getServiceClient() {
   );
 }
 
+export async function PATCH(req: NextRequest, { params }: Props) {
+  const { id } = await params;
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  let body: { follow_up_delays?: number[]; follow_ups_enabled?: boolean };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const update: Record<string, unknown> = {};
+  if (Array.isArray(body.follow_up_delays)) {
+    if (body.follow_up_delays.length !== 3 || !body.follow_up_delays.every((n) => Number.isInteger(n) && n >= 1 && n <= 30)) {
+      return NextResponse.json({ error: "follow_up_delays must be 3 integers between 1 and 30" }, { status: 400 });
+    }
+    update.follow_up_delays = body.follow_up_delays;
+  }
+  if (typeof body.follow_ups_enabled === "boolean") {
+    update.follow_ups_enabled = body.follow_ups_enabled;
+  }
+  if (Object.keys(update).length === 0) {
+    return NextResponse.json({ error: "No fields to update" }, { status: 400 });
+  }
+
+  const db = getServiceClient();
+  const { data: campaign } = await db
+    .from("campaigns")
+    .select("id")
+    .eq("id", id)
+    .eq("user_id", user.id)
+    .single();
+  if (!campaign) return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
+
+  const { error: updErr } = await db.from("campaigns").update(update).eq("id", id);
+  if (updErr) {
+    return NextResponse.json({ error: updErr.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
+}
+
 export async function DELETE(_req: NextRequest, { params }: Props) {
   const { id } = await params;
 

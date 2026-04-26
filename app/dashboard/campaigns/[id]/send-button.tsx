@@ -11,6 +11,8 @@ type Props = {
   plan: string;
   gmailEmail: string | null;
   initialStatus: string;
+  followUpDelays?: [number, number, number];
+  followUpsEnabled?: boolean;
 };
 
 type SendState =
@@ -35,6 +37,8 @@ export default function SendCampaignButton({
   plan,
   gmailEmail,
   initialStatus,
+  followUpDelays = [3, 5, 7],
+  followUpsEnabled = true,
 }: Props) {
   const [state, setState] = useState<SendState>({ phase: "idle" });
   const isProOrAgency = plan === "pro" || plan === "agency";
@@ -132,7 +136,11 @@ export default function SendCampaignButton({
             } else if (evt.type === "done") {
               finalSent = evt.sent;
               finalTotal = evt.total;
-              setState({ phase: "followup_setup", sent: evt.sent, total: evt.total, delays: [3, 5, 7] });
+              if (followUpsEnabled) {
+                handleGenerateFollowups(followUpDelays);
+              } else {
+                setState({ phase: "followup_done", scheduled: 0 });
+              }
             } else if (evt.type === "error") {
               setState({ phase: "error", message: evt.message });
             }
@@ -142,7 +150,12 @@ export default function SendCampaignButton({
 
       // If stream ended without a "done" event, transition anyway
       if ((state as SendState).phase === "sending") {
-        setState({ phase: "followup_setup", sent: finalSent, total: finalTotal, delays: [3, 5, 7] });
+        void finalSent; void finalTotal;
+        if (followUpsEnabled) {
+          handleGenerateFollowups(followUpDelays);
+        } else {
+          setState({ phase: "followup_done", scheduled: 0 });
+        }
       }
     } catch (err: unknown) {
       setState({ phase: "error", message: err instanceof Error ? err.message : "Network error" });
