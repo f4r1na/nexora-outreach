@@ -24,9 +24,37 @@ type LeadData = {
 
 type EmailResult = { index: number; subject: string; body: string };
 
-// Simple input sanitizer — strip dangerous characters from prompt injections
 function sanitize(s: string, maxLen = 120): string {
   return String(s ?? "").replace(/[<>"'`]/g, "").trim().slice(0, maxLen);
+}
+
+// In-memory leads cache. Leads are fictional, so identical inputs can safely
+// reuse the same generated set across users. 30-min TTL, 100-entry cap.
+type LeadCacheEntry = { leads: LeadData[]; expires: number };
+const LEAD_CACHE = new Map<string, LeadCacheEntry>();
+const LEAD_CACHE_TTL_MS = 30 * 60 * 1000;
+const LEAD_CACHE_MAX = 100;
+
+function leadCacheKey(audience: string, goal: string, location: string, count: number): string {
+  return `${audience.toLowerCase()}|${goal.toLowerCase()}|${location.toLowerCase()}|${count}`;
+}
+
+function getCachedLeads(key: string): LeadData[] | null {
+  const entry = LEAD_CACHE.get(key);
+  if (!entry) return null;
+  if (entry.expires < Date.now()) {
+    LEAD_CACHE.delete(key);
+    return null;
+  }
+  return entry.leads;
+}
+
+function setCachedLeads(key: string, leads: LeadData[]): void {
+  if (LEAD_CACHE.size >= LEAD_CACHE_MAX) {
+    const firstKey = LEAD_CACHE.keys().next().value;
+    if (firstKey) LEAD_CACHE.delete(firstKey);
+  }
+  LEAD_CACHE.set(key, { leads, expires: Date.now() + LEAD_CACHE_TTL_MS });
 }
 
 export async function POST(req: NextRequest) {
@@ -110,17 +138,40 @@ export async function POST(req: NextRequest) {
         const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
         const locationCtx = location === "Anywhere" ? "worldwide" : location;
 
-        // ── Step 1: Generate leads ──
-        send({ type: "activity", text: `Finding ${count} ${targetAudience} leads...`, variant: "orange" });
-        console.log(`[wizard] calling Claude for leads: count=${count} target=${targetAudience} location=${locationCtx}`);
+        // ── Step 1: Generate leads (cached by audience/goal/location/count) ──
+        const cacheKey = leadCacheKey(targetAudience, goal, locationCtx, count);
+        const cached = getCachedLeads(cacheKey);
 
-        const leadsMsg = await anthropic.messages.create({
-          model: "claude-haiku-4-5-20251001",
-          max_tokens: 3000,
-          messages: [
-            {
-              role: "user",
-              content: `Generate ${count} realistic B2B sales leads. Return ONLY a valid JSON array with no markdown, no code fences, no explanation.
+        let leads: LeadData[] = [];
+
+        if (cached) {
+          send({ type: "activity", text: `Found ${count} ${targetAudience} leads...`, variant: "orange" });
+          console.log(`[wizard] lead cache HIT key=${cacheKey}`);
+          leads = cached;
+        } else {
+          send({ type: "activity", text: `Finding ${count} ${targetAudience} leads...`, variant: "orange" });
+          console.log(`[wizard] lead cache MISS key=${cacheKey}`);
+
+          // Split into parallel sub-calls of up to LEAD_CHUNK each.
+          const LEAD_CHUNK = 10;
+          const chunkSizes: number[] = [];
+          let remaining = count;
+          while (remaining > 0) {
+            const take = Math.min(LEAD_CHUNK, remaining);
+            chunkSizes.push(take);
+            remaining -= take;
+          }
+
+          const leadChunks = await Promise.all(
+            chunkSizes.map(async (chunkCount, chunkIdx): Promise<LeadData[]> => {
+              try {
+                const leadsMsg = await anthropic.messages.create({
+                  model: "claude-haiku-4-5-20251001",
+                  max_tokens: 1500,
+                  messages: [
+                    {
+                      role: "user",
+                      content: `Generate ${chunkCount} realistic B2B sales leads (set #${chunkIdx + 1}). Return ONLY a valid JSON array with no markdown, no code fences, no explanation.
 
 Target audience: ${targetAudience}
 Location: ${locationCtx}
@@ -132,30 +183,46 @@ Each item must be exactly: { "first_name": string, "company": string, "role": st
 - Companies and names sound real but must be entirely fictional
 - role must match the target audience archetype
 Return the JSON array only. No other text.`,
-            },
-          ],
-        });
+                    },
+                  ],
+                });
 
-        const leadsRaw = leadsMsg.content[0].type === "text" ? leadsMsg.content[0].text : "[]";
-        console.log(`[wizard] Claude leads response (first 300 chars): ${leadsRaw.slice(0, 300)}`);
+                const raw = leadsMsg.content[0].type === "text" ? leadsMsg.content[0].text : "[]";
+                const cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+                const parsed = JSON.parse(cleaned);
+                if (!Array.isArray(parsed)) return [];
+                return parsed.filter(
+                  (l): l is LeadData =>
+                    l && typeof l.first_name === "string" && typeof l.email === "string"
+                );
+              } catch (err) {
+                console.error(`[wizard] lead chunk ${chunkIdx} error:`, err);
+                return [];
+              }
+            })
+          );
 
-        const leadsCleaned = leadsRaw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+          // Dedupe by email in case parallel chunks generated overlaps.
+          const seenEmails = new Set<string>();
+          for (const chunk of leadChunks) {
+            for (const lead of chunk) {
+              const key = lead.email.toLowerCase();
+              if (seenEmails.has(key)) continue;
+              seenEmails.add(key);
+              leads.push(lead);
+              if (leads.length >= count) break;
+            }
+            if (leads.length >= count) break;
+          }
 
-        let leads: LeadData[] = [];
-        try {
-          const parsed = JSON.parse(leadsCleaned);
-          if (!Array.isArray(parsed)) throw new Error("Not an array");
-          leads = parsed
-            .slice(0, count)
-            .filter(
-              (l): l is LeadData =>
-                l && typeof l.first_name === "string" && typeof l.email === "string"
-            );
-          console.log(`[wizard] parsed ${leads.length} leads successfully`);
-        } catch (parseErr) {
-          console.error("[wizard] lead JSON parse error:", parseErr, "raw:", leadsRaw.slice(0, 500));
-          send({ type: "error", message: "Failed to generate leads. Please try again." });
-          return;
+          console.log(`[wizard] parsed ${leads.length} leads from ${chunkSizes.length} parallel chunks`);
+
+          if (leads.length === 0) {
+            send({ type: "error", message: "Failed to generate leads. Please try again." });
+            return;
+          }
+
+          if (leads.length > 0) setCachedLeads(cacheKey, leads);
         }
 
         if (leads.length === 0) {
@@ -172,37 +239,37 @@ Return the JSON array only. No other text.`,
 
         send({ type: "activity", text: `Scored ${hot} hot, ${warm} warm, ${cold} cold leads...`, variant: "amber" });
 
-        // ── Step 2: Generate emails in batches of 10 ──
+        // ── Step 2: Generate emails in parallel batches of 10 ──
         send({ type: "activity", text: "Writing personalized emails...", variant: "green" });
 
         const BATCH = 10;
-        const emailResults: EmailResult[] = [];
-
+        const batches: { start: number; batch: LeadData[] }[] = [];
         for (let start = 0; start < leads.length; start += BATCH) {
-          const batch = leads.slice(start, start + BATCH);
-          const totalBatches = Math.ceil(leads.length / BATCH);
-          const batchNum = Math.floor(start / BATCH) + 1;
+          batches.push({ start, batch: leads.slice(start, start + BATCH) });
+        }
 
-          if (totalBatches > 1) {
-            send({
-              type: "activity",
-              text: `Batch ${batchNum}/${totalBatches}: emails ${start + 1}–${Math.min(start + BATCH, leads.length)}...`,
-              variant: "green",
-            });
-          }
+        if (batches.length > 1) {
+          send({
+            type: "activity",
+            text: `Generating ${batches.length} batches in parallel...`,
+            variant: "green",
+          });
+        }
 
-          const leadsPrompt = batch
-            .map((l, i) => `${start + i + 1}. ${l.first_name} at ${l.company} (${l.role}) — ${l.custom_note}`)
-            .join("\n");
+        const batchResults = await Promise.all(
+          batches.map(async ({ start, batch }): Promise<EmailResult[]> => {
+            const leadsPrompt = batch
+              .map((l, i) => `${start + i + 1}. ${l.first_name} at ${l.company} (${l.role}) — ${l.custom_note}`)
+              .join("\n");
 
-          try {
-            const emailMsg = await anthropic.messages.create({
-              model: "claude-haiku-4-5-20251001",
-              max_tokens: 2000,
-              messages: [
-                {
-                  role: "user",
-                  content: `Write cold outreach emails. Goal: ${goal}. Return ONLY a JSON array, no markdown.
+            try {
+              const emailMsg = await anthropic.messages.create({
+                model: "claude-haiku-4-5-20251001",
+                max_tokens: 2000,
+                messages: [
+                  {
+                    role: "user",
+                    content: `Write cold outreach emails. Goal: ${goal}. Return ONLY a JSON array, no markdown.
 
 Each object: { "index": number, "subject": string, "body": string }
 - index: the lead number as shown (1-based)
@@ -211,35 +278,33 @@ Each object: { "index": number, "subject": string, "body": string }
 
 Leads:
 ${leadsPrompt}`,
-                },
-              ],
-            });
+                  },
+                ],
+              });
 
-            const raw     = emailMsg.content[0].type === "text" ? emailMsg.content[0].text : "[]";
-            const cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
-            try {
-              const parsed: EmailResult[] = JSON.parse(cleaned);
-              emailResults.push(...parsed);
-            } catch {
-              batch.forEach((lead, i) => {
-                emailResults.push({
+              const raw     = emailMsg.content[0].type === "text" ? emailMsg.content[0].text : "[]";
+              const cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+              try {
+                return JSON.parse(cleaned) as EmailResult[];
+              } catch {
+                return batch.map((lead, i) => ({
                   index: start + i + 1,
                   subject: `${goal} — ${lead.company}`,
                   body: `Hi ${lead.first_name}, ${lead.custom_note} I'd love to help ${lead.company} with ${goal.toLowerCase()}. Would you be open to a quick call?`,
-                });
-              });
-            }
-          } catch (batchErr) {
-            console.error("[wizard] email batch error:", batchErr);
-            batch.forEach((lead, i) => {
-              emailResults.push({
+                }));
+              }
+            } catch (batchErr) {
+              console.error("[wizard] email batch error:", batchErr);
+              return batch.map((lead, i) => ({
                 index: start + i + 1,
                 subject: `${goal} — ${lead.company}`,
                 body: `Hi ${lead.first_name}, I noticed ${lead.custom_note} I'd love to connect. Would you have 15 minutes this week?`,
-              });
-            });
-          }
-        }
+              }));
+            }
+          })
+        );
+
+        const emailResults: EmailResult[] = batchResults.flat();
 
         // ── Step 3: Save to Supabase ──
         send({ type: "activity", text: "Saving campaign to database...", variant: "amber" });
