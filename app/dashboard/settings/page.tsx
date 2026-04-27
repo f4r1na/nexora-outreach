@@ -68,6 +68,11 @@ function SettingsInner() {
   const [disconnecting, setDisconnecting] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
+  const [companyName, setCompanyName] = useState("");
+  const [physicalAddress, setPhysicalAddress] = useState("");
+  const [addressSaving, setAddressSaving] = useState(false);
+  const [addressMsg, setAddressMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
   const gmailStatus = searchParams.get("gmail");
 
   useEffect(() => {
@@ -83,6 +88,16 @@ function SettingsInner() {
       .then((d) => { setGmail(d.connection ?? null); setGmailLoading(false); })
       .catch(() => setGmailLoading(false));
   }, [searchParams]);
+
+  useEffect(() => {
+    fetch("/api/compliance/address")
+      .then((r) => r.json())
+      .then((d) => {
+        setCompanyName(d.company_name ?? "");
+        setPhysicalAddress(d.physical_address ?? "");
+      })
+      .catch(() => {});
+  }, []);
 
   async function handleUpgrade(plan: string) {
     setUpgrading(plan);
@@ -111,6 +126,28 @@ function SettingsInner() {
       alert("Failed to disconnect. Please try again.");
     } finally {
       setDisconnecting(false);
+    }
+  }
+
+  async function handleSaveAddress() {
+    setAddressSaving(true);
+    setAddressMsg(null);
+    try {
+      const res = await fetch("/api/compliance/address", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ company_name: companyName, physical_address: physicalAddress }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAddressMsg({ ok: true, text: "Compliance info saved." });
+      } else {
+        setAddressMsg({ ok: false, text: data.error ?? "Failed to save." });
+      }
+    } catch {
+      setAddressMsg({ ok: false, text: "Network error." });
+    } finally {
+      setAddressSaving(false);
     }
   }
 
@@ -449,6 +486,86 @@ function SettingsInner() {
               </Link>
             ))}
           </div>
+        </ScrollReveal>
+
+        {/* ── Compliance ── */}
+        <ScrollReveal delay={0.18}>
+          <SectionLabel>Compliance</SectionLabel>
+          <SectionCard>
+            <p style={{ fontSize: 12, color: "#555", fontFamily: "var(--font-outfit)", marginBottom: 16, lineHeight: 1.55 }}>
+              Required for CAN-SPAM: your company name and physical mailing address appear in every email footer. Sending is blocked until an address is saved.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
+              <div>
+                <label style={{ display: "block", fontSize: 11, color: "#555", fontFamily: "var(--font-outfit)", marginBottom: 5 }}>
+                  Company name
+                </label>
+                <input
+                  type="text"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  placeholder="Acme Inc."
+                  style={{
+                    width: "100%", padding: "8px 12px", borderRadius: 6,
+                    backgroundColor: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    color: "#ccc", fontFamily: "var(--font-outfit)", fontSize: 13,
+                    outline: "none", boxSizing: "border-box",
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontSize: 11, color: "#555", fontFamily: "var(--font-outfit)", marginBottom: 5 }}>
+                  Physical mailing address
+                </label>
+                <input
+                  type="text"
+                  value={physicalAddress}
+                  onChange={(e) => setPhysicalAddress(e.target.value)}
+                  placeholder="123 Main St, City, State 00000, Country"
+                  style={{
+                    width: "100%", padding: "8px 12px", borderRadius: 6,
+                    backgroundColor: "rgba(255,255,255,0.03)",
+                    border: `1px solid ${physicalAddress.trim() ? "rgba(255,255,255,0.08)" : "rgba(239,68,68,0.3)"}`,
+                    color: "#ccc", fontFamily: "var(--font-outfit)", fontSize: 13,
+                    outline: "none", boxSizing: "border-box",
+                  }}
+                />
+                {!physicalAddress.trim() && (
+                  <p style={{ fontSize: 11, color: "#ef4444", fontFamily: "var(--font-outfit)", marginTop: 5 }}>
+                    Required before sending emails
+                  </p>
+                )}
+              </div>
+            </div>
+            {addressMsg && (
+              <div style={{
+                padding: "8px 12px", borderRadius: 6, marginBottom: 14,
+                backgroundColor: addressMsg.ok ? "rgba(74,222,128,0.06)" : "rgba(239,68,68,0.06)",
+                border: `1px solid ${addressMsg.ok ? "rgba(74,222,128,0.15)" : "rgba(239,68,68,0.15)"}`,
+              }}>
+                <span style={{ fontSize: 12, color: addressMsg.ok ? "#4ade80" : "#f87171", fontFamily: "var(--font-outfit)" }}>
+                  {addressMsg.text}
+                </span>
+              </div>
+            )}
+            <button
+              onClick={handleSaveAddress}
+              disabled={addressSaving}
+              style={{
+                padding: "8px 18px", borderRadius: 6, fontSize: 12,
+                fontFamily: "var(--font-outfit)", cursor: addressSaving ? "not-allowed" : "pointer",
+                backgroundColor: "#FF5200", color: "#fff", border: "none",
+                opacity: addressSaving ? 0.6 : 1,
+              }}
+            >
+              {addressSaving ? "Saving..." : "Save"}
+            </button>
+            <p style={{ fontSize: 11, color: "#3a3a4a", fontFamily: "var(--font-outfit)", marginTop: 14, lineHeight: 1.55 }}>
+              GDPR/CASL: ensure you have appropriate consent for EU and Canadian recipients before sending.{" "}
+              <a href="/privacy" target="_blank" style={{ color: "#555", textDecoration: "underline" }}>Privacy policy</a>
+            </p>
+          </SectionCard>
         </ScrollReveal>
 
       </div>
