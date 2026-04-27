@@ -57,7 +57,7 @@ export default function PrivacyPage() {
           Privacy Policy
         </h1>
         <p style={{ fontSize: 13.5, color: "rgba(255,255,255,0.4)" }}>
-          Last updated: April 21, 2026
+          Last updated: April 27, 2026
         </p>
       </div>
 
@@ -100,6 +100,16 @@ export default function PrivacyPage() {
           "Object: opt out of data processing for AI model improvement",
         ]} />
         <P>To exercise any of these rights, email us at <a href="mailto:privacy@nexoraoutreach.com" style={{ color: "#FF5200" }}>privacy@nexoraoutreach.com</a>. We respond within 30 days.</P>
+      </Section>
+
+      <Section title="CAN-SPAM compliance">
+        <P>Every email sent through Nexora includes your company name, a physical mailing address, and a working unsubscribe link. Unsubscribe requests are processed immediately. The sender is identified in every message.</P>
+        <P>As the account holder you are responsible for ensuring your physical mailing address is kept up to date in Settings {">"} Compliance. Sending is blocked if no address is on file.</P>
+      </Section>
+
+      <Section title="CASL compliance">
+        <P>If you send emails to recipients in Canada, you are responsible for obtaining express or implied consent as required by the Canadian Anti-Spam Legislation (CASL) before sending.</P>
+        <P>Nexora provides the unsubscribe mechanism required by section 11 of CASL. Unsubscribe requests are honoured within 10 business days.</P>
       </Section>
 
       <Section title="Third-party services">
