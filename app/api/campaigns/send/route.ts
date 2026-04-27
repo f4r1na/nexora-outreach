@@ -20,13 +20,16 @@ function sleep(ms: number) {
 const TRACKING_BASE = "https://nexoraoutreach.com";
 
 // Build a base64url-encoded RFC 2822 MIME message for the Gmail API.
-// Injects open-tracking pixel and rewrites URLs for click tracking.
+// Injects open-tracking pixel, rewrites URLs for click tracking, and appends CAN-SPAM footer.
 function buildRawMessage(opts: {
   to: string;
   from: string;
   subject: string;
   body: string;
   leadId: string;
+  unsubscribeUrl: string;
+  companyName: string;
+  physicalAddress: string;
 }): string {
   // Step 1: HTML-escape the body
   let htmlBody = opts.body
@@ -48,6 +51,16 @@ function buildRawMessage(opts: {
   // Step 4: Open-tracking pixel
   const pixel = `<img src="${TRACKING_BASE}/api/track/open/${opts.leadId}" width="1" height="1" style="display:none" alt="" />`;
 
+  // Step 5: CAN-SPAM / CASL compliance footer
+  const footer = [
+    `<div style="margin-top:32px;padding-top:16px;border-top:1px solid #e0e0e0;`,
+    `font-family:Arial,sans-serif;font-size:11px;color:#9ca3af;text-align:center;line-height:1.8">`,
+    `<p style="margin:0 0 4px">${opts.companyName}</p>`,
+    `<p style="margin:0 0 8px">${opts.physicalAddress}</p>`,
+    `<p style="margin:0"><a href="${opts.unsubscribeUrl}" style="color:#9ca3af;text-decoration:underline">Unsubscribe</a></p>`,
+    `</div>`,
+  ].join("");
+
   const mime = [
     `To: ${opts.to}`,
     `From: ${opts.from}`,
@@ -55,7 +68,7 @@ function buildRawMessage(opts: {
     "MIME-Version: 1.0",
     "Content-Type: text/html; charset=UTF-8",
     "",
-    `<html><body><div style="font-family:Arial,sans-serif;line-height:1.7;color:#222;max-width:600px">${htmlBody}${pixel}</div></body></html>`,
+    `<html><body><div style="font-family:Arial,sans-serif;line-height:1.7;color:#222;max-width:600px">${htmlBody}${pixel}${footer}</div></body></html>`,
   ].join("\r\n");
 
   return Buffer.from(mime).toString("base64url");
@@ -153,13 +166,21 @@ export async function POST(req: NextRequest) {
         // ── Plan check ───────────────────────────────────────────────────────
         const { data: sub } = await db
           .from("subscriptions")
-          .select("plan, sends_used, sends_limit")
+          .select("plan, sends_used, sends_limit, company_name, physical_address")
           .eq("user_id", user.id)
           .single();
 
         const plan = sub?.plan ?? "free";
         if (plan !== "pro" && plan !== "agency") {
           event(controller, { type: "error", message: "Pro or Agency plan required to send emails" });
+          controller.close();
+          return;
+        }
+
+        const companyName: string = sub?.company_name ?? "";
+        const physicalAddress: string = sub?.physical_address ?? "";
+        if (!physicalAddress.trim()) {
+          event(controller, { type: "error", message: "Physical address required for CAN-SPAM compliance. Add it in Settings under Compliance." });
           controller.close();
           return;
         }
@@ -200,6 +221,7 @@ export async function POST(req: NextRequest) {
           .from("leads")
           .select("id, email, generated_subject, generated_body")
           .eq("campaign_id", campaignId)
+          .eq("unsubscribed", false)
           .order("created_at");
 
         if (leadsError || !leads || leads.length === 0) {
@@ -228,12 +250,18 @@ export async function POST(req: NextRequest) {
             continue;
           }
 
+          const token = Buffer.from(lead.id).toString("base64url");
+          const unsubscribeUrl = `${TRACKING_BASE}/api/unsubscribe?token=${token}`;
+
           const raw = buildRawMessage({
             to: lead.email,
             from: fromEmail,
             subject: lead.generated_subject ?? "(no subject)",
             body: lead.generated_body ?? "",
             leadId: lead.id,
+            unsubscribeUrl,
+            companyName,
+            physicalAddress,
           });
 
           let result = await sendGmail({ accessToken, raw });

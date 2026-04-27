@@ -24,6 +24,9 @@ function buildRawMessage(opts: {
   subject: string;
   body: string;
   leadId: string;
+  unsubscribeUrl: string;
+  companyName: string;
+  physicalAddress: string;
 }): string {
   let htmlBody = opts.body
     .replace(/&/g, "&amp;")
@@ -40,6 +43,15 @@ function buildRawMessage(opts: {
   htmlBody = htmlBody.split("\n").join("<br>\n");
   const pixel = `<img src="${TRACKING_BASE}/api/track/open/${opts.leadId}" width="1" height="1" style="display:none" alt="" />`;
 
+  const footer = [
+    `<div style="margin-top:32px;padding-top:16px;border-top:1px solid #e0e0e0;`,
+    `font-family:Arial,sans-serif;font-size:11px;color:#9ca3af;text-align:center;line-height:1.8">`,
+    `<p style="margin:0 0 4px">${opts.companyName}</p>`,
+    `<p style="margin:0 0 8px">${opts.physicalAddress}</p>`,
+    `<p style="margin:0"><a href="${opts.unsubscribeUrl}" style="color:#9ca3af;text-decoration:underline">Unsubscribe</a></p>`,
+    `</div>`,
+  ].join("");
+
   const mime = [
     `To: ${opts.to}`,
     `From: ${opts.from}`,
@@ -47,7 +59,7 @@ function buildRawMessage(opts: {
     "MIME-Version: 1.0",
     "Content-Type: text/html; charset=UTF-8",
     "",
-    `<html><body><div style="font-family:Arial,sans-serif;line-height:1.7;color:#222;max-width:600px">${htmlBody}${pixel}</div></body></html>`,
+    `<html><body><div style="font-family:Arial,sans-serif;line-height:1.7;color:#222;max-width:600px">${htmlBody}${pixel}${footer}</div></body></html>`,
   ].join("\r\n");
 
   return Buffer.from(mime).toString("base64url");
@@ -151,11 +163,11 @@ export async function POST(req: NextRequest) {
 
     // Load subscriptions and Gmail connections for all relevant users
     const [{ data: subscriptions }, { data: gmailConns }] = await Promise.all([
-      db.from("subscriptions").select("user_id, plan, sends_used, sends_limit").in("user_id", userIds),
+      db.from("subscriptions").select("user_id, plan, sends_used, sends_limit, company_name, physical_address").in("user_id", userIds),
       db.from("gmail_connections").select("user_id, access_token, refresh_token, gmail_email").in("user_id", userIds),
     ]);
 
-    const subByUser = new Map((subscriptions ?? []).map((s: { user_id: string; plan: string; sends_used: number; sends_limit: number }) => [s.user_id, s]));
+    const subByUser = new Map((subscriptions ?? []).map((s: { user_id: string; plan: string; sends_used: number; sends_limit: number; company_name: string | null; physical_address: string | null }) => [s.user_id, s]));
     const gmailByUser = new Map((gmailConns ?? []).map((g: { user_id: string; access_token: string; refresh_token: string; gmail_email: string }) => [g.user_id, g]));
 
     let sent = 0;
@@ -204,11 +216,11 @@ export async function POST(req: NextRequest) {
       // ── Fetch lead email address ───────────────────────────────────────────
       const { data: lead } = await db
         .from("leads")
-        .select("email")
+        .select("email, unsubscribed")
         .eq("id", email.lead_id)
         .single();
 
-      if (!lead?.email) {
+      if (!lead?.email || lead.unsubscribed) {
         await db.from("follow_up_emails").update({ status: "skipped" }).eq("id", email.id);
         skipped++;
         continue;
@@ -216,12 +228,20 @@ export async function POST(req: NextRequest) {
 
       // ── Build and send ─────────────────────────────────────────────────────
       let accessToken = gmailConn.access_token;
+      const token = Buffer.from(email.lead_id).toString("base64url");
+      const unsubscribeUrl = `${TRACKING_BASE}/api/unsubscribe?token=${token}`;
+      const companyName = sub.company_name ?? "";
+      const physicalAddress = sub.physical_address ?? "";
+
       const raw = buildRawMessage({
         to: lead.email,
         from: gmailConn.gmail_email,
         subject: email.subject ?? `Follow-up #${email.follow_up_number}`,
         body: email.body ?? "",
         leadId: email.lead_id,
+        unsubscribeUrl,
+        companyName,
+        physicalAddress,
       });
 
       let result = await sendGmail({ accessToken, raw });
