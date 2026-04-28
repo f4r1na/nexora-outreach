@@ -31,7 +31,7 @@ export default async function CampaignDetailPage({ params, searchParams }: Props
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [{ data: campaign }, { data: leads }, { data: sub }, { data: gmailConn }] = await Promise.all([
+  const [{ data: campaign }, { data: leads }, { data: sub }, { data: gmailConn }, { data: signals }] = await Promise.all([
     supabase
       .from("campaigns")
       .select("id, name, tone, status, lead_count, created_at, follow_up_delays, follow_ups_enabled")
@@ -53,12 +53,29 @@ export default async function CampaignDetailPage({ params, searchParams }: Props
       .select("gmail_email")
       .eq("user_id", user.id)
       .maybeSingle(),
+    supabase
+      .from("signals")
+      .select("source")
+      .eq("campaign_id", id)
+      .limit(100),
   ]);
 
   if (!campaign) notFound();
 
   const allLeads = leads ?? [];
   const plan = sub?.plan ?? "free";
+
+  const sourceCounts: Record<string, number> = {};
+  for (const sig of signals ?? []) {
+    sourceCounts[sig.source] = (sourceCounts[sig.source] ?? 0) + 1;
+  }
+  const primarySignalType: string | null = Object.keys(sourceCounts).length > 0
+    ? Object.entries(sourceCounts).sort((a, b) => b[1] - a[1])[0][0]
+    : null;
+
+  const firstLead = allLeads[0];
+  const sampleContactName: string = firstLead?.first_name ?? "";
+  const sampleCompanyName: string = firstLead?.company ?? "";
 
   const signalProgress = {
     total: allLeads.length,
@@ -122,6 +139,9 @@ export default async function CampaignDetailPage({ params, searchParams }: Props
             initialStatus={campaign.status ?? ""}
             followUpDelays={(campaign.follow_up_delays ?? [3, 5, 7]) as [number, number, number]}
             followUpsEnabled={campaign.follow_ups_enabled ?? true}
+            primarySignalType={primarySignalType}
+            sampleContactName={sampleContactName}
+            sampleCompanyName={sampleCompanyName}
           />
           <a href={`/api/export?campaignId=${id}&format=csv`} style={{
             display: "flex", alignItems: "center", gap: 6,

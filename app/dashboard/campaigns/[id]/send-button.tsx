@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Mail, Lock, Check, Loader2 } from "lucide-react";
 
@@ -13,10 +13,14 @@ type Props = {
   initialStatus: string;
   followUpDelays?: [number, number, number];
   followUpsEnabled?: boolean;
+  primarySignalType?: string | null;
+  sampleContactName?: string;
+  sampleCompanyName?: string;
 };
 
 type SendState =
   | { phase: "idle" }
+  | { phase: "template-picking" }
   | { phase: "confirming" }
   | { phase: "sending"; sent: number; total: number; currentTo: string }
   | { phase: "followup_setup"; sent: number; total: number; delays: [number, number, number] }
@@ -39,6 +43,9 @@ export default function SendCampaignButton({
   initialStatus,
   followUpDelays = [3, 5, 7],
   followUpsEnabled = true,
+  primarySignalType = null,
+  sampleContactName = "",
+  sampleCompanyName = "",
 }: Props) {
   const [state, setState] = useState<SendState>({ phase: "idle" });
   const isProOrAgency = plan === "pro" || plan === "agency";
@@ -406,11 +413,31 @@ export default function SendCampaignButton({
     );
   }
 
+  // ── Template picking ──────────────────────────────────────────────────────
+  if (state.phase === "template-picking") {
+    return (
+      <div style={{
+        position: "fixed", inset: 0, zIndex: 100,
+        backgroundColor: "rgba(0,0,0,0.75)", backdropFilter: "blur(6px)",
+        display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+      }}>
+        <TemplatePicker
+          campaignId={campaignId}
+          signalType={primarySignalType}
+          contactName={sampleContactName}
+          companyName={sampleCompanyName}
+          onSelect={() => setState({ phase: "confirming" })}
+          onSkip={() => setState({ phase: "confirming" })}
+        />
+      </div>
+    );
+  }
+
   // ── Idle: show button + confirmation modal ────────────────────────────────
   return (
     <>
       <button
-        onClick={() => setState({ phase: "confirming" })}
+        onClick={() => setState({ phase: "template-picking" })}
         style={{
           display: "inline-flex", alignItems: "center", gap: 7,
           padding: "7px 16px", borderRadius: 8, fontSize: 13, fontWeight: 700,
@@ -591,6 +618,314 @@ function FollowupSetupModal({
           onClick={onSkip}
           style={{
             padding: "12px 16px", borderRadius: 9,
+            backgroundColor: "transparent", color: "rgba(255,255,255,0.35)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            fontSize: 13, fontFamily: "var(--font-outfit)", cursor: "pointer", whiteSpace: "nowrap",
+          }}
+        >
+          Skip
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Template Picker ──────────────────────────────────────────────────────────
+
+type TemplateVariant = { id: string; tone: string; subject: string; body: string };
+
+const TONE_LABELS: Record<string, string> = {
+  formal: "Formal",
+  casual: "Casual",
+  urgent: "Urgent",
+  "value-first": "Value-First",
+  "social-proof": "Social Proof",
+};
+
+function TemplatePicker({
+  campaignId,
+  signalType,
+  contactName,
+  companyName,
+  onSelect,
+  onSkip,
+}: {
+  campaignId: string;
+  signalType: string | null;
+  contactName: string;
+  companyName: string;
+  onSelect: () => void;
+  onSkip: () => void;
+}) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [templates, setTemplates] = useState<TemplateVariant[]>([]);
+  const [activeTone, setActiveTone] = useState<string>("");
+  const [subjects, setSubjects] = useState<string[]>([]);
+  const [subjectsLoading, setSubjectsLoading] = useState(false);
+  const [selectedSubject, setSelectedSubject] = useState<string>("");
+  const [saving, setSaving] = useState(false);
+
+  const activeTemplate = templates.find((t) => t.tone === activeTone) ?? null;
+
+  useEffect(() => {
+    async function generate() {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch("/api/templates/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            campaign_id: campaignId,
+            signal_type: signalType ?? "general",
+            contact_name: contactName,
+            company_name: companyName,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "Generation failed");
+        const tmpl: TemplateVariant[] = data.templates ?? [];
+        setTemplates(tmpl);
+        if (tmpl.length > 0) {
+          setActiveTone(tmpl[0].tone);
+          setSelectedSubject(tmpl[0].subject);
+        }
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Failed to generate templates");
+      } finally {
+        setLoading(false);
+      }
+    }
+    void generate();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (activeTemplate) setSelectedSubject(activeTemplate.subject);
+    setSubjects([]);
+  }, [activeTone, activeTemplate]);
+
+  async function loadSubjects() {
+    if (!activeTemplate) return;
+    setSubjectsLoading(true);
+    try {
+      const res = await fetch("/api/templates/generate-subjects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          signal_type: signalType ?? "general",
+          tone: activeTone,
+          email_body: activeTemplate.body,
+          company_name: companyName,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed");
+      setSubjects(data.subjects ?? []);
+    } catch {
+      // silently fail — user still has the default subject
+    } finally {
+      setSubjectsLoading(false);
+    }
+  }
+
+  async function handleUse() {
+    if (!activeTemplate) return;
+    setSaving(true);
+    try {
+      await fetch(`/api/campaigns/${campaignId}/template`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          selected_template_id: activeTemplate.id,
+          selected_subject_line: selectedSubject || activeTemplate.subject,
+        }),
+      });
+    } finally {
+      setSaving(false);
+    }
+    onSelect();
+  }
+
+  if (loading) {
+    return (
+      <div style={{
+        backgroundColor: "#0e0e0e", border: "1px solid rgba(255,255,255,0.1)",
+        borderRadius: 16, padding: "48px 32px",
+        maxWidth: 560, width: "100%", textAlign: "center",
+      }}>
+        <Loader2
+          size={32}
+          strokeWidth={1.8}
+          style={{ animation: "spin 1s linear infinite", color: "#FF5200", marginBottom: 16 }}
+          aria-hidden="true"
+        />
+        <p style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", fontFamily: "var(--font-outfit)" }}>
+          Writing 5 template variants…
+        </p>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{
+        backgroundColor: "#0e0e0e", border: "1px solid rgba(239,68,68,0.2)",
+        borderRadius: 16, padding: "36px 28px",
+        maxWidth: 420, width: "100%", textAlign: "center",
+      }}>
+        <p style={{ fontSize: 14, color: "#ef4444", fontFamily: "var(--font-outfit)", marginBottom: 20 }}>
+          {error}
+        </p>
+        <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+          <button
+            onClick={onSkip}
+            style={{
+              padding: "10px 20px", borderRadius: 8,
+              backgroundColor: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.6)",
+              border: "1px solid rgba(255,255,255,0.1)",
+              fontSize: 13, fontFamily: "var(--font-outfit)", cursor: "pointer",
+            }}
+          >
+            Skip Templates
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{
+      backgroundColor: "#0e0e0e", border: "1px solid rgba(255,255,255,0.1)",
+      borderRadius: 16, padding: "28px 28px 24px",
+      maxWidth: 600, width: "100%",
+      boxShadow: "0 24px 64px rgba(0,0,0,0.6)",
+      maxHeight: "90vh", overflowY: "auto",
+    }}>
+      <div style={{ marginBottom: 20 }}>
+        <p style={{
+          fontSize: 11, letterSpacing: "0.08em", textTransform: "uppercase",
+          color: "#FF5200", fontFamily: "var(--font-outfit)", marginBottom: 6,
+        }}>
+          Template Picker
+        </p>
+        <h2 style={{ fontSize: 17, fontWeight: 800, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 4 }}>
+          Choose a tone for this campaign
+        </h2>
+        <p style={{ fontSize: 12.5, color: "rgba(255,255,255,0.4)", fontFamily: "var(--font-outfit)" }}>
+          {signalType ? `Signal: ${signalType}` : "General outreach"} — placeholders like {"{first_name}"} are filled per lead at send time
+        </p>
+      </div>
+
+      <div style={{ display: "flex", gap: 6, marginBottom: 18, flexWrap: "wrap" }}>
+        {templates.map((t) => (
+          <button
+            key={t.tone}
+            onClick={() => setActiveTone(t.tone)}
+            style={{
+              padding: "5px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600,
+              fontFamily: "var(--font-outfit)", cursor: "pointer",
+              backgroundColor: activeTone === t.tone ? "#FF5200" : "rgba(255,255,255,0.05)",
+              color: activeTone === t.tone ? "#fff" : "rgba(255,255,255,0.5)",
+              border: activeTone === t.tone ? "1px solid #FF5200" : "1px solid rgba(255,255,255,0.08)",
+              transition: "all 0.15s",
+            }}
+          >
+            {TONE_LABELS[t.tone] ?? t.tone}
+          </button>
+        ))}
+      </div>
+
+      {activeTemplate && (
+        <div style={{
+          backgroundColor: "rgba(255,255,255,0.02)",
+          border: "1px solid rgba(255,255,255,0.07)",
+          borderRadius: 10, padding: "14px 16px", marginBottom: 18,
+        }}>
+          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-outfit)", marginBottom: 6, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            Subject (selected)
+          </p>
+          <p style={{ fontSize: 13.5, fontWeight: 600, color: "#fff", fontFamily: "var(--font-outfit)", marginBottom: 14 }}>
+            {selectedSubject || activeTemplate.subject}
+          </p>
+          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-outfit)", marginBottom: 6, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            Body
+          </p>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", fontFamily: "var(--font-outfit)", lineHeight: 1.65, whiteSpace: "pre-wrap" }}>
+            {activeTemplate.body}
+          </p>
+        </div>
+      )}
+
+      <div style={{ marginBottom: 22 }}>
+        {subjects.length === 0 ? (
+          <button
+            onClick={loadSubjects}
+            disabled={subjectsLoading}
+            style={{
+              padding: "6px 14px", borderRadius: 7, fontSize: 12, fontWeight: 600,
+              fontFamily: "var(--font-outfit)", cursor: subjectsLoading ? "default" : "pointer",
+              backgroundColor: "rgba(255,255,255,0.04)",
+              color: subjectsLoading ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.55)",
+              border: "1px solid rgba(255,255,255,0.09)",
+            }}
+          >
+            {subjectsLoading ? "Generating subjects…" : "+ Get 3 subject variations"}
+          </button>
+        ) : (
+          <div>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-outfit)", marginBottom: 8, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+              Subject variations
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {subjects.map((s) => (
+                <label
+                  key={s}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    padding: "8px 12px", borderRadius: 8, cursor: "pointer",
+                    backgroundColor: selectedSubject === s ? "rgba(255,82,0,0.06)" : "rgba(255,255,255,0.02)",
+                    border: selectedSubject === s ? "1px solid rgba(255,82,0,0.25)" : "1px solid rgba(255,255,255,0.06)",
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="subject"
+                    value={s}
+                    checked={selectedSubject === s}
+                    onChange={() => setSelectedSubject(s)}
+                    style={{ accentColor: "#FF5200", flexShrink: 0 }}
+                  />
+                  <span style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", fontFamily: "var(--font-outfit)" }}>
+                    {s}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <button
+          onClick={handleUse}
+          disabled={saving || !activeTemplate}
+          style={{
+            flex: 1, padding: "11px 0", borderRadius: 9,
+            backgroundColor: saving ? "rgba(255,82,0,0.5)" : "#FF5200",
+            color: "#fff", border: "none",
+            fontSize: 14, fontWeight: 700, fontFamily: "var(--font-outfit)",
+            cursor: saving ? "default" : "pointer",
+          }}
+        >
+          {saving ? "Saving…" : "Use This Template"}
+        </button>
+        <button
+          onClick={onSkip}
+          style={{
+            padding: "11px 16px", borderRadius: 9,
             backgroundColor: "transparent", color: "rgba(255,255,255,0.35)",
             border: "1px solid rgba(255,255,255,0.08)",
             fontSize: 13, fontFamily: "var(--font-outfit)", cursor: "pointer", whiteSpace: "nowrap",
