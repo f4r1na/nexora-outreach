@@ -3,6 +3,10 @@
     {
       "path": "/api/signals/cron",
       "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/cron/signal-alerts",
+      "schedule": "*/30 * * * *"
     }
   ]
 }
