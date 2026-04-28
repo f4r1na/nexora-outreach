@@ -73,6 +73,10 @@ function SettingsInner() {
   const [addressSaving, setAddressSaving] = useState(false);
   const [addressMsg, setAddressMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
+  const [founderType, setFounderType] = useState<string>("");
+  const [founderTypeSaving, setFounderTypeSaving] = useState(false);
+  const [founderTypeMsg, setFounderTypeMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
   const gmailStatus = searchParams.get("gmail");
 
   useEffect(() => {
@@ -96,6 +100,13 @@ function SettingsInner() {
         setCompanyName(d.company_name ?? "");
         setPhysicalAddress(d.physical_address ?? "");
       })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/profile/founder-type")
+      .then((r) => r.json())
+      .then((d) => { if (d.founder_type) setFounderType(d.founder_type); })
       .catch(() => {});
   }, []);
 
@@ -148,6 +159,29 @@ function SettingsInner() {
       setAddressMsg({ ok: false, text: "Network error." });
     } finally {
       setAddressSaving(false);
+    }
+  }
+
+  async function handleSaveFounderType() {
+    if (!founderType) return;
+    setFounderTypeSaving(true);
+    setFounderTypeMsg(null);
+    try {
+      const res = await fetch("/api/profile/founder-type", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ founder_type: founderType }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setFounderTypeMsg({ ok: true, text: "Saved. Signal scores will update on next panel open." });
+      } else {
+        setFounderTypeMsg({ ok: false, text: data.error ?? "Failed to save." });
+      }
+    } catch {
+      setFounderTypeMsg({ ok: false, text: "Network error." });
+    } finally {
+      setFounderTypeSaving(false);
     }
   }
 
@@ -486,6 +520,61 @@ function SettingsInner() {
               </Link>
             ))}
           </div>
+        </ScrollReveal>
+
+        {/* ── Signal Scoring Profile ── */}
+        <ScrollReveal delay={0.16}>
+          <SectionLabel>Signal Scoring Profile</SectionLabel>
+          <SectionCard>
+            <p style={{ fontSize: 12, color: "#555", fontFamily: "var(--font-outfit)", marginBottom: 14, lineHeight: 1.55 }}>
+              Nexora weights signals differently depending on who you sell to. Picking the right type improves your Signal Scores.
+            </p>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: "block", fontSize: 11, color: "#555", fontFamily: "var(--font-outfit)", marginBottom: 5 }}>
+                I sell to...
+              </label>
+              <select
+                value={founderType}
+                onChange={(e) => setFounderType(e.target.value)}
+                style={{
+                  width: "100%", padding: "8px 12px", borderRadius: 6,
+                  backgroundColor: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  color: founderType ? "#ccc" : "#555",
+                  fontFamily: "var(--font-outfit)", fontSize: 13,
+                  outline: "none", cursor: "pointer", boxSizing: "border-box",
+                }}
+              >
+                <option value="" disabled>Select your target audience</option>
+                <option value="saas">SaaS founders &amp; technical buyers</option>
+                <option value="agency">Agency owners &amp; service businesses</option>
+                <option value="investor">Investors &amp; fund managers</option>
+              </select>
+            </div>
+            {founderTypeMsg && (
+              <div style={{
+                padding: "8px 12px", borderRadius: 6, marginBottom: 14,
+                backgroundColor: founderTypeMsg.ok ? "rgba(74,222,128,0.06)" : "rgba(239,68,68,0.06)",
+                border: `1px solid ${founderTypeMsg.ok ? "rgba(74,222,128,0.15)" : "rgba(239,68,68,0.15)"}`,
+              }}>
+                <span style={{ fontSize: 12, color: founderTypeMsg.ok ? "#4ade80" : "#f87171", fontFamily: "var(--font-outfit)" }}>
+                  {founderTypeMsg.text}
+                </span>
+              </div>
+            )}
+            <button
+              onClick={handleSaveFounderType}
+              disabled={founderTypeSaving || !founderType}
+              style={{
+                padding: "8px 18px", borderRadius: 6, fontSize: 12,
+                fontFamily: "var(--font-outfit)", cursor: founderTypeSaving || !founderType ? "not-allowed" : "pointer",
+                backgroundColor: "#FF5200", color: "#fff", border: "none",
+                opacity: founderTypeSaving || !founderType ? 0.5 : 1,
+              }}
+            >
+              {founderTypeSaving ? "Saving..." : "Save"}
+            </button>
+          </SectionCard>
         </ScrollReveal>
 
         {/* ── Compliance ── */}
