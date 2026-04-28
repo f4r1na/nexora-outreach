@@ -148,6 +148,8 @@ export default function LeadPanel({
   const [githubUrl, setGithubUrl] = useState("");
   const [githubLoading, setGithubLoading] = useState(false);
   const [showGithubInput, setShowGithubInput] = useState(false);
+  const [signalScores, setSignalScores] = useState<Record<string, { score: number; conversion_rate: number }>>({});
+  const [scoresFounderType, setScoresFounderType] = useState<string>("");
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -191,9 +193,15 @@ export default function LeadPanel({
     }
     setSigLoading(true);
     setDiscardedIds(new Set());
-    fetch(`/api/signals/discard?lead_id=${lead.id}`)
-      .then((r) => r.json())
-      .then((d) => setSignals(d.signals ?? []))
+    Promise.all([
+      fetch(`/api/signals/discard?lead_id=${lead.id}`).then((r) => r.json()),
+      fetch("/api/signals/score").then((r) => r.json()),
+    ])
+      .then(([sigData, scoreData]) => {
+        setSignals(sigData.signals ?? []);
+        setSignalScores(scoreData.scores ?? {});
+        setScoresFounderType(scoreData.founder_type ?? "");
+      })
       .catch(() => setSignals([]))
       .finally(() => setSigLoading(false));
   }, [lead?.id]);
@@ -732,6 +740,24 @@ export default function LeadPanel({
                             >
                               {conf}
                             </span>
+                            {signalScores[sig.source] && (
+                              <span
+                                title={`Converts ${signalScores[sig.source].conversion_rate}% for ${scoresFounderType} founders`}
+                                style={{
+                                  fontSize: 9,
+                                  padding: "1.5px 6px",
+                                  borderRadius: 4,
+                                  color: "#FF5200",
+                                  border: "1px solid rgba(255,82,0,0.3)",
+                                  fontFamily: "var(--font-outfit)",
+                                  letterSpacing: "0.04em",
+                                  cursor: "default",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {signalScores[sig.source].score}/10
+                              </span>
+                            )}
                             {sig.source_url ? (
                               <a
                                 href={sig.source_url}
