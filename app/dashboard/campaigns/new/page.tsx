@@ -810,6 +810,17 @@ function WizardContent() {
   const searchParams = useSearchParams();
   const templateParam = searchParams.get("template");
   const q1Param = searchParams.get("q1");
+  const signalParam = searchParams.get("signal");
+  const signalData = (() => {
+    if (!signalParam) return null;
+    try {
+      return JSON.parse(
+        atob(signalParam.replace(/-/g, "+").replace(/_/g, "/"))
+      ) as { company: string; signal_type: string; headline: string; url: string };
+    } catch {
+      return null;
+    }
+  })();
 
   const [step, setStep] = useState(0);
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -1139,6 +1150,13 @@ function WizardContent() {
               gap: 10,
             }}
           >
+            {signalData && (
+              <SignalBanner
+                headline={signalData.headline}
+                company={signalData.company}
+                signalType={signalData.signal_type}
+              />
+            )}
             {messages.map((msg) => (
               <div
                 key={msg.id}
@@ -1365,10 +1383,49 @@ function WizardContent() {
   );
 }
 
+// ── Signal Banner ─────────────────────────────────────────────────────────────
+
+function SignalBanner({ headline, company, signalType }: {
+  headline: string;
+  company: string;
+  signalType: string;
+}) {
+  const emoji = signalType === "funding" ? "💰" : "📢";
+  const label = signalType === "funding" ? "Funding signal" : "Hiring signal";
+  return (
+    <div style={{
+      margin: "0 0 6px",
+      padding: "10px 14px",
+      borderRadius: 9,
+      backgroundColor: "rgba(255,82,0,0.06)",
+      border: "1px solid rgba(255,82,0,0.2)",
+      display: "flex",
+      alignItems: "flex-start",
+      gap: 10,
+    }}>
+      <span style={{ fontSize: 16, flexShrink: 0 }}>{emoji}</span>
+      <div>
+        <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "#FF5200", fontFamily: "var(--font-outfit)" }}>
+          {label} — {company}
+        </p>
+        <p style={{ margin: "2px 0 0", fontSize: 11.5, color: "rgba(255,255,255,0.45)", fontFamily: "var(--font-outfit)", lineHeight: 1.4 }}>
+          {headline}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ── Page export ────────────────────────────────────────────────────────────────
 
 export default function NewCampaignPage() {
   const [path, setPath] = useState<Path>(null);
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("signal")) {
+      setPath("wizard");
+    }
+  }, []);
 
   return (
     <div
