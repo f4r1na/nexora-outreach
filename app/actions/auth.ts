@@ -36,13 +36,33 @@ export async function signup(
     return { error: "Passwords do not match." };
   }
 
-  const { error } = await supabase.auth.signUp({
+  const founderType = formData.get("founderType") as string | null;
+  const validTypes = ["saas", "agency", "investor"];
+  const safeFounderType = validTypes.includes(founderType ?? "") ? founderType : "saas";
+
+  const { data: authData, error } = await supabase.auth.signUp({
     email: formData.get("email") as string,
     password,
   });
 
   if (error) {
     return { error: error.message };
+  }
+
+  // Save founder type to subscriptions (service role bypasses RLS).
+  // The subscription row is created by a DB trigger on auth.users insert;
+  // this update runs after the trigger fires.
+  if (authData.user) {
+    const { createClient: createServiceClient } = await import("@supabase/supabase-js");
+    const db = createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+    await db
+      .from("subscriptions")
+      .update({ founder_type: safeFounderType })
+      .eq("user_id", authData.user.id);
   }
 
   redirect("/dashboard");

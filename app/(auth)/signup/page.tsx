@@ -112,6 +112,27 @@ export default function SignupPage() {
               />
             </div>
 
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="founderType"
+                className="text-sm font-medium"
+                style={{ color: "rgba(255,255,255,0.6)" }}
+              >
+                I sell to...
+              </label>
+              <select
+                id="founderType"
+                name="founderType"
+                className="nx-input"
+                defaultValue="saas"
+                style={{ cursor: "pointer" }}
+              >
+                <option value="saas">SaaS founders &amp; technical buyers</option>
+                <option value="agency">Agency owners &amp; service businesses</option>
+                <option value="investor">Investors &amp; fund managers</option>
+              </select>
+            </div>
+
             {state?.error && (
               <p className="nx-error" role="alert">
                 {state.error}
