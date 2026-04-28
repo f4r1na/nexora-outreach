@@ -219,7 +219,7 @@ export async function POST(req: NextRequest) {
         // ── Fetch leads ──────────────────────────────────────────────────────
         const { data: leads, error: leadsError } = await db
           .from("leads")
-          .select("id, email, generated_subject, generated_body")
+          .select("id, email, first_name, company, generated_subject, generated_body")
           .eq("campaign_id", campaignId)
           .eq("unsubscribed", false)
           .order("created_at");
@@ -228,6 +228,25 @@ export async function POST(req: NextRequest) {
           event(controller, { type: "error", message: "No leads found for this campaign" });
           controller.close();
           return;
+        }
+
+        // Fetch campaign to check for a selected template
+        const { data: campaignRow } = await db
+          .from("campaigns")
+          .select("selected_template_id, selected_subject_line")
+          .eq("id", campaignId)
+          .single();
+
+        let templateBody: string | null = null;
+        const templateSubject: string | null = campaignRow?.selected_subject_line ?? null;
+
+        if (campaignRow?.selected_template_id) {
+          const { data: tmpl } = await db
+            .from("email_templates")
+            .select("body")
+            .eq("id", campaignRow.selected_template_id)
+            .single();
+          templateBody = tmpl?.body ?? null;
         }
 
         // Cap to remaining send allowance
@@ -253,11 +272,24 @@ export async function POST(req: NextRequest) {
           const token = Buffer.from(lead.id).toString("base64url");
           const unsubscribeUrl = `${TRACKING_BASE}/api/unsubscribe?token=${token}`;
 
+          const leadFirstName: string = (lead as { first_name?: string }).first_name ?? "";
+          const leadCompany: string = (lead as { company?: string }).company ?? "";
+
+          const subject = templateSubject
+            ?? lead.generated_subject
+            ?? "(no subject)";
+
+          const body = templateBody
+            ? templateBody
+                .replace(/\{first_name\}/gi, leadFirstName)
+                .replace(/\{company_name\}/gi, leadCompany)
+            : (lead.generated_body ?? "");
+
           const raw = buildRawMessage({
             to: lead.email,
             from: fromEmail,
-            subject: lead.generated_subject ?? "(no subject)",
-            body: lead.generated_body ?? "",
+            subject,
+            body,
             leadId: lead.id,
             unsubscribeUrl,
             companyName,
