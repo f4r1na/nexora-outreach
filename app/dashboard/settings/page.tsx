@@ -77,6 +77,11 @@ function SettingsInner() {
   const [founderTypeSaving, setFounderTypeSaving] = useState(false);
   const [founderTypeMsg, setFounderTypeMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
+  const [icpKeywords, setIcpKeywords] = useState("");
+  const [icpLocation, setIcpLocation] = useState("");
+  const [icpSaving, setIcpSaving] = useState(false);
+  const [icpMsg, setIcpMsg] = useState<{ ok: boolean; text: string } | null>(null);
+
   const gmailStatus = searchParams.get("gmail");
 
   useEffect(() => {
@@ -107,6 +112,16 @@ function SettingsInner() {
     fetch("/api/profile/founder-type")
       .then((r) => r.json())
       .then((d) => { if (d.founder_type) setFounderType(d.founder_type); })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/profile/icp")
+      .then((r) => r.json())
+      .then((d) => {
+        setIcpKeywords(d.icp_keywords ?? "");
+        setIcpLocation(d.icp_location ?? "");
+      })
       .catch(() => {});
   }, []);
 
@@ -182,6 +197,28 @@ function SettingsInner() {
       setFounderTypeMsg({ ok: false, text: "Network error." });
     } finally {
       setFounderTypeSaving(false);
+    }
+  }
+
+  async function handleSaveIcp() {
+    setIcpSaving(true);
+    setIcpMsg(null);
+    try {
+      const res = await fetch("/api/profile/icp", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ icp_keywords: icpKeywords, icp_location: icpLocation }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setIcpMsg({ ok: true, text: "Alert settings saved." });
+      } else {
+        setIcpMsg({ ok: false, text: data.error ?? "Failed to save." });
+      }
+    } catch {
+      setIcpMsg({ ok: false, text: "Network error." });
+    } finally {
+      setIcpSaving(false);
     }
   }
 
@@ -574,6 +611,74 @@ function SettingsInner() {
             >
               {founderTypeSaving ? "Saving..." : "Save"}
             </button>
+          </SectionCard>
+        </ScrollReveal>
+
+        {/* ── Signal Velocity Alerts ── */}
+        <ScrollReveal delay={0.20}>
+          <SectionCard>
+            <SectionLabel icon={<Zap size={13} strokeWidth={1.75} aria-hidden="true" />}>
+              Signal Velocity Alerts
+            </SectionLabel>
+            <p style={{ fontSize: 12.5, color: "rgba(255,255,255,0.4)", fontFamily: "var(--font-outfit)", marginBottom: 16, lineHeight: 1.6 }}>
+              Get emailed within 2 hours when a company matching your ICP raises funding or posts new jobs.
+              Leave keywords empty to receive all signals.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 14 }}>
+              <div>
+                <label style={{ fontSize: 11, color: "#555", fontFamily: "var(--font-outfit)", display: "block", marginBottom: 5 }}>
+                  ICP Keywords (comma-separated)
+                </label>
+                <input
+                  type="text"
+                  value={icpKeywords}
+                  onChange={(e) => setIcpKeywords(e.target.value)}
+                  placeholder="e.g. SaaS, fintech, B2B, e-commerce"
+                  style={{
+                    width: "100%", padding: "8px 12px", borderRadius: 7,
+                    backgroundColor: "#060606", border: "1px solid rgba(255,255,255,0.1)",
+                    color: "#fff", fontSize: 13, fontFamily: "var(--font-outfit)",
+                    outline: "none", boxSizing: "border-box",
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, color: "#555", fontFamily: "var(--font-outfit)", display: "block", marginBottom: 5 }}>
+                  Target Location
+                </label>
+                <input
+                  type="text"
+                  value={icpLocation}
+                  onChange={(e) => setIcpLocation(e.target.value)}
+                  placeholder="e.g. San Francisco, New York, London"
+                  style={{
+                    width: "100%", padding: "8px 12px", borderRadius: 7,
+                    backgroundColor: "#060606", border: "1px solid rgba(255,255,255,0.1)",
+                    color: "#fff", fontSize: 13, fontFamily: "var(--font-outfit)",
+                    outline: "none", boxSizing: "border-box",
+                  }}
+                />
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <button
+                onClick={handleSaveIcp}
+                disabled={icpSaving}
+                style={{
+                  padding: "7px 16px", borderRadius: 7, fontSize: 12.5, fontWeight: 600,
+                  fontFamily: "var(--font-outfit)", cursor: icpSaving ? "default" : "pointer",
+                  backgroundColor: icpSaving ? "rgba(255,82,0,0.4)" : "#FF5200",
+                  color: "#fff", border: "none",
+                }}
+              >
+                {icpSaving ? "Saving..." : "Save Alert Settings"}
+              </button>
+              {icpMsg && (
+                <span style={{ fontSize: 12, fontFamily: "var(--font-outfit)", color: icpMsg.ok ? "#4ade80" : "#ef4444" }}>
+                  {icpMsg.text}
+                </span>
+              )}
+            </div>
           </SectionCard>
         </ScrollReveal>
 
