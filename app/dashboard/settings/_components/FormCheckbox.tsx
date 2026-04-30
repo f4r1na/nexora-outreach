@@ -13,7 +13,7 @@ interface FormCheckboxProps {
   onChange: (checked: boolean) => void;
 }
 
-export function FormCheckbox({ label, description, checked, onChange }: FormCheckboxProps) {
+export default function FormCheckbox({ label, description, checked, onChange }: FormCheckboxProps) {
   const id = useId();
   const [toggleCount, setToggleCount] = useState(0);
   const [focused, setFocused] = useState(false);

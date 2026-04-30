@@ -16,7 +16,7 @@ interface FormSelectProps {
   onChange: (value: string) => void;
 }
 
-export function FormSelect({
+export default function FormSelect({
   label,
   description,
   options,

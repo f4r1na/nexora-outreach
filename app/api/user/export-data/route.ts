@@ -1,13 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export async function GET() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return new Response("Unauthorized", { status: 401 });
-
+async function buildExport(userId: string, userEmail: string | undefined, createdAt: string) {
   const admin = createAdminClient();
-  const userId = user.id;
 
   const [campaigns, sub, gmail, style] = await Promise.all([
     admin.from("campaigns").select("*").eq("user_id", userId),
@@ -25,20 +20,18 @@ export async function GET() {
     leads = leadsData ?? [];
   }
 
-  const payload = {
+  return {
     exported_at: new Date().toISOString(),
-    account: {
-      id: user.id,
-      email: user.email,
-      created_at: user.created_at,
-    },
+    account: { id: userId, email: userEmail, created_at: createdAt },
     subscription: sub.data ?? null,
     gmail_connection: gmail.data ?? null,
     writing_style: style.data ?? null,
     campaigns: campaigns.data ?? [],
     leads,
   };
+}
 
+function exportResponse(payload: unknown) {
   const date = new Date().toISOString().split("T")[0];
   return new Response(JSON.stringify(payload, null, 2), {
     headers: {
@@ -46,4 +39,18 @@ export async function GET() {
       "Content-Disposition": `attachment; filename="nexora-data-export-${date}.json"`,
     },
   });
+}
+
+export async function GET() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return new Response("Unauthorized", { status: 401 });
+  return exportResponse(await buildExport(user.id, user.email, user.created_at));
+}
+
+export async function POST() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return new Response("Unauthorized", { status: 401 });
+  return exportResponse(await buildExport(user.id, user.email, user.created_at));
 }

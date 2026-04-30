@@ -10,7 +10,7 @@ interface SectionHeaderProps {
   divider?: boolean;
 }
 
-export function SectionHeader({ title, description, divider = false }: SectionHeaderProps) {
+export default function SectionHeader({ title, description, divider = false }: SectionHeaderProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}

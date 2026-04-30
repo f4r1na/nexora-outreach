@@ -10,7 +10,7 @@ interface SaveStatusProps {
   timestamp?: Date;
 }
 
-export function SaveStatus({ status, message, timestamp }: SaveStatusProps) {
+export default function SaveStatus({ status, message, timestamp }: SaveStatusProps) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {

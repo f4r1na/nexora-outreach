@@ -11,9 +11,11 @@ interface FormInputProps {
   maxLength?: number;
   value: string;
   onChange: (value: string) => void;
+  onBlur?: () => void;
+  disabled?: boolean;
 }
 
-export function FormInput({
+export default function FormInput({
   label,
   description,
   placeholder,
@@ -22,6 +24,8 @@ export function FormInput({
   maxLength,
   value,
   onChange,
+  onBlur: onBlurProp,
+  disabled,
 }: FormInputProps) {
   const id = useId();
   const [focused, setFocused] = useState(false);
@@ -71,10 +75,11 @@ export function FormInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
+        onBlur={() => { setFocused(false); onBlurProp?.(); }}
         placeholder={placeholder}
         maxLength={maxLength}
         required={required}
+        disabled={disabled}
         aria-required={required}
         aria-invalid={!!error}
         aria-describedby={error ? `${id}-error` : undefined}
@@ -84,12 +89,14 @@ export function FormInput({
           borderRadius: 6,
           backgroundColor: "#060606",
           border: `1px solid ${borderColor}`,
-          color: "#fff",
+          color: disabled ? "rgba(255,255,255,0.3)" : "#fff",
           fontSize: 13,
           fontFamily: "var(--font-outfit)",
           outline: "none",
           boxSizing: "border-box",
           transition: "border-color 0.15s ease",
+          cursor: disabled ? "not-allowed" : undefined,
+          opacity: disabled ? 0.6 : 1,
         }}
       />
       {(error || maxLength) && (

@@ -11,15 +11,16 @@ interface FormTextareaProps {
   maxLength?: number;
   value: string;
   onChange: (value: string) => void;
+  onBlur?: () => void;
   error?: string;
 }
 
 const LINE_HEIGHT = 21;
 const MIN_ROWS = 4;
 const MAX_ROWS = 8;
-const PADDING_V = 16; // top + bottom padding inside textarea
+const PADDING_V = 16;
 
-export function FormTextarea({
+export default function FormTextarea({
   label,
   description,
   placeholder,
@@ -28,6 +29,7 @@ export function FormTextarea({
   maxLength,
   value,
   onChange,
+  onBlur: onBlurProp,
   error,
 }: FormTextareaProps) {
   const id = useId();
@@ -90,7 +92,7 @@ export function FormTextarea({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
+        onBlur={() => { setFocused(false); onBlurProp?.(); }}
         placeholder={placeholder}
         rows={clampedRows}
         maxLength={maxLength}

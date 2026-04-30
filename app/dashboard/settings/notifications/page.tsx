@@ -1,184 +1,367 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Check, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Loader2 } from "lucide-react";
+import SectionHeader from "../_components/SectionHeader";
+import SaveStatus from "../_components/SaveStatus";
+import FormCheckbox from "../_components/FormCheckbox";
 
-const cardStyle: React.CSSProperties = {
-  backgroundColor: "#0e0e18",
-  border: "1px solid rgba(255,255,255,0.06)",
-  borderRadius: 10, padding: "0 22px", marginBottom: 20,
-  overflow: "hidden",
-};
+const EASE = [0.23, 1, 0.32, 1] as const;
 
-function Toggle({ enabled, onChange }: { enabled: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <button
-      onClick={() => onChange(!enabled)}
-      aria-pressed={enabled}
-      style={{
-        display: "inline-flex", alignItems: "center",
-        width: 40, height: 22, borderRadius: 4,
-        backgroundColor: enabled ? "rgba(255,82,0,0.15)" : "rgba(255,255,255,0.05)",
-        border: `1px solid ${enabled ? "rgba(255,82,0,0.3)" : "rgba(255,255,255,0.08)"}`,
-        cursor: "pointer", padding: "0 3px",
-        transition: "background-color 0.15s ease, border-color 0.15s ease",
-        flexShrink: 0,
-      }}
-    >
-      <div style={{
-        width: 14, height: 14, borderRadius: 3,
-        backgroundColor: enabled ? "#FF5200" : "rgba(255,255,255,0.2)",
-        transform: `translateX(${enabled ? 18 : 0}px)`,
-        transition: "transform 0.15s ease, background-color 0.15s ease",
-      }} />
-    </button>
-  );
+function fadeUp(i: number) {
+  return {
+    initial: { opacity: 0, y: 10 },
+    animate: { opacity: 1, y: 0 },
+    transition: { delay: i * 0.08, duration: 0.26, ease: EASE },
+  };
 }
 
-type Prefs = {
+type Frequency = "immediately" | "daily" | "weekly";
+
+interface Prefs {
   notif_replies: boolean;
-  notif_digest: boolean;
-  notif_launches: boolean;
+  notif_campaign_sent: boolean;
   notif_credits: boolean;
-};
+  notif_signals: boolean;
+  notif_frequency: Frequency;
+}
 
 const DEFAULTS: Prefs = {
   notif_replies: true,
-  notif_digest: false,
-  notif_launches: true,
+  notif_campaign_sent: true,
   notif_credits: true,
+  notif_signals: true,
+  notif_frequency: "immediately",
 };
 
-const ROWS: { key: keyof Prefs; label: string; desc: string }[] = [
-  { key: "notif_replies", label: "New reply alerts", desc: "Email when a lead replies to your campaign" },
-  { key: "notif_digest", label: "Daily digest", desc: "Summary of opens, clicks, and replies every morning" },
-  { key: "notif_launches", label: "Campaign confirmations", desc: "Email when a campaign launches or completes" },
-  { key: "notif_credits", label: "Low credit warnings", desc: "Alert when you have fewer than 20% credits remaining" },
+const CHECKBOXES: {
+  key: keyof Omit<Prefs, "notif_frequency">;
+  label: string;
+  description: string;
+}[] = [
+  {
+    key: "notif_replies",
+    label: "Reply received",
+    description: "Get notified when someone replies to your emails",
+  },
+  {
+    key: "notif_campaign_sent",
+    label: "Campaign sent",
+    description: "Confirmation when a campaign finishes sending",
+  },
+  {
+    key: "notif_credits",
+    label: "Low credits warning",
+    description: "Alert when you have less than 100 credits remaining",
+  },
+  {
+    key: "notif_signals",
+    label: "Signal velocity alerts",
+    description: "Real-time alerts when new signals match your ICP",
+  },
 ];
+
+const FREQUENCIES: { value: Frequency; label: string; description: string }[] = [
+  {
+    value: "immediately",
+    label: "Immediately",
+    description: "Get notified as soon as the event happens",
+  },
+  {
+    value: "daily",
+    label: "Daily digest",
+    description: "Receive one email per day with all updates",
+  },
+  {
+    value: "weekly",
+    label: "Weekly summary",
+    description: "Receive one email per week with all updates",
+  },
+];
+
+function RadioOption({
+  value,
+  selected,
+  label,
+  description,
+  onChange,
+  toggleCount,
+}: {
+  value: string;
+  selected: boolean;
+  label: string;
+  description: string;
+  onChange: () => void;
+  toggleCount: number;
+}) {
+  const id = useId();
+  const [focused, setFocused] = useState(false);
+
+  return (
+    <label
+      htmlFor={id}
+      style={{
+        display: "flex",
+        alignItems: "flex-start",
+        gap: 12,
+        cursor: "pointer",
+        backgroundColor: "rgba(255,255,255,0.05)",
+        borderRadius: 8,
+        padding: 16,
+        userSelect: "none",
+        border: `1px solid ${selected ? "rgba(255,82,0,0.22)" : "transparent"}`,
+        transition: "border-color 0.18s ease",
+      }}
+    >
+      <input
+        id={id}
+        type="radio"
+        value={value}
+        checked={selected}
+        onChange={onChange}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        style={{
+          position: "absolute",
+          opacity: 0,
+          width: 1,
+          height: 1,
+          margin: -1,
+          padding: 0,
+          overflow: "hidden",
+          clip: "rect(0,0,0,0)",
+          border: 0,
+          whiteSpace: "nowrap",
+        }}
+      />
+
+      {/* Custom radio indicator */}
+      <motion.div
+        key={`${value}-${toggleCount}`}
+        initial={{ scale: toggleCount > 0 && selected ? 0.88 : 1 }}
+        animate={{ scale: 1 }}
+        transition={{ duration: 0.15, ease: EASE }}
+        aria-hidden="true"
+        style={{
+          width: 18,
+          height: 18,
+          borderRadius: "50%",
+          flexShrink: 0,
+          marginTop: 2,
+          border: `2px solid ${
+            focused ? "#FF5200" : selected ? "#FF5200" : "rgba(255,255,255,0.22)"
+          }`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transition: "border-color 0.15s ease",
+        }}
+      >
+        <AnimatePresence>
+          {selected && (
+            <motion.div
+              key="dot"
+              initial={{ opacity: 0, scale: 0.3 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.3 }}
+              transition={{ duration: 0.12, ease: EASE }}
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                backgroundColor: "#FF5200",
+              }}
+            />
+          )}
+        </AnimatePresence>
+      </motion.div>
+
+      <div>
+        <span style={{
+          display: "block",
+          fontSize: 13,
+          fontWeight: 500,
+          color: "rgba(255,255,255,0.8)",
+          fontFamily: "var(--font-outfit)",
+          lineHeight: 1.4,
+        }}>
+          {label}
+        </span>
+        <span style={{
+          display: "block",
+          fontSize: 11.5,
+          color: "rgba(255,255,255,0.35)",
+          fontFamily: "var(--font-outfit)",
+          marginTop: 3,
+          lineHeight: 1.5,
+        }}>
+          {description}
+        </span>
+      </div>
+    </label>
+  );
+}
 
 export default function NotificationsPage() {
   const [prefs, setPrefs] = useState<Prefs>(DEFAULTS);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [freqToggleCount, setFreqToggleCount] = useState(0);
+
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [saveError, setSaveError] = useState<string | undefined>();
+  const [saveTimestamp, setSaveTimestamp] = useState<Date | undefined>();
 
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user?.user_metadata) {
+        const m = user.user_metadata;
         setPrefs({
-          notif_replies: user.user_metadata.notif_replies ?? DEFAULTS.notif_replies,
-          notif_digest: user.user_metadata.notif_digest ?? DEFAULTS.notif_digest,
-          notif_launches: user.user_metadata.notif_launches ?? DEFAULTS.notif_launches,
-          notif_credits: user.user_metadata.notif_credits ?? DEFAULTS.notif_credits,
+          notif_replies: m.notif_replies ?? true,
+          // backward-compat: old key was notif_launches
+          notif_campaign_sent: m.notif_campaign_sent ?? m.notif_launches ?? true,
+          notif_credits: m.notif_credits ?? true,
+          notif_signals: m.notif_signals ?? true,
+          notif_frequency: m.notif_frequency ?? "immediately",
         });
       }
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    }).finally(() => setLoading(false));
   }, []);
 
-  function set(key: keyof Prefs, value: boolean) {
-    setPrefs((prev) => ({ ...prev, [key]: value }));
-  }
-
-  async function handleSave() {
-    setSaving(true);
-    setSaved(false);
+  const save = useCallback(async (patch: Partial<Prefs>) => {
+    setSaveStatus("saving");
+    setSaveError(undefined);
     try {
       const supabase = createClient();
-      await supabase.auth.updateUser({ data: prefs });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    } finally {
-      setSaving(false);
+      const { error } = await supabase.auth.updateUser({ data: patch });
+      if (error) {
+        setSaveError(error.message);
+        setSaveStatus("error");
+      } else {
+        setSaveTimestamp(new Date());
+        setSaveStatus("saved");
+      }
+    } catch {
+      setSaveError("Failed to save preferences");
+      setSaveStatus("error");
     }
+  }, []);
+
+  function handleCheckbox(key: keyof Omit<Prefs, "notif_frequency">, value: boolean) {
+    setPrefs((p) => ({ ...p, [key]: value }));
+    save({ [key]: value });
+  }
+
+  function handleFrequency(freq: Frequency) {
+    if (prefs.notif_frequency === freq) return;
+    setFreqToggleCount((c) => c + 1);
+    setPrefs((p) => ({ ...p, notif_frequency: freq }));
+    save({ notif_frequency: freq });
+  }
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", paddingTop: 80 }}>
+        <Loader2
+          size={20}
+          color="rgba(255,255,255,0.25)"
+          style={{ animation: "spin 0.8s linear infinite" }}
+        />
+      </div>
+    );
   }
 
   return (
-    <>
-      <header style={{
-        padding: "0 32px", height: 68,
-        display: "flex", alignItems: "center",
-        borderBottom: "1px solid rgba(255,255,255,0.055)",
-        backgroundColor: "rgba(8,8,16,0.94)",
-        backdropFilter: "blur(12px)",
-        position: "sticky", top: 0, zIndex: 30,
-      }}>
-        <div>
-          <h1 style={{ fontSize: 16, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)", letterSpacing: "-0.02em", lineHeight: 1 }}>
-            Notifications
-          </h1>
-          <p style={{ fontSize: 11, color: "#383838", fontFamily: "var(--font-outfit)", marginTop: 3 }}>
-            Control which emails you receive from Nexora
-          </p>
-        </div>
-      </header>
-
-      <div style={{ padding: "28px 32px 64px", maxWidth: 560 }}>
-
-        <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.07em", textTransform: "uppercase", color: "#444", fontFamily: "var(--font-outfit)", marginBottom: 10 }}>
-          Email Notifications
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.25 }}
+      style={{ maxWidth: 900, paddingBottom: 80 }}
+    >
+      {/* Page header */}
+      <motion.div {...fadeUp(0)} style={{ marginBottom: 40 }}>
+        <h1 style={{
+          fontSize: 22,
+          fontWeight: 700,
+          color: "#fff",
+          fontFamily: "var(--font-syne)",
+          letterSpacing: "-0.02em",
+          margin: 0,
+          lineHeight: 1.2,
+        }}>
+          Notifications
+        </h1>
+        <p style={{
+          fontSize: 13,
+          color: "rgba(255,255,255,0.45)",
+          fontFamily: "var(--font-outfit)",
+          margin: "6px 0 0",
+        }}>
+          Control how and when you receive notifications
         </p>
+      </motion.div>
 
-        {loading ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "20px 0", color: "#444" }}>
-            <Loader2 size={14} style={{ animation: "spin 0.8s linear infinite" }} />
-            <span style={{ fontSize: 13, fontFamily: "var(--font-outfit)" }}>Loading preferences...</span>
-          </div>
-        ) : (
-          <div style={cardStyle}>
-            {ROWS.map(({ key, label, desc }, i) => (
-              <div
-                key={key}
-                style={{
-                  display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16,
-                  padding: "16px 0",
-                  borderBottom: i < ROWS.length - 1 ? "1px solid rgba(255,255,255,0.04)" : "none",
-                }}
-              >
-                <div>
-                  <p style={{ fontSize: 13, color: "#ccc", fontFamily: "var(--font-outfit)", marginBottom: 2 }}>{label}</p>
-                  <p style={{ fontSize: 12, color: "#555", fontFamily: "var(--font-outfit)" }}>{desc}</p>
-                </div>
-                <Toggle enabled={prefs[key]} onChange={(v) => set(key, v)} />
-              </div>
-            ))}
-          </div>
-        )}
+      {/* ── SECTION 1: Email Notifications ── */}
+      <motion.section {...fadeUp(1)} style={{ marginBottom: 48 }}>
+        <SectionHeader
+          title="Email Notifications"
+          description="Receive email updates for the following events:"
+          divider
+        />
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {CHECKBOXES.map(({ key, label, description }, i) => (
+            <motion.div key={key} {...fadeUp(i + 2)}>
+              <FormCheckbox
+                label={label}
+                description={description}
+                checked={prefs[key]}
+                onChange={(v) => handleCheckbox(key, v)}
+              />
+            </motion.div>
+          ))}
+        </div>
+      </motion.section>
 
-        {saved && (
-          <div style={{
-            display: "flex", alignItems: "center", gap: 8,
-            padding: "9px 12px", borderRadius: 7, marginBottom: 14,
-            backgroundColor: "rgba(74,222,128,0.06)",
-            border: "1px solid rgba(74,222,128,0.15)",
-          }}>
-            <Check size={12} color="#4ade80" strokeWidth={2} />
-            <span style={{ fontSize: 12, color: "#4ade80", fontFamily: "var(--font-outfit)" }}>
-              Preferences saved.
-            </span>
-          </div>
-        )}
-
-        <button
-          onClick={handleSave}
-          disabled={saving || loading}
-          style={{
-            display: "inline-flex", alignItems: "center", gap: 6,
-            padding: "9px 20px",
-            backgroundColor: "#FF5200", color: "#fff",
-            borderRadius: 6, border: "none", fontSize: 12,
-            fontFamily: "var(--font-outfit)", fontWeight: 500,
-            cursor: saving ? "not-allowed" : "pointer",
-            opacity: saving ? 0.6 : 1,
-          }}
+      {/* ── SECTION 2: Notification Frequency ── */}
+      <motion.section {...fadeUp(6)} style={{ marginBottom: 48 }}>
+        <SectionHeader
+          title="Notification Frequency"
+          description="How often would you like to receive notifications?"
+          divider
+        />
+        <div
+          role="radiogroup"
+          aria-label="Notification frequency"
+          style={{ display: "flex", flexDirection: "column", gap: 10 }}
         >
-          {saving && <Loader2 size={11} style={{ animation: "spin 0.8s linear infinite" }} />}
-          {saving ? "Saving..." : "Save preferences"}
-        </button>
+          {FREQUENCIES.map(({ value, label, description }, i) => (
+            <motion.div key={value} {...fadeUp(i + 7)}>
+              <RadioOption
+                value={value}
+                selected={prefs.notif_frequency === value}
+                label={label}
+                description={description}
+                onChange={() => handleFrequency(value)}
+                toggleCount={freqToggleCount}
+              />
+            </motion.div>
+          ))}
+        </div>
+      </motion.section>
 
-      </div>
-    </>
+      {/* Footer */}
+      <motion.div
+        {...fadeUp(10)}
+        style={{ display: "flex", alignItems: "center" }}
+      >
+        <SaveStatus
+          status={saveStatus}
+          message={saveError}
+          timestamp={saveTimestamp}
+        />
+      </motion.div>
+    </motion.div>
   );
 }

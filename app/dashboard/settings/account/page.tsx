@@ -1,642 +1,506 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { logout } from "@/app/actions/auth";
-import { Check, Loader2, X, Shield, Mail, Lock, Trash2, ShieldCheck } from "lucide-react";
+import { motion } from "framer-motion";
+import { Camera, Loader2 } from "lucide-react";
+import SectionHeader from "../_components/SectionHeader";
+import SaveStatus from "../_components/SaveStatus";
+import FormInput from "../_components/FormInput";
+import FormTextarea from "../_components/FormTextarea";
+import FormSelect from "../_components/FormSelect";
 
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "8px 12px",
-  borderRadius: 6,
-  backgroundColor: "rgba(255,255,255,0.03)",
-  border: "1px solid rgba(255,255,255,0.08)",
-  color: "#ccc",
-  fontFamily: "var(--font-outfit)",
-  fontSize: 13,
-  outline: "none",
-  boxSizing: "border-box",
+const EASE = [0.23, 1, 0.32, 1] as const;
+
+function fadeUp(i: number) {
+  return {
+    initial: { opacity: 0, y: 10 },
+    animate: { opacity: 1, y: 0 },
+    transition: { delay: i * 0.06, duration: 0.28, ease: EASE },
+  };
+}
+
+const SIZE_OPTIONS = [
+  { value: "bootstrapped", label: "Bootstrapped / Solo" },
+  { value: "seed_1_10",    label: "Seed (1-10)" },
+  { value: "series_a",     label: "Series A (11-50)" },
+  { value: "series_b",     label: "Series B+ (50+)" },
+  { value: "enterprise",   label: "Enterprise (500+)" },
+  { value: "all",          label: "All sizes" },
+];
+
+interface Profile {
+  full_name: string;
+  avatar_url: string;
+  company_name: string;
+  website_url: string;
+  company_description: string;
+  role: string;
+  icp_industries: string;
+  icp_company_size: string;
+  icp_location: string;
+}
+
+const EMPTY: Profile = {
+  full_name: "",
+  avatar_url: "",
+  company_name: "",
+  website_url: "",
+  company_description: "",
+  role: "",
+  icp_industries: "",
+  icp_company_size: "all",
+  icp_location: "",
 };
 
-const labelStyle: React.CSSProperties = {
-  display: "block", fontSize: 11, color: "#555",
-  fontFamily: "var(--font-outfit)", marginBottom: 5,
-};
-
-const cardStyle: React.CSSProperties = {
-  backgroundColor: "#0e0e18",
-  border: "1px solid rgba(255,255,255,0.06)",
-  borderRadius: 10, padding: "20px 22px", marginBottom: 20,
-};
-
-function Modal({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
-  return (
-    <div
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      style={{
-        position: "fixed", inset: 0, zIndex: 200,
-        backgroundColor: "rgba(0,0,0,0.75)",
-        backdropFilter: "blur(6px)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        padding: 24,
-      }}
-    >
-      <div style={{
-        backgroundColor: "#0e0e18",
-        border: "1px solid rgba(255,255,255,0.08)",
-        borderRadius: 12, padding: "28px 28px",
-        width: "100%", maxWidth: 400,
-        position: "relative",
-      }}>
-        <button
-          onClick={onClose}
-          style={{
-            position: "absolute", top: 14, right: 14,
-            background: "none", border: "none", cursor: "pointer", color: "#555",
-            display: "flex",
-          }}
-        >
-          <X size={16} strokeWidth={1.75} />
-        </button>
-        {children}
-      </div>
-    </div>
-  );
+function isValidUrl(raw: string) {
+  if (!raw) return true;
+  try {
+    new URL(raw.startsWith("http") ? raw : `https://${raw}`);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export default function AccountPage() {
   const [email, setEmail] = useState("");
-  const [mfaFactors, setMfaFactors] = useState<{ id: string; friendly_name?: string }[]>([]);
-  const [mfaLoading, setMfaLoading] = useState(true);
+  const [profile, setProfile] = useState<Profile>(EMPTY);
+  const [loading, setLoading] = useState(true);
+  const [avatarPreview, setAvatarPreview] = useState("");
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [errors, setErrors] = useState<Partial<Record<keyof Profile | "avatar", string>>>({});
 
-  // Modals
-  const [showEmail, setShowEmail] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [show2FA, setShow2FA] = useState(false);
-  const [showDelete, setShowDelete] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [saveError, setSaveError] = useState<string | undefined>();
+  const [saveTimestamp, setSaveTimestamp] = useState<Date | undefined>();
 
-  // Change email
-  const [newEmail, setNewEmail] = useState("");
-  const [emailSaving, setEmailSaving] = useState(false);
-  const [emailMsg, setEmailMsg] = useState<{ ok: boolean; text: string } | null>(null);
-
-  // Change password
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [pwSaving, setPwSaving] = useState(false);
-  const [pwMsg, setPwMsg] = useState<{ ok: boolean; text: string } | null>(null);
-
-  // 2FA
-  const [qrCode, setQrCode] = useState("");
-  const [totpSecret, setTotpSecret] = useState("");
-  const [factorId, setFactorId] = useState("");
-  const [totpCode, setTotpCode] = useState("");
-  const [mfaEnrolling, setMfaEnrolling] = useState(false);
-  const [mfaVerifying, setMfaVerifying] = useState(false);
-  const [mfaMsg, setMfaMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const [mfaStep, setMfaStep] = useState<"idle" | "scan" | "verify">("idle");
-
-  // Delete
-  const [deleteText, setDeleteText] = useState("");
-  const [deleting, setDeleting] = useState(false);
-  const [deleteMsg, setDeleteMsg] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+  // Always-current profile ref to avoid stale closures in onBlur handlers
+  const profileRef = useRef<Profile>(EMPTY);
+  profileRef.current = profile;
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) setEmail(user.email ?? "");
-    });
-    supabase.auth.mfa.listFactors().then(({ data }) => {
-      setMfaFactors(data?.totp ?? []);
-      setMfaLoading(false);
-    }).catch(() => setMfaLoading(false));
+    fetch("/api/profile")
+      .then((r) => r.json())
+      .then(({ profile: p, email: e }) => {
+        if (e) setEmail(e);
+        if (p) {
+          const loaded = { ...EMPTY, ...p };
+          setProfile(loaded);
+          profileRef.current = loaded;
+          if (p.avatar_url) setAvatarPreview(p.avatar_url);
+        }
+      })
+      .finally(() => setLoading(false));
   }, []);
 
-  async function handleChangeEmail() {
-    setEmailSaving(true);
-    setEmailMsg(null);
+  const patch = useCallback(async (data: Partial<Profile>) => {
+    setSaveStatus("saving");
+    setSaveError(undefined);
     try {
-      const res = await fetch("/api/auth/change-email", {
-        method: "POST",
+      const res = await fetch("/api/profile", {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ newEmail }),
+        body: JSON.stringify(data),
       });
-      const data = await res.json();
-      if (res.ok) {
-        setEmailMsg({ ok: true, text: "Email updated successfully." });
-        setEmail(newEmail);
-        setNewEmail("");
-        setTimeout(() => setShowEmail(false), 2000);
+      if (!res.ok) {
+        const j = await res.json();
+        setSaveError(j.error ?? "Save failed");
+        setSaveStatus("error");
       } else {
-        setEmailMsg({ ok: false, text: data.error ?? "Failed to update email." });
-      }
-    } finally {
-      setEmailSaving(false);
-    }
-  }
-
-  async function handleChangePassword() {
-    if (newPassword !== confirmPassword) {
-      setPwMsg({ ok: false, text: "Passwords do not match." });
-      return;
-    }
-    if (newPassword.length < 8) {
-      setPwMsg({ ok: false, text: "Password must be at least 8 characters." });
-      return;
-    }
-    setPwSaving(true);
-    setPwMsg(null);
-    try {
-      const res = await fetch("/api/auth/change-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ newPassword }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setPwMsg({ ok: true, text: "Password updated." });
-        setNewPassword("");
-        setConfirmPassword("");
-        setTimeout(() => setShowPassword(false), 2000);
-      } else {
-        setPwMsg({ ok: false, text: data.error ?? "Failed to update password." });
-      }
-    } finally {
-      setPwSaving(false);
-    }
-  }
-
-  async function handleEnroll2FA() {
-    setMfaEnrolling(true);
-    setMfaMsg(null);
-    try {
-      const supabase = createClient();
-      const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp" });
-      if (error || !data) {
-        setMfaMsg({ ok: false, text: error?.message ?? "Failed to start 2FA enrollment." });
-        return;
-      }
-      setQrCode(data.totp.qr_code);
-      setTotpSecret(data.totp.secret);
-      setFactorId(data.id);
-      setMfaStep("scan");
-    } finally {
-      setMfaEnrolling(false);
-    }
-  }
-
-  async function handleVerify2FA() {
-    if (!totpCode || totpCode.length < 6) {
-      setMfaMsg({ ok: false, text: "Enter the 6-digit code from your app." });
-      return;
-    }
-    setMfaVerifying(true);
-    setMfaMsg(null);
-    try {
-      const supabase = createClient();
-      const { data: challenge, error: cErr } = await supabase.auth.mfa.challenge({ factorId });
-      if (cErr || !challenge) {
-        setMfaMsg({ ok: false, text: cErr?.message ?? "Challenge failed." });
-        return;
-      }
-      const { error: vErr } = await supabase.auth.mfa.verify({
-        factorId,
-        challengeId: challenge.id,
-        code: totpCode,
-      });
-      if (vErr) {
-        setMfaMsg({ ok: false, text: vErr.message ?? "Invalid code." });
-        return;
-      }
-      setMfaMsg({ ok: true, text: "2FA enabled successfully." });
-      setMfaFactors((prev) => [...prev, { id: factorId, friendly_name: undefined }]);
-      setTimeout(() => setShow2FA(false), 2000);
-    } finally {
-      setMfaVerifying(false);
-    }
-  }
-
-  async function handleUnenroll2FA(id: string) {
-    const supabase = createClient();
-    await supabase.auth.mfa.unenroll({ factorId: id });
-    setMfaFactors((prev) => prev.filter((f) => f.id !== id));
-  }
-
-  async function handleDeleteAccount() {
-    if (deleteText !== "DELETE") {
-      setDeleteMsg("Type DELETE to confirm.");
-      return;
-    }
-    setDeleting(true);
-    setDeleteMsg(null);
-    try {
-      const res = await fetch("/api/auth/delete-account", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ confirm: "DELETE" }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        // Sign out and redirect
-        const supabase = createClient();
-        await supabase.auth.signOut();
-        window.location.href = "/login";
-      } else {
-        setDeleteMsg(data.error ?? "Failed to delete account.");
-        setDeleting(false);
+        setSaveTimestamp(new Date());
+        setSaveStatus("saved");
       }
     } catch {
-      setDeleteMsg("An error occurred. Please try again.");
-      setDeleting(false);
+      setSaveError("Network error");
+      setSaveStatus("error");
+    }
+  }, []);
+
+  function autoSave(
+    key: keyof Profile,
+    validate?: () => string | undefined,
+  ): () => void {
+    return () => {
+      if (validate) {
+        const err = validate();
+        setErrors((e) => ({ ...e, [key]: err }));
+        if (err) return;
+      } else {
+        setErrors((e) => ({ ...e, [key]: undefined }));
+      }
+      patch({ [key]: profileRef.current[key] });
+    };
+  }
+
+  function setField<K extends keyof Profile>(key: K) {
+    return (v: string) => setProfile((p) => ({ ...p, [key]: v }));
+  }
+
+  async function handleAvatarFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!["image/jpeg", "image/png"].includes(file.type)) {
+      setErrors((er) => ({ ...er, avatar: "JPG or PNG only" }));
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setErrors((er) => ({ ...er, avatar: "Max 2 MB" }));
+      return;
+    }
+    setErrors((er) => ({ ...er, avatar: undefined }));
+
+    const reader = new FileReader();
+    reader.onload = (ev) => setAvatarPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+
+    setAvatarUploading(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const ext = file.type === "image/png" ? "png" : "jpg";
+      const path = `${user.id}/avatar.${ext}`;
+
+      const { error: upErr } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true, contentType: file.type });
+
+      if (upErr) {
+        setSaveError("Avatar upload failed");
+        setSaveStatus("error");
+        return;
+      }
+      const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path);
+      setProfile((p) => ({ ...p, avatar_url: publicUrl }));
+      await patch({ avatar_url: publicUrl });
+    } finally {
+      setAvatarUploading(false);
     }
   }
 
-  const mfaEnabled = mfaFactors.length > 0;
+  async function handleSaveAll() {
+    const errs: typeof errors = {};
+    if (!profileRef.current.full_name.trim()) errs.full_name = "Full name is required";
+    if (profileRef.current.website_url && !isValidUrl(profileRef.current.website_url)) {
+      errs.website_url = "Invalid URL format";
+    }
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) return;
+    await patch(profileRef.current);
+  }
+
+  if (loading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", paddingTop: 80 }}>
+        <Loader2 size={20} color="rgba(255,255,255,0.25)" style={{ animation: "spin 0.8s linear infinite" }} />
+      </div>
+    );
+  }
 
   return (
-    <>
-      <header style={{
-        padding: "0 32px", height: 68,
-        display: "flex", alignItems: "center",
-        borderBottom: "1px solid rgba(255,255,255,0.055)",
-        backgroundColor: "rgba(8,8,16,0.94)",
-        backdropFilter: "blur(12px)",
-        position: "sticky", top: 0, zIndex: 30,
-      }}>
-        <div>
-          <h1 style={{ fontSize: 16, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)", letterSpacing: "-0.02em", lineHeight: 1 }}>
-            Account Security
-          </h1>
-          <p style={{ fontSize: 11, color: "#383838", fontFamily: "var(--font-outfit)", marginTop: 3 }}>
-            Manage your email, password, and authentication
-          </p>
-        </div>
-      </header>
-
-      <div style={{ padding: "28px 32px 64px", maxWidth: 560 }}>
-
-        {/* Email & Password */}
-        <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.07em", textTransform: "uppercase", color: "#444", fontFamily: "var(--font-outfit)", marginBottom: 10 }}>
-          Email &amp; Password
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.25 }}
+      style={{ maxWidth: 900, paddingBottom: 80 }}
+    >
+      {/* Page header */}
+      <motion.div {...fadeUp(0)} style={{ marginBottom: 40 }}>
+        <h1 style={{
+          fontSize: 22,
+          fontWeight: 700,
+          color: "#fff",
+          fontFamily: "var(--font-syne)",
+          letterSpacing: "-0.02em",
+          margin: 0,
+          lineHeight: 1.2,
+        }}>
+          Account Settings
+        </h1>
+        <p style={{
+          fontSize: 13,
+          color: "rgba(255,255,255,0.45)",
+          fontFamily: "var(--font-outfit)",
+          margin: "6px 0 0",
+          lineHeight: 1.5,
+        }}>
+          Manage your profile and personal information
         </p>
-        <div style={cardStyle}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, paddingBottom: 14, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <Mail size={14} strokeWidth={1.5} color="#555" />
-              <div>
-                <p style={{ fontSize: 13, color: "#ccc", fontFamily: "var(--font-outfit)" }}>Email address</p>
-                <p style={{ fontSize: 12, color: "#555", fontFamily: "var(--font-outfit)" }}>{email || "Loading..."}</p>
-              </div>
-            </div>
-            <button
-              onClick={() => { setShowEmail(true); setEmailMsg(null); }}
-              style={{
-                padding: "6px 14px", borderRadius: 6, fontSize: 12,
-                fontFamily: "var(--font-outfit)", cursor: "pointer",
-                backgroundColor: "transparent", color: "#888",
-                border: "1px solid rgba(255,255,255,0.08)",
-              }}
-            >
-              Change
-            </button>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <Lock size={14} strokeWidth={1.5} color="#555" />
-              <div>
-                <p style={{ fontSize: 13, color: "#ccc", fontFamily: "var(--font-outfit)" }}>Password</p>
-                <p style={{ fontSize: 12, color: "#555", fontFamily: "var(--font-outfit)" }}>Last changed: unknown</p>
-              </div>
-            </div>
-            <button
-              onClick={() => { setShowPassword(true); setPwMsg(null); }}
-              style={{
-                padding: "6px 14px", borderRadius: 6, fontSize: 12,
-                fontFamily: "var(--font-outfit)", cursor: "pointer",
-                backgroundColor: "transparent", color: "#888",
-                border: "1px solid rgba(255,255,255,0.08)",
-              }}
-            >
-              Change
-            </button>
-          </div>
-        </div>
+      </motion.div>
 
-        {/* 2FA */}
-        <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.07em", textTransform: "uppercase", color: "#444", fontFamily: "var(--font-outfit)", marginBottom: 10 }}>
-          Two-Factor Authentication
-        </p>
-        <div style={cardStyle}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              {mfaEnabled
-                ? <ShieldCheck size={14} strokeWidth={1.5} color="#4ade80" />
-                : <Shield size={14} strokeWidth={1.5} color="#555" />
-              }
-              <div>
-                <p style={{ fontSize: 13, color: "#ccc", fontFamily: "var(--font-outfit)" }}>
-                  Authenticator app
-                </p>
-                <p style={{ fontSize: 12, color: mfaEnabled ? "#4ade80" : "#555", fontFamily: "var(--font-outfit)" }}>
-                  {mfaLoading ? "Checking..." : mfaEnabled ? "Enabled" : "Not configured"}
-                </p>
-              </div>
-            </div>
-            {!mfaLoading && (
-              mfaEnabled ? (
+      {/* ── SECTION 1: Personal Information ── */}
+      <motion.section {...fadeUp(1)} style={{ marginBottom: 48 }}>
+        <SectionHeader title="Personal Information" divider />
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+          <motion.div {...fadeUp(2)}>
+            <FormInput
+              label="Email"
+              description="Your login email address."
+              value={email}
+              onChange={() => {}}
+              required
+              disabled
+            />
+          </motion.div>
+
+          <motion.div {...fadeUp(3)}>
+            <FormInput
+              label="Full Name"
+              placeholder="Jane Smith"
+              required
+              value={profile.full_name}
+              onChange={setField("full_name")}
+              error={errors.full_name}
+              onBlur={autoSave("full_name", () =>
+                profile.full_name.trim() ? undefined : "Full name is required"
+              )}
+            />
+          </motion.div>
+
+          {/* Avatar upload */}
+          <motion.div {...fadeUp(4)}>
+            <div style={{
+              backgroundColor: "rgba(255,255,255,0.05)",
+              borderRadius: 8,
+              padding: 16,
+            }}>
+              <p style={{
+                fontSize: 12,
+                fontWeight: 500,
+                color: "rgba(255,255,255,0.7)",
+                fontFamily: "var(--font-outfit)",
+                marginBottom: 14,
+              }}>
+                Profile Photo
+              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
                 <button
-                  onClick={() => handleUnenroll2FA(mfaFactors[0].id)}
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  aria-label="Upload profile photo"
                   style={{
-                    padding: "6px 14px", borderRadius: 6, fontSize: 12,
-                    fontFamily: "var(--font-outfit)", cursor: "pointer",
-                    backgroundColor: "transparent", color: "#f87171",
-                    border: "1px solid rgba(239,68,68,0.2)",
+                    width: 80,
+                    height: 80,
+                    borderRadius: "50%",
+                    border: "2px solid rgba(255,255,255,0.1)",
+                    backgroundColor: "rgba(255,255,255,0.06)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    overflow: "hidden",
+                    flexShrink: 0,
+                    padding: 0,
+                    position: "relative",
                   }}
                 >
-                  Disable
+                  {avatarPreview ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={avatarPreview}
+                      alt="Profile photo"
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  ) : avatarUploading ? (
+                    <Loader2 size={20} color="rgba(255,255,255,0.35)" style={{ animation: "spin 0.8s linear infinite" }} />
+                  ) : (
+                    <Camera size={20} color="rgba(255,255,255,0.3)" aria-hidden="true" />
+                  )}
                 </button>
-              ) : (
-                <button
-                  onClick={() => { setShow2FA(true); setMfaMsg(null); setMfaStep("idle"); }}
-                  style={{
-                    padding: "6px 14px", borderRadius: 6, fontSize: 12,
-                    fontFamily: "var(--font-outfit)", cursor: "pointer",
-                    backgroundColor: "#FF5200", color: "#fff",
-                    border: "none",
-                  }}
-                >
-                  Enable 2FA
-                </button>
-              )
-            )}
-          </div>
-        </div>
 
-        {/* Delete Account */}
-        <p style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.07em", textTransform: "uppercase", color: "#444", fontFamily: "var(--font-outfit)", marginBottom: 10 }}>
-          Danger Zone
-        </p>
-        <div style={{ ...cardStyle, border: "1px solid rgba(239,68,68,0.15)" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <Trash2 size={14} strokeWidth={1.5} color="#f87171" />
-              <div>
-                <p style={{ fontSize: 13, color: "#ccc", fontFamily: "var(--font-outfit)" }}>Delete account</p>
-                <p style={{ fontSize: 12, color: "#555", fontFamily: "var(--font-outfit)" }}>
-                  Permanently removes all data. This cannot be undone.
-                </p>
+                <div>
+                  <button
+                    type="button"
+                    onClick={() => fileRef.current?.click()}
+                    disabled={avatarUploading}
+                    style={{
+                      display: "block",
+                      padding: "7px 14px",
+                      borderRadius: 6,
+                      border: "1px solid rgba(255,255,255,0.12)",
+                      backgroundColor: "transparent",
+                      color: "rgba(255,255,255,0.7)",
+                      fontSize: 12,
+                      fontFamily: "var(--font-outfit)",
+                      cursor: avatarUploading ? "not-allowed" : "pointer",
+                      marginBottom: 6,
+                      opacity: avatarUploading ? 0.5 : 1,
+                    }}
+                  >
+                    {avatarUploading ? "Uploading..." : "Upload photo"}
+                  </button>
+                  <p style={{ fontSize: 11, color: "rgba(255,255,255,0.28)", fontFamily: "var(--font-outfit)" }}>
+                    JPG or PNG, max 2 MB
+                  </p>
+                  {errors.avatar && (
+                    <p role="alert" style={{ fontSize: 11, color: "#ef4444", fontFamily: "var(--font-outfit)", marginTop: 3 }}>
+                      {errors.avatar}
+                    </p>
+                  )}
+                </div>
               </div>
+
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/jpeg,image/png"
+                onChange={handleAvatarFile}
+                style={{ display: "none" }}
+                aria-label="Profile photo file input"
+              />
             </div>
-            <button
-              onClick={() => { setShowDelete(true); setDeleteMsg(null); setDeleteText(""); }}
-              style={{
-                padding: "6px 14px", borderRadius: 6, fontSize: 12,
-                fontFamily: "var(--font-outfit)", cursor: "pointer",
-                backgroundColor: "transparent", color: "#f87171",
-                border: "1px solid rgba(239,68,68,0.25)",
-                flexShrink: 0,
+          </motion.div>
+
+        </div>
+      </motion.section>
+
+      {/* ── SECTION 2: Company Profile ── */}
+      <motion.section {...fadeUp(5)} style={{ marginBottom: 48 }}>
+        <SectionHeader title="Company Profile" divider />
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+          <motion.div {...fadeUp(6)}>
+            <FormInput
+              label="Company Name"
+              placeholder="Acme Corp"
+              value={profile.company_name}
+              onChange={setField("company_name")}
+              onBlur={autoSave("company_name")}
+            />
+          </motion.div>
+
+          <motion.div {...fadeUp(7)}>
+            <FormInput
+              label="Website URL"
+              placeholder="https://acme.com"
+              value={profile.website_url}
+              onChange={setField("website_url")}
+              error={errors.website_url}
+              onBlur={autoSave("website_url", () =>
+                isValidUrl(profileRef.current.website_url) ? undefined : "Invalid URL format"
+              )}
+            />
+          </motion.div>
+
+          <motion.div {...fadeUp(8)}>
+            <FormTextarea
+              label="Company Description"
+              placeholder="Briefly describe what your company does..."
+              rows={4}
+              maxLength={500}
+              value={profile.company_description}
+              onChange={setField("company_description")}
+              onBlur={autoSave("company_description")}
+            />
+          </motion.div>
+
+          <motion.div {...fadeUp(9)}>
+            <FormInput
+              label="Your Role"
+              placeholder="Founder, Head of Sales..."
+              value={profile.role}
+              onChange={setField("role")}
+              onBlur={autoSave("role")}
+            />
+          </motion.div>
+
+        </div>
+      </motion.section>
+
+      {/* ── SECTION 3: ICP ── */}
+      <motion.section {...fadeUp(10)} style={{ marginBottom: 48 }}>
+        <SectionHeader
+          title="ICP (Ideal Customer Profile)"
+          description="Help us identify better signals by telling us who you target"
+          divider
+        />
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+          <motion.div {...fadeUp(11)}>
+            <FormTextarea
+              label="Industry Keywords"
+              description="Separate with commas"
+              placeholder="SaaS, B2B, Fintech, eCommerce..."
+              rows={3}
+              maxLength={500}
+              value={profile.icp_industries}
+              onChange={setField("icp_industries")}
+              onBlur={autoSave("icp_industries")}
+            />
+          </motion.div>
+
+          <motion.div {...fadeUp(12)}>
+            <FormSelect
+              label="Target Company Size"
+              options={SIZE_OPTIONS}
+              value={profile.icp_company_size}
+              onChange={(v) => {
+                setProfile((p) => ({ ...p, icp_company_size: v }));
+                patch({ icp_company_size: v });
               }}
-            >
-              Delete
-            </button>
-          </div>
+            />
+          </motion.div>
+
+          <motion.div {...fadeUp(13)}>
+            <FormInput
+              label="Location Focus"
+              placeholder="US, UK, Europe, Global..."
+              value={profile.icp_location}
+              onChange={setField("icp_location")}
+              onBlur={autoSave("icp_location")}
+            />
+          </motion.div>
+
         </div>
+      </motion.section>
 
-      </div>
-
-      {/* ── Change Email Modal ── */}
-      {showEmail && (
-        <Modal onClose={() => setShowEmail(false)}>
-          <h2 style={{ fontSize: 15, fontWeight: 500, color: "#ddd", fontFamily: "var(--font-syne)", marginBottom: 6 }}>
-            Change email
-          </h2>
-          <p style={{ fontSize: 12, color: "#555", fontFamily: "var(--font-outfit)", marginBottom: 20, lineHeight: 1.5 }}>
-            Your email will be updated immediately.
-          </p>
-          <div style={{ marginBottom: 14 }}>
-            <label style={labelStyle}>New email address</label>
-            <input
-              type="email"
-              value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
-              placeholder="new@example.com"
-              style={inputStyle}
-              autoFocus
-            />
-          </div>
-          {emailMsg && (
-            <div style={{
-              display: "flex", alignItems: "center", gap: 7,
-              padding: "8px 12px", borderRadius: 6, marginBottom: 14,
-              backgroundColor: emailMsg.ok ? "rgba(74,222,128,0.06)" : "rgba(239,68,68,0.06)",
-              border: `1px solid ${emailMsg.ok ? "rgba(74,222,128,0.15)" : "rgba(239,68,68,0.15)"}`,
-            }}>
-              <span style={{ fontSize: 12, color: emailMsg.ok ? "#4ade80" : "#f87171", fontFamily: "var(--font-outfit)" }}>
-                {emailMsg.text}
-              </span>
-            </div>
+      {/* ── Footer ── */}
+      <motion.div
+        {...fadeUp(14)}
+        style={{ display: "flex", alignItems: "center", gap: 16, paddingTop: 4 }}
+      >
+        <button
+          onClick={handleSaveAll}
+          disabled={saveStatus === "saving"}
+          style={{
+            width: 120,
+            padding: "9px 0",
+            borderRadius: 7,
+            backgroundColor: "#FF5200",
+            color: "#fff",
+            fontSize: 13,
+            fontWeight: 500,
+            fontFamily: "var(--font-outfit)",
+            border: "none",
+            cursor: saveStatus === "saving" ? "not-allowed" : "pointer",
+            opacity: saveStatus === "saving" ? 0.7 : 1,
+            display: "inline-flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 7,
+            transition: "filter 0.15s ease",
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => {
+            if (saveStatus !== "saving")
+              (e.currentTarget as HTMLButtonElement).style.filter = "brightness(1.1)";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.filter = "none";
+          }}
+        >
+          {saveStatus === "saving" && (
+            <Loader2 size={13} strokeWidth={2} style={{ animation: "spin 0.8s linear infinite" }} />
           )}
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-            <button onClick={() => setShowEmail(false)} style={{ padding: "8px 16px", borderRadius: 6, fontSize: 12, fontFamily: "var(--font-outfit)", cursor: "pointer", backgroundColor: "transparent", color: "#666", border: "1px solid rgba(255,255,255,0.08)" }}>
-              Cancel
-            </button>
-            <button
-              onClick={handleChangeEmail}
-              disabled={emailSaving || !newEmail}
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 6, fontSize: 12, fontFamily: "var(--font-outfit)", cursor: emailSaving ? "not-allowed" : "pointer", backgroundColor: "#FF5200", color: "#fff", border: "none", opacity: emailSaving ? 0.6 : 1 }}
-            >
-              {emailSaving && <Loader2 size={11} style={{ animation: "spin 0.8s linear infinite" }} />}
-              Update email
-            </button>
-          </div>
-        </Modal>
-      )}
+          {saveStatus === "saving" ? "Saving..." : "Save Changes"}
+        </button>
 
-      {/* ── Change Password Modal ── */}
-      {showPassword && (
-        <Modal onClose={() => setShowPassword(false)}>
-          <h2 style={{ fontSize: 15, fontWeight: 500, color: "#ddd", fontFamily: "var(--font-syne)", marginBottom: 6 }}>
-            Change password
-          </h2>
-          <p style={{ fontSize: 12, color: "#555", fontFamily: "var(--font-outfit)", marginBottom: 20, lineHeight: 1.5 }}>
-            Must be at least 8 characters.
-          </p>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 14 }}>
-            <div>
-              <label style={labelStyle}>New password</label>
-              <input
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="New password"
-                style={inputStyle}
-                autoFocus
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>Confirm password</label>
-              <input
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm new password"
-                style={inputStyle}
-              />
-            </div>
-          </div>
-          {pwMsg && (
-            <div style={{
-              padding: "8px 12px", borderRadius: 6, marginBottom: 14,
-              backgroundColor: pwMsg.ok ? "rgba(74,222,128,0.06)" : "rgba(239,68,68,0.06)",
-              border: `1px solid ${pwMsg.ok ? "rgba(74,222,128,0.15)" : "rgba(239,68,68,0.15)"}`,
-            }}>
-              <span style={{ fontSize: 12, color: pwMsg.ok ? "#4ade80" : "#f87171", fontFamily: "var(--font-outfit)" }}>
-                {pwMsg.text}
-              </span>
-            </div>
-          )}
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-            <button onClick={() => setShowPassword(false)} style={{ padding: "8px 16px", borderRadius: 6, fontSize: 12, fontFamily: "var(--font-outfit)", cursor: "pointer", backgroundColor: "transparent", color: "#666", border: "1px solid rgba(255,255,255,0.08)" }}>
-              Cancel
-            </button>
-            <button
-              onClick={handleChangePassword}
-              disabled={pwSaving}
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 6, fontSize: 12, fontFamily: "var(--font-outfit)", cursor: pwSaving ? "not-allowed" : "pointer", backgroundColor: "#FF5200", color: "#fff", border: "none", opacity: pwSaving ? 0.6 : 1 }}
-            >
-              {pwSaving && <Loader2 size={11} style={{ animation: "spin 0.8s linear infinite" }} />}
-              Update password
-            </button>
-          </div>
-        </Modal>
-      )}
-
-      {/* ── 2FA Modal ── */}
-      {show2FA && (
-        <Modal onClose={() => setShow2FA(false)}>
-          <h2 style={{ fontSize: 15, fontWeight: 500, color: "#ddd", fontFamily: "var(--font-syne)", marginBottom: 6 }}>
-            Enable two-factor auth
-          </h2>
-
-          {mfaStep === "idle" && (
-            <>
-              <p style={{ fontSize: 12, color: "#555", fontFamily: "var(--font-outfit)", marginBottom: 20, lineHeight: 1.5 }}>
-                Use an authenticator app like Google Authenticator or Authy to add an extra layer of security.
-              </p>
-              {mfaMsg && (
-                <div style={{ padding: "8px 12px", borderRadius: 6, marginBottom: 14, backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)" }}>
-                  <span style={{ fontSize: 12, color: "#f87171", fontFamily: "var(--font-outfit)" }}>{mfaMsg.text}</span>
-                </div>
-              )}
-              <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <button
-                  onClick={handleEnroll2FA}
-                  disabled={mfaEnrolling}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 6, fontSize: 12, fontFamily: "var(--font-outfit)", cursor: mfaEnrolling ? "not-allowed" : "pointer", backgroundColor: "#FF5200", color: "#fff", border: "none", opacity: mfaEnrolling ? 0.6 : 1 }}
-                >
-                  {mfaEnrolling && <Loader2 size={11} style={{ animation: "spin 0.8s linear infinite" }} />}
-                  {mfaEnrolling ? "Generating..." : "Get QR code"}
-                </button>
-              </div>
-            </>
-          )}
-
-          {mfaStep === "scan" && (
-            <>
-              <p style={{ fontSize: 12, color: "#555", fontFamily: "var(--font-outfit)", marginBottom: 16, lineHeight: 1.5 }}>
-                Scan this QR code with your authenticator app, then enter the 6-digit code below.
-              </p>
-              {qrCode && (
-                <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-                  {/* qr_code is a data URI returned by Supabase */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={qrCode} alt="2FA QR code" width={160} height={160} style={{ borderRadius: 6, border: "1px solid rgba(255,255,255,0.08)" }} />
-                </div>
-              )}
-              <div style={{ marginBottom: 6, padding: "8px 12px", borderRadius: 6, backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-                <p style={{ fontSize: 10, color: "#444", fontFamily: "var(--font-outfit)", marginBottom: 3, textTransform: "uppercase", letterSpacing: "0.06em" }}>Manual entry key</p>
-                <p style={{ fontSize: 11, color: "#888", fontFamily: "var(--font-outfit)", wordBreak: "break-all" }}>{totpSecret}</p>
-              </div>
-              <div style={{ marginTop: 14, marginBottom: 14 }}>
-                <label style={labelStyle}>6-digit verification code</label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={6}
-                  value={totpCode}
-                  onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ""))}
-                  placeholder="000000"
-                  style={{ ...inputStyle, letterSpacing: "0.2em", fontSize: 16 }}
-                  autoFocus
-                />
-              </div>
-              {mfaMsg && (
-                <div style={{
-                  padding: "8px 12px", borderRadius: 6, marginBottom: 14,
-                  backgroundColor: mfaMsg.ok ? "rgba(74,222,128,0.06)" : "rgba(239,68,68,0.06)",
-                  border: `1px solid ${mfaMsg.ok ? "rgba(74,222,128,0.15)" : "rgba(239,68,68,0.15)"}`,
-                }}>
-                  <span style={{ fontSize: 12, color: mfaMsg.ok ? "#4ade80" : "#f87171", fontFamily: "var(--font-outfit)" }}>{mfaMsg.text}</span>
-                </div>
-              )}
-              <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-                <button onClick={() => setMfaStep("idle")} style={{ padding: "8px 16px", borderRadius: 6, fontSize: 12, fontFamily: "var(--font-outfit)", cursor: "pointer", backgroundColor: "transparent", color: "#666", border: "1px solid rgba(255,255,255,0.08)" }}>
-                  Back
-                </button>
-                <button
-                  onClick={handleVerify2FA}
-                  disabled={mfaVerifying || totpCode.length < 6}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 6, fontSize: 12, fontFamily: "var(--font-outfit)", cursor: mfaVerifying ? "not-allowed" : "pointer", backgroundColor: "#FF5200", color: "#fff", border: "none", opacity: (mfaVerifying || totpCode.length < 6) ? 0.6 : 1 }}
-                >
-                  {mfaVerifying && <Loader2 size={11} style={{ animation: "spin 0.8s linear infinite" }} />}
-                  Verify &amp; enable
-                </button>
-              </div>
-            </>
-          )}
-        </Modal>
-      )}
-
-      {/* ── Delete Modal ── */}
-      {showDelete && (
-        <Modal onClose={() => setShowDelete(false)}>
-          <h2 style={{ fontSize: 15, fontWeight: 500, color: "#f87171", fontFamily: "var(--font-syne)", marginBottom: 6 }}>
-            Delete account permanently
-          </h2>
-          <p style={{ fontSize: 12, color: "#555", fontFamily: "var(--font-outfit)", marginBottom: 16, lineHeight: 1.5 }}>
-            This will permanently delete your account and all data including campaigns, leads, and billing history. This action cannot be undone.
-          </p>
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ ...labelStyle, color: "#f87171" }}>Type DELETE to confirm</label>
-            <input
-              type="text"
-              value={deleteText}
-              onChange={(e) => setDeleteText(e.target.value)}
-              placeholder="DELETE"
-              style={{ ...inputStyle, border: "1px solid rgba(239,68,68,0.2)" }}
-              autoFocus
-            />
-          </div>
-          {deleteMsg && (
-            <div style={{ padding: "8px 12px", borderRadius: 6, marginBottom: 14, backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)" }}>
-              <span style={{ fontSize: 12, color: "#f87171", fontFamily: "var(--font-outfit)" }}>{deleteMsg}</span>
-            </div>
-          )}
-          <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-            <button onClick={() => setShowDelete(false)} style={{ padding: "8px 16px", borderRadius: 6, fontSize: 12, fontFamily: "var(--font-outfit)", cursor: "pointer", backgroundColor: "transparent", color: "#666", border: "1px solid rgba(255,255,255,0.08)" }}>
-              Cancel
-            </button>
-            <button
-              onClick={handleDeleteAccount}
-              disabled={deleting || deleteText !== "DELETE"}
-              style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 16px", borderRadius: 6, fontSize: 12, fontFamily: "var(--font-outfit)", cursor: (deleting || deleteText !== "DELETE") ? "not-allowed" : "pointer", backgroundColor: "#ef4444", color: "#fff", border: "none", opacity: (deleting || deleteText !== "DELETE") ? 0.5 : 1 }}
-            >
-              {deleting && <Loader2 size={11} style={{ animation: "spin 0.8s linear infinite" }} />}
-              {deleting ? "Deleting..." : "Delete my account"}
-            </button>
-          </div>
-        </Modal>
-      )}
-    </>
+        <SaveStatus status={saveStatus} message={saveError} timestamp={saveTimestamp} />
+      </motion.div>
+    </motion.div>
   );
 }
