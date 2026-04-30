@@ -1,7 +1,6 @@
 import { Resend } from "resend";
 import type { FeedItem } from "./rss";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM    = process.env.RESEND_FROM_EMAIL ?? "alerts@nexoraoutreach.com";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://nexoraoutreach.com";
 
@@ -83,6 +82,7 @@ function buildHtml(payload: AlertPayload, deeplink: string, draft: string): stri
 }
 
 export async function sendSignalAlert(payload: AlertPayload): Promise<void> {
+  const resend   = new Resend(process.env.RESEND_API_KEY);
   const draft    = draftColdEmail(payload.companyName, payload.signalType);
   const deeplink = buildDeeplink(payload.companyName, payload.signalType, payload.item.title, payload.item.link);
   const html     = buildHtml(payload, deeplink, draft);
