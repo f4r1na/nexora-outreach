@@ -49,6 +49,7 @@
 }
 
 /* ── Base ────────────────────────────────────────────────────────────────────── */
+html { scroll-behavior: smooth; }
 *, *::before, *::after { box-sizing: border-box; }
 
 body {
@@ -280,7 +281,53 @@ body {
 .landing-nav-link {
   transition: color 0.15s ease;
 }
-.landing-nav-link:hover { color: rgba(255,255,255,0.75) !important; }
+.landing-nav-link:hover { color: rgba(255,255,255,0.9) !important; }
+
+/* ── Landing responsive helpers ───────────────────────────────────────────────── */
+.landing-desktop-only { display: flex; }
+.landing-mobile-only  { display: none; }
+@media (max-width: 768px) {
+  .landing-desktop-only { display: none !important; }
+  .landing-mobile-only  { display: flex !important; }
+}
+
+/* ── Landing feature/pricing card hover ────────────────────────────────────────── */
+.landing-card {
+  transition: transform 0.22s cubic-bezier(0.23,1,0.32,1),
+              border-color 0.22s ease,
+              box-shadow 0.22s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .landing-card:hover {
+    transform: translateY(-4px) scale(1.02);
+    border-color: rgba(255,82,0,0.35) !important;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,82,0,0.15), 0 0 32px rgba(255,82,0,0.08);
+  }
+}
+
+/* ── Landing button hover ────────────────────────────────────────────────────────── */
+.landing-btn-primary {
+  transition: background-color 0.15s ease, transform 0.12s cubic-bezier(0.23,1,0.32,1), box-shadow 0.15s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .landing-btn-primary:hover {
+    background-color: #FF6B1A !important;
+    transform: scale(1.04);
+    box-shadow: 0 6px 24px rgba(255,82,0,0.4);
+  }
+}
+.landing-btn-primary:active { transform: scale(0.97) !important; }
+
+.landing-btn-ghost {
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.12s cubic-bezier(0.23,1,0.32,1);
+}
+@media (hover: hover) and (pointer: fine) {
+  .landing-btn-ghost:hover {
+    background-color: rgba(255,255,255,0.07) !important;
+    transform: scale(1.04);
+  }
+}
+.landing-btn-ghost:active { transform: scale(0.97) !important; }
 
 /* ── Prose spacing fix ────────────────────────────────────────────────────────── */
 p { margin: 0; }
