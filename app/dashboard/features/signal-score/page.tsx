@@ -294,7 +294,7 @@ export default function SignalScorePage() {
   const [showPicker,    setShowPicker]    = useState(false);
   const [weights,       setWeights]       = useState(DEFAULT_WEIGHTS);
   const [saving,        setSaving]        = useState(false);
-  const [saveStatus,    setSaveStatus]    = useState<"idle" | "saved" | "error">("idle");
+  const [saveStatus,    setSaveStatus]    = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   const pickerRef = useRef<HTMLDivElement>(null);
 
@@ -326,7 +326,7 @@ export default function SignalScorePage() {
   // ── save ────
   const save = useCallback(async () => {
     setSaving(true);
-    setSaveStatus("idle");
+    setSaveStatus("saving");
     const { error } = await supabase.auth.updateUser({
       data: { ss_profile: profileId, ss_weights: weights },
     });

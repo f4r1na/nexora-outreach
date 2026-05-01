@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -68,6 +68,7 @@ const SIGNAL_FILTER_OPTIONS = [
 ];
 
 const STATUS_FILTER_OPTIONS = [
+  { value: "all",      label: "All" },
   { value: "active",   label: "Active" },
   { value: "archived", label: "Archived" },
   { value: "testing",  label: "Testing" },
@@ -389,7 +390,7 @@ export default function TemplateVariationsPage() {
   const [generatedSubjects, setGeneratedSubjects] = useState<SubjectLine[] | null>(null);
   const [toneFilter,    setToneFilter]    = useState("all");
   const [signalFilter,  setSignalFilter]  = useState("all");
-  const [statusFilter,  setStatusFilter]  = useState("active");
+  const [statusFilter,  setStatusFilter]  = useState("all");
   const [sortCol,       setSortCol]       = useState<"name" | "tone" | "signal" | "variants" | "replyRate">("replyRate");
   const [sortDir,       setSortDir]       = useState<"asc" | "desc">("desc");
 
@@ -397,12 +398,11 @@ export default function TemplateVariationsPage() {
   const [generating,        setGenerating]        = useState(false);
   const [generatingSubject, setGeneratingSubject] = useState(false);
   const [saving,            setSaving]            = useState(false);
-  const [saveStatus,        setSaveStatus]        = useState<"idle" | "saved" | "error">("idle");
+  const [saveStatus,        setSaveStatus]        = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [usedSubject,       setUsedSubject]        = useState<string | null>(null);
   const [abStopped,         setAbStopped]          = useState(false);
   const [abWinnerApplied,   setAbWinnerApplied]    = useState(false);
 
-  const mountRef = useRef(false);
 
   // --- load from Supabase ---
   useEffect(() => {
@@ -412,14 +412,13 @@ export default function TemplateVariationsPage() {
       if (meta.tv_signal)  setSelectedSignal(meta.tv_signal);
       if (meta.tv_tone)    setSelectedTone(meta.tv_tone);
       if (meta.tv_company) setCompanyName(meta.tv_company);
-      mountRef.current = true;
     })();
   }, []);
 
   // --- save ---
   const save = useCallback(async () => {
     setSaving(true);
-    setSaveStatus("idle");
+    setSaveStatus("saving");
     const { error } = await supabase.auth.updateUser({
       data: {
         tv_signal:  selectedSignal,
@@ -481,9 +480,9 @@ export default function TemplateVariationsPage() {
 
   // --- sort / filter library ---
   const filteredTemplates = templates.filter((t) => {
-    if (toneFilter   !== "all" && t.tone   !== toneFilter)   return false;
-    if (signalFilter !== "all" && t.signal !== signalFilter) return false;
-    if (t.status !== statusFilter) return false;
+    if (toneFilter   !== "all" && t.tone   !== toneFilter)              return false;
+    if (signalFilter !== "all" && t.signal !== signalFilter)            return false;
+    if (statusFilter !== "all" && t.status !== statusFilter)            return false;
     return true;
   }).sort((a, b) => {
     let av: string | number = a[sortCol];
