@@ -39,9 +39,11 @@ export async function POST(req: Request) {
 
   const result = await streamText({
     model: anthropic("claude-sonnet-4-6"),
+    temperature: 0.7,
+    maxTokens: 2000,
     system: `You are the Nexora AI agent - a focused assistant for cold email outreach. You help with campaigns, leads, analytics, inbox management, and follow-ups. Be concise and direct. No filler phrases.${companyCtx}`,
     messages,
   });
 
-  return result.toTextStreamResponse();
+  return result.toDataStreamResponse();
 }
