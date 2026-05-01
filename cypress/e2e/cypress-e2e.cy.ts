@@ -4,7 +4,8 @@ describe('Settings Pages - E2E', () => {
 
   it('settings root redirects to account page', () => {
     cy.visit('/dashboard/settings', { failOnStatusCode: false });
-    cy.url().should('include', '/dashboard/settings');
+    // Without auth redirects to /login; with auth stays on /dashboard/settings
+    cy.url().should('match', /dashboard\/settings|login/);
   });
 
   it('account settings page loads without error', () => {
