@@ -24,6 +24,7 @@ import type { CSSProperties } from "react";
 import { logout } from "@/app/actions/auth";
 import { NexoraLogo } from "@/components/ui/nexora-logo";
 import NavItem from "./NavItem";
+import SoundToggle from "./SoundToggle";
 
 interface SidebarProps {
   email: string;
@@ -284,6 +285,13 @@ export default function Sidebar({
             >
               {planLabel}
             </span>
+          </div>
+        )}
+
+        {/* Sound toggle */}
+        {!collapsed && (
+          <div style={{ marginBottom: 6 }}>
+            <SoundToggle />
           </div>
         )}
 

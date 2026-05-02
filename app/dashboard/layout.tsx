@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import Sidebar from "./_components/Sidebar";
 import MouseGradient from "./_components/MouseGradient";
 import PageWrapper from "./_components/PageWrapper";
+import { SoundProvider } from "./_components/SoundProvider";
 import OnboardingChecklist from "./components/onboarding-checklist";
 import CommandPalette from "./components/command-palette";
 
@@ -35,6 +36,7 @@ export default async function DashboardLayout({
   const pendingReplies = repliesResult.count ?? 0;
 
   return (
+    <SoundProvider>
     <div
       className="dashboard-gradient-bg"
       style={{
@@ -88,5 +90,6 @@ export default async function DashboardLayout({
         }}
       />
     </div>
+    </SoundProvider>
   );
 }

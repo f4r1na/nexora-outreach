@@ -2,6 +2,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowUp } from "lucide-react";
 import { ChangeEvent, FormEvent, KeyboardEvent, useRef, useState } from "react";
+import { playSend } from "@/lib/sounds";
 
 interface InputAreaProps {
   input: string;
@@ -16,10 +17,16 @@ export function InputArea({ input, onChange, onSubmit, isLoading }: InputAreaPro
   const prefersReduced = useReducedMotion();
   const canSend = !isLoading && input.trim().length > 0;
 
+  function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    if (canSend) playSend();
+    onSubmit(e);
+  }
+
   function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       if (canSend) {
+        playSend();
         onSubmit(e as unknown as FormEvent<HTMLFormElement>);
       }
     }
@@ -34,7 +41,7 @@ export function InputArea({ input, onChange, onSubmit, isLoading }: InputAreaPro
 
   return (
     <form
-      onSubmit={onSubmit}
+      onSubmit={handleSubmit}
       style={{ padding: "10px 12px", borderTop: "1px solid rgba(255,255,255,0.06)", flexShrink: 0 }}
     >
       <div
