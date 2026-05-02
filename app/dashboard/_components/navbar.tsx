@@ -21,6 +21,7 @@ type NavItem = { label: string; href: string; exact?: boolean };
 
 const NAV: NavItem[] = [
   { label: "Agent",       href: "/dashboard",                exact: true },
+  { label: "Chat",        href: "/dashboard/agent"                       },
   { label: "Campaigns",   href: "/dashboard/campaigns"                   },
   { label: "Inbox",       href: "/dashboard/inbox"                       },
   { label: "Preferences", href: "/dashboard/preferences"                 },
