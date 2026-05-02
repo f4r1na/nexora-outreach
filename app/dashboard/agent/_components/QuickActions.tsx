@@ -34,11 +34,11 @@ export function QuickActions({ onSend }: QuickActionsProps) {
           }}
           style={{
             padding: "6px 10px",
-            background: "rgba(255,255,255,0.03)",
-            border: "1px solid rgba(255,255,255,0.06)",
+            background: "rgba(255,82,0,0.05)",
+            border: "1px solid rgba(255,82,0,0.15)",
             borderRadius: 6,
             fontSize: 13,
-            color: "rgba(255,255,255,0.55)",
+            color: "rgba(255,130,0,0.8)",
             cursor: "pointer",
             textAlign: "left",
             display: "flex",
@@ -46,15 +46,17 @@ export function QuickActions({ onSend }: QuickActionsProps) {
             gap: 8,
             minHeight: 48,
             fontFamily: "var(--font-outfit)",
-            transition: "background 150ms, color 150ms",
+            transition: "background 150ms, color 150ms, border-color 150ms",
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = "rgba(255,255,255,0.06)";
-            e.currentTarget.style.color = "#fff";
+            e.currentTarget.style.background = "rgba(255,82,0,0.12)";
+            e.currentTarget.style.color = "#FF7A30";
+            e.currentTarget.style.borderColor = "rgba(255,82,0,0.35)";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = "rgba(255,255,255,0.03)";
-            e.currentTarget.style.color = "rgba(255,255,255,0.55)";
+            e.currentTarget.style.background = "rgba(255,82,0,0.05)";
+            e.currentTarget.style.color = "rgba(255,130,0,0.8)";
+            e.currentTarget.style.borderColor = "rgba(255,82,0,0.15)";
           }}
         >
           <Icon size={15} />

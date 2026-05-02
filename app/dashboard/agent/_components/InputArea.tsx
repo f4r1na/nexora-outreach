@@ -39,14 +39,15 @@ export function InputArea({ input, onChange, onSubmit, isLoading }: InputAreaPro
     >
       <div
         style={{
-          background: "rgba(255,255,255,0.04)",
-          border: "1px solid rgba(255,255,255,0.08)",
+          background: "rgba(255,255,255,0.08)",
+          border: "1px solid rgba(255,255,255,0.1)",
           borderRadius: 999,
-          padding: "8px 8px 8px 16px",
+          padding: "0 8px 0 16px",
           display: "flex",
           alignItems: "center",
           gap: 8,
-          boxShadow: focused ? "0 0 0 3px rgba(255,82,0,0.2)" : "none",
+          minHeight: 56,
+          boxShadow: focused ? "0 0 0 4px rgba(255,82,0,0.2)" : "none",
           transition: "box-shadow 200ms ease",
         }}
       >
@@ -84,9 +85,9 @@ export function InputArea({ input, onChange, onSubmit, isLoading }: InputAreaPro
           transition={{ type: "spring", stiffness: 400, damping: 17 }}
           aria-label="Send message"
           style={{
-            width: 32,
-            height: 32,
-            borderRadius: 8,
+            width: 38,
+            height: 38,
+            borderRadius: 999,
             background: canSend ? "#FF5200" : "rgba(255,255,255,0.08)",
             border: "none",
             cursor: canSend ? "pointer" : "not-allowed",
@@ -98,7 +99,7 @@ export function InputArea({ input, onChange, onSubmit, isLoading }: InputAreaPro
             transition: "background 150ms ease",
           }}
         >
-          <ArrowUp size={16} />
+          <ArrowUp size={18} />
         </motion.button>
       </div>
     </form>

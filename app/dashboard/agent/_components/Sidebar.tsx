@@ -1,9 +1,17 @@
 "use client";
 import { AnimatePresence, motion } from "framer-motion";
+import { Check } from "lucide-react";
 import { useEffect } from "react";
 import { ContextPanel } from "./ContextPanel";
 import { QuickActions } from "./QuickActions";
 import { RecentChats } from "./RecentChats";
+
+const CAPABILITIES = [
+  "Analyze campaign performance",
+  "Draft personalized emails",
+  "Identify follow-up opportunities",
+  "Summarize inbox replies",
+];
 
 interface SidebarProps {
   isOpen: boolean;
@@ -21,7 +29,7 @@ function SidebarBody({
   currentChatId: string;
 }) {
   return (
-    <div style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 16 }}>
+    <div style={{ flex: 1, overflowY: "auto", padding: 12, display: "flex", flexDirection: "column", gap: 24 }}>
       <div>
         <p style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>Active Campaign</p>
         <ContextPanel />
@@ -29,6 +37,17 @@ function SidebarBody({
       <div>
         <p style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Quick Actions</p>
         <QuickActions onSend={onSend} />
+      </div>
+      <div>
+        <p style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 8 }}>Agent Capabilities</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {CAPABILITIES.map((cap) => (
+            <div key={cap} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Check size={13} color="#00D084" strokeWidth={2.5} />
+              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", fontFamily: "var(--font-outfit)" }}>{cap}</span>
+            </div>
+          ))}
+        </div>
       </div>
       <div>
         <p style={{ fontSize: 9, color: "rgba(255,255,255,0.3)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 6 }}>Recent Chats</p>
@@ -102,7 +121,7 @@ export function Sidebar({ isOpen, isMobile, onClose, onSend, currentChatId }: Si
           id="agent-sidebar"
           key="desktop-sidebar"
           initial={{ width: 0, opacity: 0 }}
-          animate={{ width: "45%", opacity: 1 }}
+          animate={{ width: "35%", opacity: 1 }}
           exit={{ width: 0, opacity: 0 }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
           style={{

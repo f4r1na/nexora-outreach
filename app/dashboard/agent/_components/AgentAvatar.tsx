@@ -24,8 +24,8 @@ export function AgentAvatar({ isLoading }: { isLoading: boolean }) {
           : {}
       }
       style={{
-        width: 28,
-        height: 28,
+        width: 32,
+        height: 32,
         borderRadius: "50%",
         background: "linear-gradient(135deg, #FF5200, #F59E0B)",
         flexShrink: 0,

@@ -3,14 +3,16 @@ import { Message } from "ai";
 import { useEffect, useRef } from "react";
 import { AgentAvatar } from "./AgentAvatar";
 import { MessageBubble } from "./MessageBubble";
+import { WelcomeCard } from "./WelcomeCard";
 
 interface MessageListProps {
   messages: Message[];
   isLoading: boolean;
   freshMessageIds: Set<string>;
+  onSend?: (msg: string) => void;
 }
 
-export function MessageList({ messages, isLoading, freshMessageIds }: MessageListProps) {
+export function MessageList({ messages, isLoading, freshMessageIds, onSend }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,23 +32,27 @@ export function MessageList({ messages, isLoading, freshMessageIds }: MessageLis
       aria-busy={isLoading}
       style={{
         flex: 1,
-        padding: "16px",
+        padding: "24px",
         display: "flex",
         flexDirection: "column",
         gap: 12,
         overflowY: "auto",
       }}
     >
-      {messages.map((msg, i) => (
-        <MessageBubble
-          key={msg.id}
-          role={msg.role as "user" | "assistant"}
-          content={msg.content}
-          isFresh={freshMessageIds.has(msg.id)}
-          isLast={i === messages.length - 1}
-          isLoading={isLoading}
-        />
-      ))}
+      {messages.map((msg, i) =>
+        msg.id === "welcome" ? (
+          <WelcomeCard key={msg.id} onSend={onSend ?? (() => {})} />
+        ) : (
+          <MessageBubble
+            key={msg.id}
+            role={msg.role as "user" | "assistant"}
+            content={msg.content}
+            isFresh={freshMessageIds.has(msg.id)}
+            isLast={i === messages.length - 1}
+            isLoading={isLoading}
+          />
+        )
+      )}
       {showThinking && (
         <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
           <AgentAvatar isLoading={true} />

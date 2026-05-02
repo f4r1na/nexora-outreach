@@ -106,7 +106,7 @@ export function ChatInterface({ chatId }: ChatInterfaceProps) {
           transition={{ duration: 0.4, delay: 0.1 }}
           style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}
         >
-          <MessageList messages={messages} isLoading={isLoading} freshMessageIds={freshIds.current} />
+          <MessageList messages={messages} isLoading={isLoading} freshMessageIds={freshIds.current} onSend={handleQuickAction} />
           <InputArea input={input} onChange={handleInputChange} onSubmit={handleSubmit} isLoading={isLoading} />
         </motion.main>
 

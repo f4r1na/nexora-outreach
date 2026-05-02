@@ -53,7 +53,7 @@ export function MessageBubble({
             background: isUser ? "rgba(255,82,0,0.12)" : "rgba(255,255,255,0.05)",
             border: `1px solid ${isUser ? "rgba(255,82,0,0.2)" : "rgba(255,255,255,0.08)"}`,
             borderRadius: isUser ? "12px 4px 12px 12px" : "4px 12px 12px 12px",
-            padding: "8px 12px",
+            padding: "10px 14px",
             fontSize: 14,
             color: isUser ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.82)",
             lineHeight: 1.6,
