@@ -9,7 +9,7 @@ export default function MouseGradient() {
     const el = ref.current;
     if (!el) return;
 
-    let raf: number;
+    let raf = 0;
     let tx = window.innerWidth / 2;
     let ty = window.innerHeight / 2;
     let cx = tx;

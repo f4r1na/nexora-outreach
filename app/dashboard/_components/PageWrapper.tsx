@@ -18,7 +18,7 @@ export default function PageWrapper({ children }: { children: React.ReactNode })
     <motion.div
       key={pathname}
       variants={variants}
-      initial="hidden"
+      initial={false}
       animate="visible"
       style={{ flex: 1, display: "flex", flexDirection: "column" }}
     >
