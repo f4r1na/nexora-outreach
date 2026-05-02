@@ -73,59 +73,95 @@ export function ChatInterface({ chatId }: ChatInterfaceProps) {
   return (
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#080810", overflow: "hidden" }}>
       {/* Header */}
-      <motion.div
-        initial={prefersReduced ? false : { y: 16, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.4 }}
-        style={{ padding: "0 16px", height: 52, borderBottom: "1px solid rgba(255,255,255,0.06)", display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}
+      <div
+        style={{
+          padding: "0 16px",
+          height: 52,
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          flexShrink: 0,
+        }}
       >
         <AgentAvatar isLoading={false} />
-        <span style={{ fontSize: 14, color: "#fff", fontFamily: "var(--font-space-grotesk)", fontWeight: 600 }}>Nexora Agent</span>
+        <span style={{ fontSize: 14, color: "#fff", fontFamily: "var(--font-space-grotesk)", fontWeight: 600 }}>
+          Nexora Agent
+        </span>
         <button
           onClick={() => setSidebarOpen((o) => !o)}
           aria-expanded={sidebarOpen}
           aria-controls="agent-sidebar"
           aria-label="Toggle sidebar"
-          style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.4)", padding: 4, minWidth: 48, minHeight: 48, display: "flex", alignItems: "center", justifyContent: "center", transition: "color 150ms" }}
+          style={{
+            marginLeft: "auto",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: "rgba(255,255,255,0.4)",
+            padding: 4,
+            minWidth: 48,
+            minHeight: 48,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "color 150ms",
+          }}
           onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; }}
           onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.4)"; }}
         >
-          <motion.div animate={{ rotate: sidebarOpen ? 180 : 0 }} transition={{ duration: 0.3 }} style={{ display: "flex" }}>
+          <motion.div
+            animate={{ rotate: sidebarOpen ? 180 : 0 }}
+            transition={{ duration: 0.3 }}
+            style={{ display: "flex" }}
+          >
             <PanelRight size={18} />
           </motion.div>
         </button>
-      </motion.div>
+      </div>
 
       {/* Body */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        {/* Chat column */}
-        <motion.main
+        {/* Chat column - flex: 1, always fills remaining space */}
+        <main
           role="main"
-          initial={prefersReduced ? false : { y: 16, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.4, delay: 0.1 }}
-          style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}
+          style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minWidth: 0 }}
         >
-          <MessageList messages={messages} isLoading={isLoading} freshMessageIds={freshIds.current} onSend={handleQuickAction} />
-          <InputArea input={input} onChange={handleInputChange} onSubmit={handleSubmit} isLoading={isLoading} />
-        </motion.main>
+          <MessageList
+            messages={messages}
+            isLoading={isLoading}
+            freshMessageIds={freshIds.current}
+            onSend={handleQuickAction}
+          />
+          <InputArea
+            input={input}
+            onChange={handleInputChange}
+            onSubmit={handleSubmit}
+            isLoading={isLoading}
+          />
+        </main>
 
-        {/* Desktop sidebar */}
+        {/* Desktop sidebar - fixed 400px, animated via Sidebar component */}
         {!isMobile && (
-          <motion.div
-            initial={prefersReduced ? false : { y: 16, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.2 }}
-            style={{ display: "flex" }}
-          >
-            <Sidebar isOpen={sidebarOpen} isMobile={false} onClose={() => setSidebarOpen(false)} onSend={handleQuickAction} currentChatId={chatId} />
-          </motion.div>
+          <Sidebar
+            isOpen={sidebarOpen}
+            isMobile={false}
+            onClose={() => setSidebarOpen(false)}
+            onSend={handleQuickAction}
+            currentChatId={chatId}
+          />
         )}
       </div>
 
       {/* Mobile sidebar modal */}
       {isMobile && (
-        <Sidebar isOpen={sidebarOpen} isMobile={true} onClose={() => setSidebarOpen(false)} onSend={handleQuickAction} currentChatId={chatId} />
+        <Sidebar
+          isOpen={sidebarOpen}
+          isMobile={true}
+          onClose={() => setSidebarOpen(false)}
+          onSend={handleQuickAction}
+          currentChatId={chatId}
+        />
       )}
     </div>
   );
