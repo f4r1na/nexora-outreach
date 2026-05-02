@@ -66,8 +66,13 @@ export async function POST(req: NextRequest) {
   const file = formData.get("file") as File | null;
   if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
 
+  // 10 MB hard limit — prevents DoS via large file uploads
+  const MAX_BYTES = 10 * 1024 * 1024;
+  if (file.size > MAX_BYTES) {
+    return NextResponse.json({ error: "File too large. Maximum size is 10 MB." }, { status: 413 });
+  }
+
   const ext = file.name.split(".").pop()?.toLowerCase();
-  console.log("[parse-file] file:", file.name, "ext:", ext, "plan:", plan);
 
   if (ext === "docx") {
     if (plan !== "agency") {
@@ -78,13 +83,10 @@ export async function POST(req: NextRequest) {
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
       const result = await mammoth.extractRawText({ buffer });
-      console.log("[parse-file] DOCX text length:", result.value.length);
       const leads = textToLeads(result.value);
-      console.log("[parse-file] DOCX leads extracted:", leads.length);
       return NextResponse.json({ leads });
-    } catch (err: any) {
-      console.error("[parse-file] DOCX parse error:", err.message);
-      return NextResponse.json({ error: "Failed to parse Word document: " + err.message }, { status: 500 });
+    } catch {
+      return NextResponse.json({ error: "Failed to parse Word document." }, { status: 500 });
     }
   }
 

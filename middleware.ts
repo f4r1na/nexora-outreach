@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: { headers: request.headers },
   });
@@ -29,16 +29,19 @@ export async function proxy(request: NextRequest) {
     }
   );
 
+  // Refreshes the session cookie on every request — required for Supabase SSR
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
 
+  // Protect all /dashboard routes
   if (pathname.startsWith("/dashboard") && !user) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
+  // Redirect authenticated users away from auth pages
   if ((pathname === "/login" || pathname === "/signup") && user) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
@@ -47,5 +50,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };
