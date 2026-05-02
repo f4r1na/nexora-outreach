@@ -163,6 +163,19 @@ export async function POST(req: NextRequest) {
 
         const db = getServiceClient();
 
+        // ── Verify campaign ownership ─────────────────────────────────────────
+        const { data: campaignOwner } = await db
+          .from("campaigns")
+          .select("id")
+          .eq("id", campaignId)
+          .eq("user_id", user.id)
+          .single();
+        if (!campaignOwner) {
+          event(controller, { type: "error", message: "Campaign not found" });
+          controller.close();
+          return;
+        }
+
         // ── Plan check ───────────────────────────────────────────────────────
         const { data: sub } = await db
           .from("subscriptions")

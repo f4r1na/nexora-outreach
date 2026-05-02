@@ -25,7 +25,12 @@ export async function GET(
     ) as { lead_id: string; url: string };
 
     const { lead_id: leadId, url } = decoded;
-    targetUrl = url;
+
+    // Only redirect to http/https URLs to prevent javascript: / data: redirects
+    if (typeof url === "string" && /^https?:\/\//i.test(url)) {
+      targetUrl = url;
+    }
+
 
     const db = getServiceClient();
 

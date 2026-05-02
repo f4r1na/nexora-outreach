@@ -9,9 +9,9 @@ Auditor: automated + manual review
 | Category | Findings | Fixed in this audit |
 |---|---|---|
 | CRITICAL | 0 | — |
-| HIGH | 3 | 3 |
-| MEDIUM | 5 | 5 |
-| LOW | 3 | 3 |
+| HIGH | 4 | 4 |
+| MEDIUM | 8 | 8 |
+| LOW | 5 | 5 |
 | INFO | 4 | — |
 
 **Verdict: CONDITIONAL GO**
@@ -135,19 +135,47 @@ All six tables previously missing RLS have been fixed. Run `supabase/migrations/
 
 ## Phase 3 — API Security
 
-### Rate Limiting
+### Rate Limiting — FIXED (MEDIUM)
 
-All AI-backed routes (`/api/agent`, `/api/chat`, `/api/generate`, etc.) have per-user in-memory rate limiting (10 req/60s). PASS.
+| Route | Before | After |
+|---|---|---|
+| `/api/agent` | 10 req/60s | PASS (unchanged) |
+| `/api/chat` | 10 req/60s | PASS (unchanged) |
+| `/api/generate` | **None** | 10 req/hour — FIXED |
+| `/api/leads/intelligence` | 20 req/hour | PASS (unchanged) |
+| `/api/signals/research` | **None** | 10 req/hour — FIXED |
+| `/api/campaign/wizard` | 10 req/hour | PASS (unchanged) |
+| `/api/replies/draft` | **None** | 30 req/hour — FIXED |
 
 ### Input Validation
 
 - `/api/agent`: prompt length capped at 2000 chars. PASS.
 - `/api/parse-file`: file size now enforced at 10 MB (was unlimited). FIXED.
 - Error messages normalized — internal errors no longer leak `err.message` to the client. FIXED.
+- `/api/replies/delete`: fatal error handler was leaking `err.message` to client. FIXED.
 
-### Ownership Checks
+### Ownership Checks — FIXED (HIGH)
 
-All campaign/lead queries are scoped to `user_id = auth.uid()` via RLS. API routes use the anon client (RLS-enforced) for user-scoped reads. Service role is used only for cross-user operations (signals cron, email sending). PASS.
+**`/api/campaigns/send` IDOR:** Leads were fetched by `campaign_id` using the service client without first verifying the campaign belongs to the authenticated user. An attacker could provide another user's `campaign_id` and trigger email sends from that campaign.
+
+**Fix:** Added campaign ownership check (`campaigns.eq("user_id", user.id)`) immediately after auth, before any lead access.
+
+All other routes verified:
+- `/api/campaigns/[id]` (PATCH/DELETE): verifies ownership before operation. PASS.
+- `/api/replies/delete`: verifies `user_id = user.id` before delete. PASS.
+- `/api/signals/delete`: verifies campaign ownership before clearing signals. PASS.
+- `/api/followups/action`: verifies sequence ownership before status change. PASS.
+- `/api/leads/intelligence`: filters lead IDs through anon client (RLS). PASS.
+
+### Tracking Endpoints
+
+- `/api/track/open/[id]`: no auth required by design (email pixel). Deduplicates opens per lead. PASS.
+- `/api/track/click/[id]` — **Open Redirect (LOW) — FIXED:** The base64-encoded payload `{ lead_id, url }` was used as the redirect target without URL validation. An attacker could craft a token redirecting to an arbitrary URL. Fixed: URL validated to match `^https?://` before use as redirect target.
+- `/api/unsubscribe`: token is `base64url(leadId)` — not signed, but UUID v4 keyspace (2^122) makes guessing impractical. PASS/INFO.
+
+### Service Role Usage
+
+Service role client is used only where required: cross-user signal cron, email sending, ownership pre-checks via service client. All user-scoped data access uses the anon client (RLS-enforced). PASS.
 
 ---
 
