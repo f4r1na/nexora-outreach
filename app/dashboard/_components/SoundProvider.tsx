@@ -14,20 +14,21 @@ const SoundContext = createContext<SoundContextType>({
 });
 
 export function SoundProvider({ children }: { children: React.ReactNode }) {
-  const [soundsEnabled, setSoundsState] = useState(true);
+  const [soundsEnabled, setSoundsState] = useState<boolean | null>(null);
 
   useEffect(() => {
     setSoundsState(getSoundsEnabled());
   }, []);
 
   function toggleSounds() {
-    const next = !soundsEnabled;
+    const next = !(soundsEnabled ?? true);
     setSoundsState(next);
     setSoundsEnabled(next);
   }
 
+  // Provide `true` as fallback while not yet hydrated — avoids null propagation
   return (
-    <SoundContext.Provider value={{ soundsEnabled, toggleSounds }}>
+    <SoundContext.Provider value={{ soundsEnabled: soundsEnabled ?? true, toggleSounds }}>
       {children}
     </SoundContext.Provider>
   );

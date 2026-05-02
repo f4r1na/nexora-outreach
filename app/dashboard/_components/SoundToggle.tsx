@@ -7,10 +7,10 @@ import { playClick } from "@/lib/sounds";
 export default function SoundToggle() {
   const { soundsEnabled, toggleSounds } = useSounds();
 
-  async function handleToggle() {
+  function handleToggle() {
     toggleSounds();
     if (!soundsEnabled) {
-      await playClick();
+      void playClick();
     }
   }
 

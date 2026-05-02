@@ -36,6 +36,9 @@ async function playNotes(
   attack = 0.001
 ): Promise<void> {
   if (!isEnabled()) return;
+  if (notes.length !== durations.length) {
+    throw new Error(`playNotes: notes (${notes.length}) and durations (${durations.length}) must have the same length`);
+  }
   if (typeof window === "undefined") return;
   try {
     const Tone = await getTone();
