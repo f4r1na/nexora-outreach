@@ -11,6 +11,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Linkedin,
 } from "lucide-react";
 import { toast } from "sonner";
 import TimingBadge from "@/app/dashboard/components/timing-badge";
@@ -145,9 +146,6 @@ export default function LeadPanel({
   const [signals, setSignals] = useState<Signal[]>([]);
   const [sigLoading, setSigLoading] = useState(false);
   const [discardedIds, setDiscardedIds] = useState<Set<string>>(new Set());
-  const [githubUrl, setGithubUrl] = useState("");
-  const [githubLoading, setGithubLoading] = useState(false);
-  const [showGithubInput, setShowGithubInput] = useState(false);
   const [signalScores, setSignalScores] = useState<Record<string, { score: number; conversion_rate: number }>>({});
   const [scoresFounderType, setScoresFounderType] = useState<string>("");
   const panelRef = useRef<HTMLDivElement>(null);
@@ -187,8 +185,6 @@ export default function LeadPanel({
       setSignals([]);
       setSigLoading(false);
       setDiscardedIds(new Set());
-      setShowGithubInput(false);
-      setGithubUrl("");
       return;
     }
     setSigLoading(true);
@@ -263,34 +259,6 @@ export default function LeadPanel({
     }
   };
 
-  const handleGithubCheck = async () => {
-    if (!lead || !githubUrl.trim() || githubLoading) return;
-    setGithubLoading(true);
-    try {
-      const res = await fetch("/api/signals/github/detect", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lead_id: lead.id, repo_url: githubUrl.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error ?? "GitHub check failed");
-        return;
-      }
-      if (data.signals?.length > 0) {
-        setSignals((prev) => [...(data.signals as Signal[]), ...prev]);
-        toast.success(data.message);
-      } else {
-        toast(data.message, { style: { color: "#888" } });
-      }
-      setShowGithubInput(false);
-      setGithubUrl("");
-    } catch {
-      toast.error("GitHub check failed");
-    } finally {
-      setGithubLoading(false);
-    }
-  };
 
   const isOpen = !!lead;
   const score = lead
@@ -437,6 +405,28 @@ export default function LeadPanel({
                 >
                   {lead.email}
                 </p>
+                <a
+                  href={`https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(`${lead.first_name} ${lead.company}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="View on LinkedIn"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    marginTop: 6,
+                    fontSize: 11,
+                    color: "#FF5200",
+                    textDecoration: "none",
+                    fontFamily: "var(--font-outfit)",
+                    transition: "opacity 150ms",
+                  }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.opacity = "0.75"; }}
+                  onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.opacity = "1"; }}
+                >
+                  <Linkedin size={13} />
+                  View on LinkedIn
+                </a>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
                 {(onPrev || onNext) && (
@@ -860,75 +850,6 @@ export default function LeadPanel({
                   </div>
                 )}
 
-                {/* GitHub signal check */}
-                <div style={{ marginTop: 10, borderTop: "1px solid rgba(255,255,255,0.04)", paddingTop: 10 }}>
-                  {showGithubInput ? (
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <input
-                        value={githubUrl}
-                        onChange={(e) => setGithubUrl(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleGithubCheck();
-                          if (e.key === "Escape") setShowGithubInput(false);
-                        }}
-                        placeholder="github.com/owner/repo"
-                        className="nx-input"
-                        style={{ flex: 1, fontSize: 11, padding: "5px 9px" }}
-                        autoFocus
-                      />
-                      <button
-                        onClick={handleGithubCheck}
-                        disabled={githubLoading || !githubUrl.trim()}
-                        style={{
-                          fontSize: 11,
-                          color: "#fff",
-                          backgroundColor: githubLoading || !githubUrl.trim() ? "rgba(255,82,0,0.3)" : "#FF5200",
-                          border: "none",
-                          borderRadius: 6,
-                          padding: "5px 11px",
-                          cursor: githubLoading || !githubUrl.trim() ? "not-allowed" : "pointer",
-                          fontFamily: "var(--font-outfit)",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {githubLoading ? "Checking..." : "Check"}
-                      </button>
-                      <button
-                        onClick={() => { setShowGithubInput(false); setGithubUrl(""); }}
-                        style={{
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          width: 28, height: 28, borderRadius: 6,
-                          border: "1px solid rgba(255,255,255,0.07)",
-                          backgroundColor: "transparent", color: "#444", cursor: "pointer",
-                        }}
-                      >
-                        <X size={10} />
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setShowGithubInput(true)}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 5,
-                        fontSize: 10,
-                        color: "#555",
-                        backgroundColor: "transparent",
-                        border: "1px solid rgba(255,255,255,0.07)",
-                        borderRadius: 5,
-                        padding: "3px 8px",
-                        cursor: "pointer",
-                        fontFamily: "var(--font-outfit)",
-                      }}
-                    >
-                      <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
-                      </svg>
-                      Check GitHub
-                    </button>
-                  )}
-                </div>
               </div>
 
               {/* Timing Badge */}
