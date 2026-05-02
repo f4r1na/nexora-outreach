@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./styles/animations.css";
 
 @theme inline {
   --font-space-grotesk: var(--font-space-grotesk);
@@ -22,7 +23,7 @@
   --orange-h: #FF6B1A;
   --amber:    #F59E0B;
   --amber-h:  #FBBF24;
-  --sidebar-width: 240px;
+  --sidebar-width: 280px;
 
   /* Easing */
   --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);
@@ -476,6 +477,55 @@ ul, ol { margin: 0; padding: 0; }
   .username-pulse, .breathe-glow {
     animation: none !important;
   }
+}
+
+/* ── Animated dashboard gradient background ──────────────────────────────────── */
+.dashboard-gradient-bg {
+  background: linear-gradient(-45deg, #0a0a2e, #1a0a3e, #2d0a4e, #1a0a3e, #080820, #0d1a3e, #1a0d3a, #2a0a4a);
+  background-size: 400% 400%;
+  animation: gradient-shift 25s ease infinite;
+}
+
+/* Gradient overlay — softer version layered on top of the animated bg */
+.gradient-overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(ellipse at top left, rgba(59,130,246,0.08) 0%, transparent 50%),
+              radial-gradient(ellipse at top right, rgba(168,85,247,0.06) 0%, transparent 50%),
+              radial-gradient(ellipse at bottom right, rgba(236,72,153,0.06) 0%, transparent 50%),
+              radial-gradient(ellipse at bottom left, rgba(255,82,0,0.08) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Nav item aura effect */
+.nav-aura {
+  position: absolute;
+  inset: -4px;
+  border-radius: 12px;
+  opacity: 0;
+  background: radial-gradient(ellipse at center, rgba(255,82,0,0.25) 0%, transparent 70%);
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+.nav-item-wrap:hover .nav-aura { opacity: 1; animation: aura-pulse 1.5s ease-in-out infinite; }
+
+/* Loading dot */
+.dot-loader span {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: rgba(255,82,0,0.7);
+  animation: dot-pulse 1.2s ease-in-out infinite;
+}
+.dot-loader span:nth-child(2) { animation-delay: 0.2s; }
+.dot-loader span:nth-child(3) { animation-delay: 0.4s; }
+
+/* Reduced motion overrides for new animations */
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-gradient-bg { animation: none !important; }
+  .nav-aura { animation: none !important; }
+  .dot-loader span { animation: none !important; }
 }
 
 /* Campaign wizard */

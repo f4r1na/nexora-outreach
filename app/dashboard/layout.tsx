@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Toaster } from "sonner";
-import Link from "next/link";
-import Navbar from "./_components/navbar";
+import Sidebar from "./_components/Sidebar";
 import OnboardingChecklist from "./components/onboarding-checklist";
 import CommandPalette from "./components/command-palette";
 
@@ -15,32 +14,58 @@ export default async function DashboardLayout({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: sub } = await supabase
-    .from("subscriptions")
-    .select("plan")
-    .eq("user_id", user.id)
-    .single();
+  const [subResult, repliesResult] = await Promise.all([
+    supabase
+      .from("subscriptions")
+      .select("plan, credits_used, credits_limit")
+      .eq("user_id", user.id)
+      .single(),
+    supabase
+      .from("replies")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .neq("status", "handled"),
+  ]);
 
-  const plan = sub?.plan ?? "free";
+  const plan = subResult.data?.plan ?? "free";
+  const creditsUsed = subResult.data?.credits_used ?? 0;
+  const creditsLimit = subResult.data?.credits_limit ?? 10;
+  const pendingReplies = repliesResult.count ?? 0;
 
   return (
-    <div style={{ backgroundColor: "#080810", minHeight: "100vh", position: "relative", overflow: "hidden" }}>
-      <Navbar email={user.email!} plan={plan} />
-      <div style={{ paddingTop: 60, minHeight: "100vh", display: "flex", flexDirection: "column", position: "relative", zIndex: 1 }}>
+    <div
+      className="dashboard-gradient-bg"
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        position: "relative",
+      }}
+    >
+      <div className="gradient-overlay" />
+
+      <Sidebar
+        email={user.email!}
+        plan={plan}
+        creditsUsed={creditsUsed}
+        creditsLimit={creditsLimit}
+        pendingReplies={pendingReplies}
+      />
+
+      <main
+        style={{
+          marginLeft: 280,
+          flex: 1,
+          minWidth: 0,
+          position: "relative",
+          zIndex: 1,
+          display: "flex",
+          flexDirection: "column",
+          minHeight: "100vh",
+        }}
+      >
         {children}
-        <footer style={{
-          marginTop: "auto",
-          borderTop: "1px solid rgba(255,255,255,0.05)",
-          padding: "14px 28px",
-          display: "flex", gap: 20, flexWrap: "wrap",
-        }}>
-          {[["Privacy", "/privacy"], ["Terms", "/terms"], ["Cookies", "/cookies"], ["Contact", "/contact"]].map(([label, href]) => (
-            <Link key={label} href={href} style={{ fontSize: 11.5, color: "rgba(255,255,255,0.22)", textDecoration: "none" }}>
-              {label}
-            </Link>
-          ))}
-        </footer>
-      </div>
+      </main>
+
       <CommandPalette />
       <OnboardingChecklist />
       <Toaster

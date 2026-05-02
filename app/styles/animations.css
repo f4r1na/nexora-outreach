@@ -1,0 +1,57 @@
+/* Animated background gradient — blue → purple → pink → orange */
+@keyframes gradient-shift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Nav item aura pulse on hover */
+@keyframes aura-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(1); }
+  50%       { opacity: 0.7; transform: scale(1.08); }
+}
+
+/* Icon scale bounce on active */
+@keyframes icon-bounce {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.18); }
+  70%  { transform: scale(0.94); }
+  100% { transform: scale(1); }
+}
+
+/* Logo flip (3D Y-axis) — used in Day 4 */
+@keyframes logo-flip {
+  0%   { transform: rotateY(0deg); }
+  50%  { transform: rotateY(180deg); }
+  100% { transform: rotateY(360deg); }
+}
+
+/* Message slide-in */
+@keyframes msg-slide-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Pulsing loading dots */
+@keyframes dot-pulse {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.3; }
+  40%            { transform: scale(1);   opacity: 1; }
+}
+
+/* Page transition slide */
+@keyframes page-slide-in {
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Input focus lift */
+@keyframes input-lift {
+  from { transform: translateY(0); box-shadow: none; }
+  to   { transform: translateY(-1px); box-shadow: 0 8px 32px rgba(255,82,0,0.15); }
+}
+
+/* Sidebar shimmer on load */
+@keyframes sidebar-shimmer {
+  from { opacity: 0; transform: translateX(-20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
