@@ -1,11 +1,11 @@
 "use client";
+import { Message } from "ai";
 import { useEffect, useRef } from "react";
-import { ChatMessage } from "../_lib/types";
 import { AgentAvatar } from "./AgentAvatar";
 import { MessageBubble } from "./MessageBubble";
 
 interface MessageListProps {
-  messages: ChatMessage[];
+  messages: Message[];
   isLoading: boolean;
   freshMessageIds: Set<string>;
 }
