@@ -20,6 +20,7 @@ export default function NavItem({ href, label, icon: Icon, active, badge, collap
       <Link
         href={href}
         title={collapsed ? label : undefined}
+        className="glow-ring"
         style={{
           display: "flex",
           alignItems: "center",

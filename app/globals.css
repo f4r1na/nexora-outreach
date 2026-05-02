@@ -528,6 +528,64 @@ ul, ol { margin: 0; padding: 0; }
   .dot-loader span { animation: none !important; }
 }
 
+/* Nav item hover state (CSS companion to NavItem.tsx) */
+.nav-item-wrap:hover > a {
+  color: rgba(255,255,255,0.72) !important;
+  background-color: rgba(255,255,255,0.04) !important;
+}
+
+/* Input focus lift (applies to .nx-input) */
+.nx-input:focus {
+  border-color: rgba(255,82,0,0.45) !important;
+  box-shadow: 0 0 0 3px rgba(255,82,0,0.12), 0 4px 20px rgba(255,82,0,0.08);
+  transform: translateY(-1px);
+  transition: border-color 0.18s ease, box-shadow 0.22s ease, transform 0.18s ease;
+}
+
+/* Layered shadow depth system */
+.shadow-depth-1 {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+}
+.shadow-depth-2 {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.04);
+}
+.shadow-depth-3 {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.06), 0 0 40px rgba(255,82,0,0.06);
+}
+
+/* Glow ring — for active/focused interactive elements */
+.glow-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255,82,0,0.5), 0 0 16px rgba(255,82,0,0.2);
+}
+
+/* Message animation (for agent/chat pages) */
+.msg-enter {
+  animation: msg-slide-in 0.28s cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+
+/* Sidebar glass glow on hover */
+.sidebar-glow {
+  transition: box-shadow 0.3s ease;
+}
+.sidebar-glow:hover {
+  box-shadow: inset 0 0 40px rgba(255,82,0,0.03);
+}
+
+/* Stat card glow on hover (upgrade from current) */
+.stat-card:hover {
+  border-color: rgba(255,82,0,0.2) !important;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,82,0,0.08) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Reduced motion: disable all custom CSS animations */
+@media (prefers-reduced-motion: reduce) {
+  .nx-input:focus { transform: none !important; }
+  .stat-card:hover { transform: none !important; }
+  .msg-enter { animation: none !important; }
+}
+
 /* Campaign wizard */
 @keyframes wiz-fade-up {
   from { opacity: 0; transform: translateY(12px); }

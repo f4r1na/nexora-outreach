@@ -132,6 +132,7 @@ export default function Sidebar({
 
   return (
     <motion.aside
+      className="sidebar-glow"
       initial={{ x: -20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ duration: 0.4, ease: EASE }}
@@ -290,7 +291,7 @@ export default function Sidebar({
         <form action={logout}>
           <button
             type="submit"
-            className="btn-ghost"
+            className="btn-ghost glow-ring"
             aria-label="Sign out"
             title={collapsed ? "Sign out" : undefined}
             style={{

@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Toaster } from "sonner";
 import Sidebar from "./_components/Sidebar";
+import MouseGradient from "./_components/MouseGradient";
+import PageWrapper from "./_components/PageWrapper";
 import OnboardingChecklist from "./components/onboarding-checklist";
 import CommandPalette from "./components/command-palette";
 
@@ -42,6 +44,7 @@ export default async function DashboardLayout({
       }}
     >
       <div className="gradient-overlay" />
+      <MouseGradient />
 
       <Sidebar
         email={user.email!}
@@ -63,7 +66,9 @@ export default async function DashboardLayout({
           minHeight: "100vh",
         }}
       >
-        {children}
+        <PageWrapper>
+          {children}
+        </PageWrapper>
       </main>
 
       <CommandPalette />
