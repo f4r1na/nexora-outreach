@@ -57,8 +57,8 @@ export default async function DashboardLayout({
       />
 
       <main
+        className="dashboard-main"
         style={{
-          marginLeft: 280,
           flex: 1,
           minWidth: 0,
           position: "relative",

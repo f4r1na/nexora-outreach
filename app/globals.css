@@ -513,13 +513,9 @@ ul, ol { margin: 0; padding: 0; }
 /* Loading dot */
 .dot-loader span {
   display: inline-block;
-  width: 6px; height: 6px;
   border-radius: 50%;
-  background: rgba(255,82,0,0.7);
   animation: dot-pulse 1.2s ease-in-out infinite;
 }
-.dot-loader span:nth-child(2) { animation-delay: 0.2s; }
-.dot-loader span:nth-child(3) { animation-delay: 0.4s; }
 
 /* Reduced motion overrides for new animations */
 @media (prefers-reduced-motion: reduce) {
@@ -608,3 +604,13 @@ ul, ol { margin: 0; padding: 0; }
 }
 
 @keyframes wiz-spin { to { transform: rotate(360deg); } }
+
+/* Responsive main content offset */
+.dashboard-main {
+  margin-left: 280px;
+}
+@media (max-width: 767px) {
+  .dashboard-main {
+    margin-left: 60px;
+  }
+}

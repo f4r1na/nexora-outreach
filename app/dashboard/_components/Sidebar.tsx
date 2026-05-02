@@ -20,11 +20,23 @@ import {
   CreditCard,
   LogOut,
 } from "lucide-react";
-import type { CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { logout } from "@/app/actions/auth";
-import { NexoraLogo } from "@/components/ui/nexora-logo";
+import { NexoraLogo, NexoraIcon } from "@/components/ui/nexora-logo";
 import NavItem from "./NavItem";
 import SoundToggle from "./SoundToggle";
+
+function useIsMobile() {
+  const [mobile, setMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    setMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return mobile;
+}
 
 interface SidebarProps {
   email: string;
@@ -32,7 +44,6 @@ interface SidebarProps {
   creditsUsed: number;
   creditsLimit: number;
   pendingReplies?: number;
-  collapsed?: boolean;
 }
 
 type NavLink = {
@@ -97,9 +108,10 @@ export default function Sidebar({
   creditsUsed,
   creditsLimit,
   pendingReplies = 0,
-  collapsed = false,
 }: SidebarProps) {
   const pathname = usePathname();
+  const isMobile = useIsMobile();
+  const collapsed = isMobile;
 
   const isUnlimited = creditsLimit >= 999999;
   const creditsLeft = isUnlimited ? null : Math.max(0, creditsLimit - creditsUsed);
@@ -134,11 +146,12 @@ export default function Sidebar({
   return (
     <motion.aside
       className="sidebar-glow"
+      aria-label="Navigation"
       initial={{ x: -20, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
       transition={{ duration: 0.4, ease: EASE }}
       style={{
-        width: 280,
+        width: collapsed ? 60 : 280,
         flexShrink: 0,
         position: "fixed",
         top: 0,
@@ -155,14 +168,24 @@ export default function Sidebar({
     >
       {/* Logo */}
       <div style={{ padding: "20px 18px 14px" }}>
-        <Link
-          href="/dashboard"
-          style={{ display: "inline-flex", textDecoration: "none" }}
-        >
-          <span style={{ display: "inline-block", transformStyle: "preserve-3d" }}>
-            <NexoraLogo size={26} wordmarkSize={16} />
-          </span>
-        </Link>
+        {collapsed ? (
+          <Link
+            href="/dashboard"
+            style={{ textDecoration: "none", display: "flex", justifyContent: "center", padding: "0 4px" }}
+          >
+            <NexoraIcon size={24} />
+          </Link>
+        ) : (
+          <motion.div
+            whileHover={{ rotateY: 180 }}
+            transition={{ duration: 0.55, ease: [0.23, 1, 0.32, 1] }}
+            style={{ display: "inline-flex", transformStyle: "preserve-3d", cursor: "pointer" }}
+          >
+            <Link href="/dashboard" style={{ textDecoration: "none" }}>
+              <NexoraLogo size={26} wordmarkSize={14} />
+            </Link>
+          </motion.div>
+        )}
       </div>
 
       <div style={dividerStyle} />
