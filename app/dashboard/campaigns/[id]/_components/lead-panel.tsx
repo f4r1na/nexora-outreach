@@ -413,7 +413,7 @@ export default function LeadPanel({
                   {lead.email}
                 </p>
                 <a
-                  href={`https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(`${lead.first_name} ${lead.company}`)}`}
+                  href={`https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent([lead.first_name, lead.role, lead.company].filter(Boolean).join(" "))}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   title="View on LinkedIn"
