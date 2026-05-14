@@ -63,6 +63,7 @@ export async function searchGithubUsers(query: ParsedQuery): Promise<ProspectRes
       domain: extractDomain(u.blog),
       linkedin_url: undefined,
       source: "GitHub",
+      signal_dates: [new Date().toISOString().slice(0, 10)],
       _github_url: u.html_url,
       _bio: u.bio ?? undefined,
     }));

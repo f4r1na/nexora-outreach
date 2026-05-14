@@ -82,6 +82,7 @@ export async function searchCrunchbase(query: ParsedQuery): Promise<ProspectResu
         announced_on: p.announced_on,
         crunchbase_url: `https://www.crunchbase.com/organization/${p.org_identifier.permalink}`,
         source: "Crunchbase",
+        signal_dates: p.announced_on ? [p.announced_on] : [],
       });
     }
 
