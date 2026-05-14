@@ -11,6 +11,7 @@ import {
   Plus,
   Zap,
   CornerDownLeft,
+  Users,
 } from "lucide-react";
 
 type Cmd = {
@@ -81,6 +82,7 @@ export default function CommandPalette() {
     { id: "nav-inbox",      label: "Go to Inbox",      hint: "G I", icon: <Inbox size={13} />,           action: () => go("/dashboard/inbox"),      group: "Navigate" },
     { id: "nav-analytics",  label: "Go to Analytics",  hint: "G N", icon: <BarChart3 size={13} />,       action: () => go("/dashboard/analytics"),  group: "Navigate" },
     { id: "act-new",        label: "Create campaign",  hint: "N",   icon: <Plus size={13} />,            action: () => go("/dashboard/campaigns/new"), group: "Actions" },
+    { id: "act-prospects",  label: "Find Prospects",   hint: "P",   icon: <Users size={13} />,           action: () => go("/dashboard/agent"),         group: "Actions" },
     ...campaigns.map<Cmd>((c) => ({
       id: `camp-${c.id}`,
       label: c.name,
