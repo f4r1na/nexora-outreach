@@ -76,7 +76,6 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (campaignError) {
-      console.error("Campaign insert error:", campaignError);
       return NextResponse.json({ error: "Failed to create campaign" }, { status: 500 });
     }
 
@@ -145,7 +144,6 @@ No generic openers. Reference the situation in the first word.${signalInstructio
         results.push({ ...lead, subject: parsed.subject, body: parsed.body });
       } catch (leadErr: unknown) {
         const msg = leadErr instanceof Error ? leadErr.message : String(leadErr);
-        console.error("generate lead error:", msg);
         // Push a fallback so the rest of the campaign still completes
         results.push({
           ...lead,
@@ -166,7 +164,6 @@ No generic openers. Reference the situation in the first word.${signalInstructio
     return NextResponse.json({ campaignId: campaign.id, emails: results });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Internal server error";
-    console.error("generate route error:", msg);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

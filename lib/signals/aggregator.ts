@@ -56,7 +56,6 @@ export async function runDetectors(
     .select("id");
 
   if (error) {
-    console.error("[aggregator] insert error:", error.message);
     return { inserted: 0, signals: detected };
   }
 

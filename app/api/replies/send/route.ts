@@ -89,7 +89,6 @@ export async function POST(req: NextRequest) {
 
     const db = getServiceClient();
 
-    console.log(JSON.stringify({ step: "reply_send_start", reply_id: replyId, action, user_id: user.id, has_edited_draft: !!editedDraft }));
 
     // Fetch reply
     const { data: reply, error: replyError } = await db
@@ -100,11 +99,9 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (replyError || !reply) {
-      console.error(JSON.stringify({ step: "reply_fetch_error", reply_id: replyId, error: replyError?.message ?? "not found" }));
       return NextResponse.json({ error: "Reply not found" }, { status: 404 });
     }
 
-    console.log(JSON.stringify({ step: "reply_fetched", reply_id: replyId, status: reply.status, has_ai_draft: !!reply.ai_draft }));
 
     if (reply.status === "sent" || reply.status === "skipped") {
       return NextResponse.json({ error: "Reply already processed" }, { status: 409 });
@@ -119,11 +116,9 @@ export async function POST(req: NextRequest) {
         .eq("user_id", user.id);
 
       if (skipError) {
-        console.error(JSON.stringify({ step: "reply_skip_db_error", error: skipError.message }));
         return NextResponse.json({ error: "Failed to update reply status" }, { status: 500 });
       }
 
-      console.log(JSON.stringify({ step: "reply_skipped", reply_id: replyId }));
       return NextResponse.json({ ok: true, action: "skipped" });
     }
 
@@ -135,11 +130,9 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (gmailConnError) {
-      console.error(JSON.stringify({ step: "reply_gmail_conn_error", error: gmailConnError.message }));
     }
 
     if (!gmailConn?.access_token) {
-      console.error(JSON.stringify({ step: "reply_no_gmail_conn", user_id: user.id }));
       return NextResponse.json({ error: "No Gmail account connected. Connect Gmail in Settings." }, { status: 400 });
     }
 
@@ -148,7 +141,6 @@ export async function POST(req: NextRequest) {
     const fromEmail: string = gmailConn.gmail_email ?? "me";
 
     const draftToSend = editedDraft ?? reply.ai_draft ?? "";
-    console.log(JSON.stringify({ step: "reply_draft_resolved", reply_id: replyId, draft_source: editedDraft ? "edited" : "ai_draft", draft_length: draftToSend.length, to: reply.lead_email, from: fromEmail }));
 
     if (!draftToSend.trim()) {
       return NextResponse.json({ error: "No draft to send — generate a draft first" }, { status: 400 });
@@ -200,7 +192,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (!result.ok) {
-      console.error(JSON.stringify({ step: "reply_send_error", reply_id: replyId, error: result.error }));
       return NextResponse.json({ error: result.error ?? "Gmail send failed" }, { status: 502 });
     }
 
@@ -211,11 +202,9 @@ export async function POST(req: NextRequest) {
       .eq("id", replyId)
       .eq("user_id", user.id);
 
-    console.log(JSON.stringify({ step: "reply_sent", reply_id: replyId, to: reply.lead_email }));
     return NextResponse.json({ ok: true, action: "sent" });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error(JSON.stringify({ step: "reply_send_fatal", error: msg }));
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

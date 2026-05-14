@@ -159,7 +159,6 @@ export async function POST(req: NextRequest) {
           return;
         }
 
-        console.log(JSON.stringify({ step: "send_start", campaign_id: campaignId, user_id: user.id }));
 
         const db = getServiceClient();
 
@@ -202,7 +201,6 @@ export async function POST(req: NextRequest) {
         const sendsLimit: number = sub?.sends_limit ?? 0;
         const remaining = sendsLimit - sendsUsed;
 
-        console.log(JSON.stringify({ step: "send_plan_check", plan, sends_used: sendsUsed, sends_limit: sendsLimit, remaining }));
 
         if (remaining <= 0) {
           event(controller, { type: "error", message: `Send limit reached (${sendsUsed}/${sendsLimit}). Upgrade to send more.` });
@@ -227,7 +225,6 @@ export async function POST(req: NextRequest) {
         const refreshToken: string | null = gmailConn.refresh_token ?? null;
         const fromEmail: string = gmailConn.gmail_email ?? "me";
 
-        console.log(JSON.stringify({ step: "send_gmail_loaded", from: fromEmail }));
 
         // ── Fetch leads ──────────────────────────────────────────────────────
         const { data: leads, error: leadsError } = await db
@@ -266,7 +263,6 @@ export async function POST(req: NextRequest) {
         const toSend = leads.slice(0, remaining);
         const total = toSend.length;
 
-        console.log(JSON.stringify({ step: "send_leads_loaded", total, capped_from: leads.length }));
         event(controller, { type: "start", total, from: fromEmail });
 
         // ── Send loop ────────────────────────────────────────────────────────
@@ -313,7 +309,6 @@ export async function POST(req: NextRequest) {
 
           // ── Token refresh on 401 ────────────────────────────────────────
           if (!result.ok && result.authError && refreshToken) {
-            console.log(JSON.stringify({ step: "send_token_refresh", index: i }));
             const newToken = await refreshGmailToken(refreshToken);
 
             if (newToken) {
@@ -344,11 +339,9 @@ export async function POST(req: NextRequest) {
               event_type: "sent",
             });
 
-            console.log(JSON.stringify({ step: "send_email_sent", index: i + 1, to: lead.email }));
             event(controller, { type: "progress", sent: sentCount, total, to: lead.email });
           } else {
             failures.push(`${lead.email}: ${result.error ?? "unknown error"}`);
-            console.error(JSON.stringify({ step: "send_email_failed", index: i + 1, to: lead.email, error: result.error }));
             event(controller, { type: "fail", index: i + 1, total, to: lead.email, error: result.error });
           }
 
@@ -367,11 +360,9 @@ export async function POST(req: NextRequest) {
             .eq("user_id", user.id);
         }
 
-        console.log(JSON.stringify({ step: "send_done", sent: sentCount, failed: failures.length, campaign_id: campaignId }));
         event(controller, { type: "done", sent: sentCount, total, failures });
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
-        console.error(JSON.stringify({ step: "send_fatal_error", error: msg }));
         event(controller, { type: "error", message: msg });
       } finally {
         controller.close();

@@ -97,7 +97,6 @@ export async function POST(req: NextRequest) {
   const db = createAdminClient();
   const userId = user.id;
 
-  console.log(`[wizard] user=${userId} audience=${targetAudience} goal=${goal} count=${count} location=${location}`);
 
   // ── Credit check (before stream starts) ──
   const { data: sub, error: subErr } = await db
@@ -107,7 +106,6 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (subErr) {
-    console.error("[wizard] subscription fetch error:", subErr.message);
     return NextResponse.json({ error: "Could not verify credits. Please try again." }, { status: 500 });
   }
 
@@ -146,11 +144,9 @@ export async function POST(req: NextRequest) {
 
         if (cached) {
           send({ type: "activity", text: `Found ${count} ${targetAudience} leads...`, variant: "orange" });
-          console.log(`[wizard] lead cache HIT key=${cacheKey}`);
           leads = cached;
         } else {
           send({ type: "activity", text: `Finding ${count} ${targetAudience} leads...`, variant: "orange" });
-          console.log(`[wizard] lead cache MISS key=${cacheKey}`);
 
           // Split into parallel sub-calls of up to LEAD_CHUNK each.
           const LEAD_CHUNK = 10;
@@ -196,7 +192,6 @@ Return the JSON array only. No other text.`,
                     l && typeof l.first_name === "string" && typeof l.email === "string"
                 );
               } catch (err) {
-                console.error(`[wizard] lead chunk ${chunkIdx} error:`, err);
                 return [];
               }
             })
@@ -215,7 +210,6 @@ Return the JSON array only. No other text.`,
             if (leads.length >= count) break;
           }
 
-          console.log(`[wizard] parsed ${leads.length} leads from ${chunkSizes.length} parallel chunks`);
 
           if (leads.length === 0) {
             send({ type: "error", message: "Failed to generate leads. Please try again." });
@@ -226,7 +220,6 @@ Return the JSON array only. No other text.`,
         }
 
         if (leads.length === 0) {
-          console.error("[wizard] leads array is empty after filter");
           send({ type: "error", message: "No leads generated. Please try again." });
           return;
         }
@@ -294,7 +287,6 @@ ${leadsPrompt}`,
                 }));
               }
             } catch (batchErr) {
-              console.error("[wizard] email batch error:", batchErr);
               return batch.map((lead, i) => ({
                 index: start + i + 1,
                 subject: `${goal} — ${lead.company}`,
@@ -310,7 +302,6 @@ ${leadsPrompt}`,
         send({ type: "activity", text: "Saving campaign to database...", variant: "amber" });
 
         const campaignName = `${targetAudience} — ${goal}`;
-        console.log(`[wizard] inserting campaign: ${campaignName} for user ${userId}`);
 
         const { data: campaign, error: campaignError } = await db
           .from("campaigns")
@@ -325,12 +316,10 @@ ${leadsPrompt}`,
           .single();
 
         if (campaignError || !campaign) {
-          console.error("[wizard] campaign insert error:", campaignError?.message);
           send({ type: "error", message: "Failed to save campaign. Please try again." });
           return;
         }
 
-        console.log(`[wizard] campaign created: ${campaign.id}`);
 
         const leadsToInsert = leads.map((lead, i) => {
           const email = emailResults.find((e) => e.index === i + 1);
@@ -349,9 +338,7 @@ ${leadsPrompt}`,
 
         const { error: leadsError } = await db.from("leads").insert(leadsToInsert);
         if (leadsError) {
-          console.error("[wizard] leads insert error:", leadsError.message);
         } else {
-          console.log(`[wizard] inserted ${leadsToInsert.length} leads`);
         }
 
         // Update credits
@@ -367,15 +354,12 @@ ${leadsPrompt}`,
           );
 
         if (creditsError) {
-          console.error("[wizard] credits update error:", creditsError.message);
         }
 
         send({ type: "activity", text: `Campaign ready — ${leads.length} emails prepared`, variant: "green" });
         send({ type: "done", campaignId: campaign.id, leadCount: leads.length, hot, warm, cold });
-        console.log(`[wizard] done: campaign=${campaign.id} leads=${leads.length}`);
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Internal server error";
-        console.error("[wizard] unhandled error:", err);
         send({ type: "error", message });
       } finally {
         closed = true;

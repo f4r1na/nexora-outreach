@@ -48,11 +48,9 @@ export async function DELETE() {
       .eq("user_id", user.id);
 
     if (error) {
-      console.error(JSON.stringify({ step: "ghostwriter_delete_error", error: error.message }));
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    console.log(JSON.stringify({ step: "ghostwriter_deleted", user_id: user.id }));
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);

@@ -10,7 +10,6 @@ import {
   Inbox,
   Zap,
   BarChart3,
-  Activity,
   GitBranch,
   Target,
   Files,
@@ -64,7 +63,6 @@ const MAIN: NavLink[] = [
 ];
 
 const FEATURES: NavLink[] = [
-  { label: "Signal Velocity",  href: "/dashboard/features/signal-velocity",       icon: Activity },
   { label: "GitHub Detection", href: "/dashboard/features/github-detection",      icon: GitBranch },
   { label: "Confidence AI",    href: "/dashboard/features/confidence-classifier", icon: Target },
   { label: "Template A/B",     href: "/dashboard/features/template-variations",   icon: Files },

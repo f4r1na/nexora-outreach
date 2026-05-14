@@ -56,7 +56,6 @@ export async function GET() {
       .select("event_type, campaign_id, created_at")
       .eq("user_id", user.id);
 
-    console.log("[analytics]", { user_id: user.id, campaigns: campaignRows?.length ?? 0, events: events?.length ?? 0 });
 
     const evts = events ?? [];
     const sent = evts.filter((e) => e.event_type === "sent").length;

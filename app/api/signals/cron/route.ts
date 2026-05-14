@@ -150,9 +150,6 @@ export async function POST(req: NextRequest) {
   });
 
   if (claimErr) {
-    console.error(
-      JSON.stringify({ step: "cron_claim_error", error: claimErr.message })
-    );
     return NextResponse.json({ error: claimErr.message }, { status: 500 });
   }
 
@@ -161,7 +158,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ processed: 0, message: "No queued leads" });
   }
 
-  console.log(JSON.stringify({ step: "cron_start", count: leads.length }));
 
   const CONCURRENCY = 15;
   let successCount = 0;
@@ -202,13 +198,6 @@ export async function POST(req: NextRequest) {
                 })
                 .select("id");
               if (signalErr) {
-                console.error(
-                  JSON.stringify({
-                    step: "cron_signals_insert_error",
-                    lead_id: lead.id,
-                    error: signalErr.message,
-                  })
-                );
               } else {
                 const insertedCount = inserted?.length ?? 0;
                 signalsInserted += insertedCount;
@@ -216,13 +205,6 @@ export async function POST(req: NextRequest) {
               }
             }
           } catch (err: unknown) {
-            console.error(
-              JSON.stringify({
-                step: "cron_signals_extract_error",
-                lead_id: lead.id,
-                error: err instanceof Error ? err.message : String(err),
-              })
-            );
           }
         } else {
           await db
@@ -267,16 +249,6 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  console.log(
-    JSON.stringify({
-      step: "cron_done",
-      total: leads.length,
-      success: successCount,
-      signals_extracted: signalsExtracted,
-      signals_inserted: signalsInserted,
-      signals_duplicate: signalsDuplicate,
-    })
-  );
   return NextResponse.json({
     processed: leads.length,
     success: successCount,

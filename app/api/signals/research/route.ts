@@ -102,9 +102,6 @@ export async function POST(req: NextRequest) {
       const role = lead.role || "Unknown Role";
       const emailDomain = lead.email?.split("@")[1] || "";
 
-      console.log(
-        JSON.stringify({ step: "signal_research_start", lead_index: i, company, role })
-      );
 
       try {
         const message = await anthropic.messages.create({
@@ -128,14 +125,8 @@ export async function POST(req: NextRequest) {
         const parsed = JSON.parse(cleaned) as SignalData;
 
         results.push({ lead_index: i, signal_data: parsed, status: "done" });
-        console.log(
-          JSON.stringify({ step: "signal_research_done", lead_index: i, company })
-        );
       } catch (leadErr: unknown) {
         const e = leadErr instanceof Error ? leadErr.message : String(leadErr);
-        console.error(
-          JSON.stringify({ step: "signal_research_error", lead_index: i, error: e })
-        );
         results.push({ lead_index: i, signal_data: null, status: "failed" });
       }
 
@@ -153,18 +144,10 @@ export async function POST(req: NextRequest) {
         .eq("user_id", user.id);
     }
 
-    console.log(
-      JSON.stringify({
-        step: "signal_research_complete",
-        total: leads.length,
-        success: successCount,
-      })
-    );
 
     return NextResponse.json({ results });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error(JSON.stringify({ step: "signal_research_fatal", error: msg }));
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

@@ -50,7 +50,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Reply not found" }, { status: 404 });
     }
 
-    console.log(JSON.stringify({ step: "draft_generate_start", reply_id: replyId }));
 
     // Generate AI draft
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -84,7 +83,6 @@ Return ONLY the email body text. No subject line, no greeting (start from the fi
     const aiDraft =
       message.content[0].type === "text" ? message.content[0].text.trim() : "";
 
-    console.log(JSON.stringify({ step: "draft_generated", reply_id: replyId, length: aiDraft.length }));
 
     // Save draft
     const { error: updateError } = await db
@@ -94,14 +92,12 @@ Return ONLY the email body text. No subject line, no greeting (start from the fi
       .eq("user_id", user.id);
 
     if (updateError) {
-      console.error(JSON.stringify({ step: "draft_save_error", error: updateError.message }));
       return NextResponse.json({ error: "Failed to save draft" }, { status: 500 });
     }
 
     return NextResponse.json({ reply_id: replyId, ai_draft: aiDraft });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error(JSON.stringify({ step: "draft_fatal", error: msg }));
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

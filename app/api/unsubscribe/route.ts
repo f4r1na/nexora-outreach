@@ -83,10 +83,8 @@ export async function GET(req: NextRequest) {
     .eq("id", leadId);
 
   if (error) {
-    console.error(JSON.stringify({ step: "unsubscribe_error", lead_id: leadId, error: error.message }));
     return htmlResponse(errorHtml("Failed to process your request. Please try again."), 500);
   }
 
-  console.log(JSON.stringify({ step: "unsubscribed", lead_id: leadId }));
   return htmlResponse(SUCCESS_HTML);
 }

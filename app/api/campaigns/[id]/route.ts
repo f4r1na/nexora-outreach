@@ -82,7 +82,6 @@ export async function DELETE(_req: NextRequest, { params }: Props) {
     return NextResponse.json({ error: "Campaign not found" }, { status: 404 });
   }
 
-  console.log(JSON.stringify({ step: "delete_campaign_start", campaign_id: id, user_id: user.id }));
 
   // 1. Delete email_events (no cascade, must delete manually)
   const { error: eventsErr } = await db
@@ -90,10 +89,8 @@ export async function DELETE(_req: NextRequest, { params }: Props) {
     .delete()
     .eq("campaign_id", id);
   if (eventsErr) {
-    console.error(JSON.stringify({ step: "delete_email_events_error", error: eventsErr.message }));
     return NextResponse.json({ error: "Failed to delete email events" }, { status: 500 });
   }
-  console.log(JSON.stringify({ step: "deleted_email_events", campaign_id: id }));
 
   // 2. Delete campaign — CASCADE handles leads; replies.campaign_id is SET NULL on cascade
   const { error: campaignErr } = await db
@@ -101,10 +98,8 @@ export async function DELETE(_req: NextRequest, { params }: Props) {
     .delete()
     .eq("id", id);
   if (campaignErr) {
-    console.error(JSON.stringify({ step: "delete_campaign_error", error: campaignErr.message }));
     return NextResponse.json({ error: "Failed to delete campaign" }, { status: 500 });
   }
-  console.log(JSON.stringify({ step: "delete_campaign_success", campaign_id: id }));
 
   return NextResponse.json({ deleted: true });
 }

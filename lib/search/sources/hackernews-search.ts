@@ -34,6 +34,12 @@ function extractDomainFromText(text: string): string | undefined {
   return urlMatch?.[1];
 }
 
+function toDateIso(dateStr: string): string {
+  if (!dateStr) return new Date().toISOString().slice(0, 10);
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? new Date().toISOString().slice(0, 10) : d.toISOString().slice(0, 10);
+}
+
 export async function searchHackerNews(query: ParsedQuery): Promise<ProspectResult[]> {
   const terms: string[] = [];
   if (query.industry) terms.push(query.industry);
@@ -64,6 +70,7 @@ export async function searchHackerNews(query: ParsedQuery): Promise<ProspectResu
       return (fb.hits ?? []).slice(0, 5).map((h) => ({
         company: extractCompanyFromHNPost(h.comment_text ?? h.story_title ?? ""),
         source: "HackerNews",
+        signal_dates: [new Date().toISOString().slice(0, 10)],
         _hn_url: `https://news.ycombinator.com/item?id=${h.objectID}`,
       })).filter((r) => r.company);
     }
@@ -80,6 +87,7 @@ export async function searchHackerNews(query: ParsedQuery): Promise<ProspectResu
           company,
           domain,
           source: "HackerNews",
+          signal_dates: [toDateIso(h.created_at ?? "")],
           _hn_url: `https://news.ycombinator.com/item?id=${h.objectID}`,
         } as ProspectResult;
       })

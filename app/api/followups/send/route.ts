@@ -104,7 +104,6 @@ export async function POST(req: NextRequest) {
   const db = getServiceClient();
 
   try {
-    console.log(JSON.stringify({ step: "followup_send_start" }));
 
     // ── Find all due follow-up emails ────────────────────────────────────────
     const now = new Date().toISOString();
@@ -127,12 +126,10 @@ export async function POST(req: NextRequest) {
       .limit(50);
 
     if (dueErr) {
-      console.error(JSON.stringify({ step: "followup_send_query_error", error: dueErr.message }));
       return NextResponse.json({ error: dueErr.message }, { status: 500 });
     }
 
     if (!dueEmails || dueEmails.length === 0) {
-      console.log(JSON.stringify({ step: "followup_send_none_due" }));
       return NextResponse.json({ sent: 0, skipped: 0, failed: 0 });
     }
 
@@ -156,7 +153,6 @@ export async function POST(req: NextRequest) {
       return seqStatus === "ready";
     });
 
-    console.log(JSON.stringify({ step: "followup_send_due", total: dueEmails.length, active: activeEmails.length }));
 
     // ── Group by user_id to load Gmail connections efficiently ───────────────
     const userIds = [...new Set(activeEmails.map((e) => e.user_id))];
@@ -186,7 +182,6 @@ export async function POST(req: NextRequest) {
       if (replyEvent) {
         await db.from("follow_up_emails").update({ status: "skipped" }).eq("id", email.id);
         skipped++;
-        console.log(JSON.stringify({ step: "followup_skipped_replied", email_id: email.id, lead_id: email.lead_id }));
         continue;
       }
 
@@ -201,7 +196,6 @@ export async function POST(req: NextRequest) {
       if (sub.sends_used >= sub.sends_limit) {
         await db.from("follow_up_emails").update({ status: "failed" }).eq("id", email.id);
         failed++;
-        console.log(JSON.stringify({ step: "followup_send_limit_reached", user_id: email.user_id }));
         continue;
       }
 
@@ -274,21 +268,17 @@ export async function POST(req: NextRequest) {
         });
 
         sent++;
-        console.log(JSON.stringify({ step: "followup_sent", email_id: email.id, follow_up_number: email.follow_up_number, to: lead.email }));
       } else {
         await db.from("follow_up_emails").update({ status: "failed" }).eq("id", email.id);
         failed++;
-        console.error(JSON.stringify({ step: "followup_send_failed", email_id: email.id, error: result.error }));
       }
 
       await sleep(3000);
     }
 
-    console.log(JSON.stringify({ step: "followup_send_done", sent, skipped, failed }));
     return NextResponse.json({ sent, skipped, failed });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error(JSON.stringify({ step: "followup_send_fatal", error: msg }));
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

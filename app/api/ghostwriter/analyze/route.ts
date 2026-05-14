@@ -49,7 +49,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "At least 3 non-empty sample emails are required" }, { status: 400 });
     }
 
-    console.log(JSON.stringify({ step: "ghostwriter_analyze_start", user_id: user.id, sample_count: filled.length }));
 
     const emailBlock = filled.map((e, i) => `[Email ${i + 1}]\n${e}`).join("\n\n---\n\n");
 
@@ -67,7 +66,6 @@ export async function POST(req: NextRequest) {
     });
 
     const raw = message.content[0].type === "text" ? message.content[0].text.trim() : "";
-    console.log(JSON.stringify({ step: "ghostwriter_analysis_raw", length: raw.length }));
 
     let styleSummary: string;
     let toneKeywords: string;
@@ -119,18 +117,15 @@ export async function POST(req: NextRequest) {
     }
 
     if (saveError) {
-      console.error(JSON.stringify({ step: "ghostwriter_save_error", error: saveError.message }));
       return NextResponse.json({ error: "Failed to save writing style" }, { status: 500 });
     }
 
-    console.log(JSON.stringify({ step: "ghostwriter_saved", user_id: user.id }));
     return NextResponse.json({
       ok: true,
       style: { style_summary: styleSummary, tone_keywords: toneKeywords, sample_emails: filled },
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error(JSON.stringify({ step: "ghostwriter_analyze_fatal", error: msg }));
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

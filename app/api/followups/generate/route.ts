@@ -144,7 +144,6 @@ export async function POST(req: NextRequest) {
         let totalScheduled = 0;
         let creditsConsumed = 0;
 
-        console.log(JSON.stringify({ step: "followup_generate_start", campaign_id: campaignId, leads: leads.length }));
         event(controller, { type: "start", totalLeads: leads.length, delays });
 
         // ── Generate 3 sequences ─────────────────────────────────────────────
@@ -172,7 +171,6 @@ export async function POST(req: NextRequest) {
           }
 
           event(controller, { type: "sequence_start", followupNum: fuNum, totalLeads: leads.length, delayDays });
-          console.log(JSON.stringify({ step: "followup_sequence_created", seq_id: seq.id, follow_up_number: fuNum }));
 
           const systemPrompt = SYSTEM_PROMPTS[fuNum];
           const emailRows: Array<{
@@ -241,7 +239,6 @@ Follow-up #${fuNum} — ${systemPrompt}${signalInstruction}${styleInstruction}`;
               creditsConsumed++;
             } catch (leadErr: unknown) {
               const msg = leadErr instanceof Error ? leadErr.message : String(leadErr);
-              console.error(JSON.stringify({ step: "followup_lead_error", follow_up_number: fuNum, lead_id: lead.id, error: msg }));
               // Push fallback
               emailRows.push({
                 sequence_id: seq.id,
@@ -265,7 +262,6 @@ Follow-up #${fuNum} — ${systemPrompt}${signalInstruction}${styleInstruction}`;
           // Bulk insert all emails for this sequence
           const { error: insertErr } = await db.from("follow_up_emails").insert(emailRows);
           if (insertErr) {
-            console.error(JSON.stringify({ step: "followup_emails_insert_error", error: insertErr.message }));
             event(controller, { type: "error", message: `Failed to save follow-up ${fuNum} emails: ${insertErr.message}` });
             controller.close();
             return;
@@ -276,7 +272,6 @@ Follow-up #${fuNum} — ${systemPrompt}${signalInstruction}${styleInstruction}`;
 
           totalScheduled += emailRows.length;
           event(controller, { type: "sequence_done", followupNum: fuNum, count: emailRows.length });
-          console.log(JSON.stringify({ step: "followup_sequence_ready", seq_id: seq.id, emails: emailRows.length }));
         }
 
         // ── Increment credits ─────────────────────────────────────────────────
@@ -286,11 +281,9 @@ Follow-up #${fuNum} — ${systemPrompt}${signalInstruction}${styleInstruction}`;
             .eq("user_id", user.id);
         }
 
-        console.log(JSON.stringify({ step: "followup_generate_done", campaign_id: campaignId, scheduled: totalScheduled }));
         event(controller, { type: "done", scheduled: totalScheduled });
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
-        console.error(JSON.stringify({ step: "followup_generate_fatal", error: msg }));
         event(controller, { type: "error", message: msg });
       } finally {
         controller.close();
