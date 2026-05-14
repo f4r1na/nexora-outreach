@@ -21,16 +21,6 @@ interface Feature {
 
 const FEATURES: Feature[] = [
   {
-    icon: Zap,
-    title: "Signal Velocity Alerts",
-    badge: "BETA",
-    badgeColor: "#FF5200",
-    badgeBg: "rgba(255,82,0,0.15)",
-    description: "Real-time alerts when signals match your ICP. Get notified instantly on hot opportunities and auto-create campaigns.",
-    highlights: ["Real-time monitoring", "ICP-based filtering", "Email notifications", "Auto-campaign creation"],
-    href: "/dashboard/features/signal-velocity",
-  },
-  {
     icon: GitBranch,
     title: "GitHub Signal Detection",
     badge: "ACTIVE",

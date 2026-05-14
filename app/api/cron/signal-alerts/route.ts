@@ -44,7 +44,6 @@ export async function GET(req: NextRequest) {
   const feedResults = await Promise.all(FEEDS.map(fetchFeed));
   const recentItems = feedResults.flat().filter((item) => isRecent(item.pubDate));
 
-  console.log(`[signal-alerts] fetched ${recentItems.length} recent items for ${targets.length} users`);
 
   // 4. For each signal item, find matching users and send alerts
   let sent = 0;
@@ -88,11 +87,9 @@ export async function GET(req: NextRequest) {
         });
 
         sent++;
-        console.log(`[signal-alerts] sent: ${target.email} <- ${companyName} (${signalType})`);
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         errors.push(`${target.email}/${companyName}: ${msg}`);
-        console.error(`[signal-alerts] send error:`, msg);
       }
     }
   }

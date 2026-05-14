@@ -59,6 +59,5 @@ export async function POST(req: NextRequest) {
       .eq("status", "scheduled");
   }
 
-  console.log(JSON.stringify({ step: "followup_action", sequence_id, action, new_status: newStatus }));
   return NextResponse.json({ ok: true, status: newStatus });
 }

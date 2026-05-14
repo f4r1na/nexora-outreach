@@ -43,7 +43,6 @@ export async function POST(req: NextRequest) {
     campaignIds = (camps ?? []).map((c: { id: string }) => c.id);
   }
 
-  console.log(JSON.stringify({ step: "delete_signals_start", user_id: user.id, campaign_ids: campaignIds }));
 
   if (campaignIds.length === 0) {
     return NextResponse.json({ cleared: 0 });
@@ -56,12 +55,10 @@ export async function POST(req: NextRequest) {
     .select("id");
 
   if (error) {
-    console.error(JSON.stringify({ step: "delete_signals_error", error: error.message }));
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
   const cleared = data?.length ?? 0;
-  console.log(JSON.stringify({ step: "delete_signals_success", cleared, campaign_ids: campaignIds }));
 
   return NextResponse.json({ cleared });
 }

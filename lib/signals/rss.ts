@@ -53,12 +53,10 @@ export async function fetchFeed(feed: typeof FEEDS[number]): Promise<FeedItem[]>
       signal: AbortSignal.timeout(12_000),
     });
     if (!res.ok) {
-      console.error(`[rss] fetch failed ${feed.url}: ${res.status}`);
       return [];
     }
     return parseFeed(await res.text(), feed.type);
   } catch (err) {
-    console.error(`[rss] fetch error ${feed.url}:`, err);
     return [];
   }
 }

@@ -19,7 +19,6 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) {
-    console.error(JSON.stringify({ step: "gmail_auth_no_user" }));
     return NextResponse.redirect(errorRedirect);
   }
 
@@ -32,19 +31,11 @@ export async function GET() {
 
   const plan = sub?.plan ?? "free";
   if (plan !== "pro" && plan !== "agency") {
-    console.error(JSON.stringify({ step: "gmail_auth_plan_blocked", plan }));
     return NextResponse.redirect(errorRedirect);
   }
 
   const clientId = process.env.GOOGLE_CLIENT_ID!;
 
-  console.log(JSON.stringify({
-    step: "gmail_auth_redirect",
-    redirect_uri: REDIRECT_URI,
-    user_id: user.id,
-    plan,
-    client_id_present: !!clientId,
-  }));
 
   const params = new URLSearchParams({
     client_id: clientId,

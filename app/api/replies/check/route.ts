@@ -104,7 +104,6 @@ export async function POST(req: NextRequest) {
     const refreshToken: string | null = gmailConn.refresh_token ?? null;
     const userId = user.id;
 
-    console.log(JSON.stringify({ step: "replies_check_start", user_id: userId }));
 
     // Fetch unread inbox messages
     async function gmailFetch(path: string): Promise<Response> {
@@ -132,14 +131,12 @@ export async function POST(req: NextRequest) {
     );
     if (!listRes.ok) {
       const text = await listRes.text();
-      console.error(JSON.stringify({ step: "replies_list_error", status: listRes.status, body: text }));
       return NextResponse.json({ error: `Gmail API error: ${listRes.status}` }, { status: 502 });
     }
 
     const listData = await listRes.json() as { messages?: Array<{ id: string; threadId: string }> };
     const messages = listData.messages ?? [];
 
-    console.log(JSON.stringify({ step: "replies_check_unread", count: messages.length }));
 
     if (messages.length === 0) {
       return NextResponse.json({ found: 0, inserted: 0 });
@@ -235,7 +232,6 @@ export async function POST(req: NextRequest) {
         });
 
         if (insertError) {
-          console.error(JSON.stringify({ step: "replies_insert_error", error: insertError.message, msg_id: msg.id }));
           errors.push(insertError.message);
           continue;
         }
@@ -259,19 +255,15 @@ export async function POST(req: NextRequest) {
         });
 
         inserted++;
-        console.log(JSON.stringify({ step: "replies_inserted", from: fromEmail, msg_id: msg.id }));
       } catch (msgErr: unknown) {
         const e = msgErr instanceof Error ? msgErr.message : String(msgErr);
         errors.push(e);
-        console.error(JSON.stringify({ step: "replies_msg_error", error: e, msg_id: msg.id }));
       }
     }
 
-    console.log(JSON.stringify({ step: "replies_check_done", found: messages.length, inserted }));
     return NextResponse.json({ found: messages.length, inserted, errors });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error(JSON.stringify({ step: "replies_check_fatal", error: msg }));
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

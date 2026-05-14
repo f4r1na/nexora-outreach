@@ -35,7 +35,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ url: session.url })
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Unknown error"
-    console.error("stripe checkout error:", msg)
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 }

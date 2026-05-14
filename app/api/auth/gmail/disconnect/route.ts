@@ -27,7 +27,6 @@ export async function POST() {
     .eq("user_id", user.id);
 
   if (error) {
-    console.error("[gmail/disconnect] delete failed:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 

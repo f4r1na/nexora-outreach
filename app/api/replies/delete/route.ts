@@ -33,7 +33,6 @@ export async function POST(req: NextRequest) {
 
     const db = getServiceClient();
 
-    console.log(JSON.stringify({ step: "reply_delete_start", reply_id: replyId, user_id: user.id }));
 
     // Verify ownership before deleting
     const { data: existing, error: fetchError } = await db
@@ -44,7 +43,6 @@ export async function POST(req: NextRequest) {
       .maybeSingle();
 
     if (fetchError) {
-      console.error(JSON.stringify({ step: "reply_delete_fetch_error", error: fetchError.message }));
       return NextResponse.json({ error: "Failed to verify reply ownership" }, { status: 500 });
     }
 
@@ -59,15 +57,12 @@ export async function POST(req: NextRequest) {
       .eq("user_id", user.id);
 
     if (deleteError) {
-      console.error(JSON.stringify({ step: "reply_delete_db_error", error: deleteError.message }));
       return NextResponse.json({ error: "Failed to delete reply" }, { status: 500 });
     }
 
-    console.log(JSON.stringify({ step: "reply_deleted", reply_id: replyId, user_id: user.id }));
     return NextResponse.json({ ok: true });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error(JSON.stringify({ step: "reply_delete_fatal", error: msg }));
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

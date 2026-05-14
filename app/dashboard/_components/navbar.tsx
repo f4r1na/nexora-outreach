@@ -28,7 +28,6 @@ const NAV: NavItem[] = [
 ];
 
 const FEATURES = [
-  { icon: Zap,    title: "Signal Velocity Alerts",    desc: "Real-time alerts when signals match your ICP", badge: "BETA",   badgeColor: "#FF5200", badgeBg: "rgba(255,82,0,0.12)",  href: "/dashboard/features/signal-velocity"       },
   { icon: GitBranch, title: "GitHub Signal Detection",   desc: "Monitor repos for tech stack changes",         badge: "ACTIVE", badgeColor: "#00D084", badgeBg: "rgba(0,208,132,0.1)",  href: "/dashboard/features/github-detection"      },
   { icon: Target, title: "Confidence Classifier",     desc: "AI-powered signal quality scoring",            badge: "ACTIVE", badgeColor: "#00D084", badgeBg: "rgba(0,208,132,0.1)",  href: "/dashboard/features/confidence-classifier" },
   { icon: Files,  title: "Email Template Variations", desc: "A/B test multiple email versions",             badge: "ACTIVE", badgeColor: "#00D084", badgeBg: "rgba(0,208,132,0.1)",  href: "/dashboard/features/template-variations"   },

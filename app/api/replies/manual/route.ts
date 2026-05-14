@@ -67,11 +67,6 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    console.log(JSON.stringify({
-      step: "manual_reply_start",
-      from: emailFrom,
-      matched_lead: matchedLead?.id ?? null,
-    }));
 
     // Generate AI draft
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -120,15 +115,12 @@ Return ONLY the email body text. No subject line, no greeting, no sign-off.`,
       .single();
 
     if (insertError || !inserted) {
-      console.error(JSON.stringify({ step: "manual_insert_error", error: insertError?.message }));
       return NextResponse.json({ error: "Failed to save reply" }, { status: 500 });
     }
 
-    console.log(JSON.stringify({ step: "manual_reply_created", reply_id: inserted.id }));
     return NextResponse.json({ reply_id: inserted.id, ai_draft: aiDraft, matched_lead: matchedLead?.id ?? null });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error(JSON.stringify({ step: "manual_reply_fatal", error: msg }));
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
