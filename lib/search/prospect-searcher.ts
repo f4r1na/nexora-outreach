@@ -3,6 +3,7 @@ import { searchCrunchbase } from "./sources/crunchbase";
 import { searchWeb } from "./sources/web-search";
 import { searchGithubUsers } from "./sources/github-search";
 import { searchHackerNews } from "./sources/hackernews-search";
+import { enrichWithLinkedIn } from "./sources/linkedin-verify";
 
 export interface ProspectResult {
   name?: string;
@@ -10,6 +11,7 @@ export interface ProspectResult {
   company?: string;
   location?: string;
   linkedin_url?: string;
+  linkedin_verified?: boolean;
   crunchbase_url?: string;
   domain?: string;
   funding_stage?: string;
@@ -80,8 +82,11 @@ export async function searchProspects(rawQuery: string): Promise<SearchResult> {
   if (github.length > 0) sourcesUsed.push("GitHub");
   if (hn.length > 0) sourcesUsed.push("HackerNews");
 
+  const merged = mergeAndRank([...crunchbase, ...web, ...github, ...hn]);
+  const enriched = await enrichWithLinkedIn(merged);
+
   return {
-    prospects: mergeAndRank([...crunchbase, ...web, ...github, ...hn]),
+    prospects: enriched,
     query_parsed: parsed,
     sources_used: sourcesUsed,
   };

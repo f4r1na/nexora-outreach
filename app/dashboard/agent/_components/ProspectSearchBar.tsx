@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, ExternalLink, Building2, MapPin, Zap } from "lucide-react";
+import { Search, ExternalLink, Building2, MapPin, Zap, Check } from "lucide-react";
 import type { ProspectResult } from "@/lib/search/prospect-searcher";
 
 interface SearchResult {
@@ -32,9 +32,19 @@ function ProspectCard({ prospect }: { prospect: ProspectResult }) {
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
         <div style={{ minWidth: 0 }}>
           {prospect.name && (
-            <p style={{ fontSize: 13, fontWeight: 600, color: "#fff", fontFamily: "var(--font-syne)", margin: 0, marginBottom: 2 }}>
-              {prospect.name}
-            </p>
+            <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
+              <p style={{ fontSize: 13, fontWeight: 600, color: "#fff", fontFamily: "var(--font-syne)", margin: 0 }}>
+                {prospect.name}
+              </p>
+              {prospect.linkedin_verified && (
+                <Check
+                  size={11}
+                  strokeWidth={2.5}
+                  color="#4ade80"
+                  aria-label="LinkedIn verified"
+                />
+              )}
+            </div>
           )}
           {prospect.role && (
             <p style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontFamily: "var(--font-outfit)", margin: 0 }}>
