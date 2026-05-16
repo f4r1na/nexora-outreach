@@ -127,7 +127,7 @@ export default function PricingPage() {
       </header>
 
       <div className="border-b border-border px-6 py-16 text-center">
-        <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary mb-4">
+        <div className="inline-flex items-center gap-2 rounded border border-primary/20 px-3 py-1 text-xs font-medium text-primary mb-4">
           <span>7-day free trial</span>
           <span className="text-muted-foreground">No credit card required</span>
         </div>

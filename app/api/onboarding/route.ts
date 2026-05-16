@@ -8,11 +8,13 @@ export async function POST(req: NextRequest) {
 
   const { product, icp } = await req.json();
 
-  // Use type assertion — columns may not be in generated types yet
-  await (supabase
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase as any)
     .from("subscriptions")
-    .update({ product_description: product, icp_description: icp } as Record<string, unknown>)
-    .eq("user_id", user.id) as unknown as Promise<{ error: unknown }>);
+    .update({ product_description: product, icp_description: icp })
+    .eq("user_id", user.id);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({ ok: true });
 }

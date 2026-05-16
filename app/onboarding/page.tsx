@@ -60,7 +60,7 @@ export default function OnboardingPage() {
             <div key={step.id} className="flex items-center">
               <div
                 className={cn(
-                  "flex h-6 w-6 items-center justify-center rounded-full text-xs font-medium",
+                  "flex h-6 w-6 items-center justify-center rounded text-xs font-medium",
                   currentStep > step.id
                     ? "bg-primary text-primary-foreground"
                     : currentStep === step.id

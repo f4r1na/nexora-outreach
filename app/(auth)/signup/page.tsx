@@ -37,7 +37,7 @@ export default function SignupPage() {
         {/* Heading */}
         <div className="text-center mb-8">
           <h1
-            className="text-3xl font-bold text-white mb-2"
+            className="text-3xl font-medium text-white mb-2"
             style={{ fontFamily: "var(--font-syne)" }}
           >
             Create an account
@@ -49,7 +49,7 @@ export default function SignupPage() {
 
         {/* Card */}
         <div
-          className="rounded-2xl p-8"
+          className="rounded-lg p-8"
           style={{
             backgroundColor: "var(--black-2)",
             border: "1px solid rgba(255,255,255,0.06)",
