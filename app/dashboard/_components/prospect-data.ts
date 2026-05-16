@@ -1,3 +1,5 @@
+import type { ProspectResult } from "@/lib/search/prospect-searcher"
+
 export type SignalType = "FUNDING" | "HIRING" | "LAUNCH" | "GROWTH"
 
 export interface Prospect {
@@ -9,73 +11,11 @@ export interface Prospect {
   signal: SignalType
   signalDetail: string
   daysAgo: number
-}
-
-const FIRST_NAMES = ["James", "Sarah", "Marcus", "Priya", "Tom", "Elena", "David", "Mia", "Lucas", "Aisha", "Ryan", "Zoe", "Kevin", "Nina", "Alex"]
-const LAST_NAMES = ["Chen", "Kim", "Lee", "Patel", "Rodriguez", "Johnson", "Williams", "Brown", "Garcia", "Martinez", "Anderson", "Taylor", "Thomas", "Jackson", "White"]
-const ROLES_SAAS = ["Founder & CEO", "Co-Founder", "CTO", "VP of Growth", "Head of Product"]
-const ROLES_MARKETING = ["VP Marketing", "CMO", "Head of Growth", "Marketing Director", "Demand Gen Lead"]
-const ROLES_GENERIC = ["CEO", "Founder", "Director", "VP Operations", "Head of Sales"]
-
-const SIGNAL_DETAILS: Record<SignalType, string[]> = {
-  FUNDING: ["Raised $4.2M Seed round", "Closed $12M Series A", "Secured $2.8M pre-seed", "Raised $7M from a16z", "Closed $18M Series B"],
-  HIRING: ["Hiring 5 engineers", "Posted 12 jobs this month", "Expanding sales team", "Hiring SDRs and AEs", "Growing ops team"],
-  LAUNCH: ["Launched v2.0 on ProductHunt", "New product line announced", "Beta launch on HN", "Public launch this week", "Major feature release"],
-  GROWTH: ["3x revenue last quarter", "Expanding to EU market", "500 new customers this month", "Featured in TechCrunch", "Crossed 10K users"],
-}
-
-function rand<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)]
-}
-
-function inferRoles(query: string): string[] {
-  const q = query.toLowerCase()
-  if (q.includes("saas") || q.includes("founder")) return ROLES_SAAS
-  if (q.includes("marketing") || q.includes("agency")) return ROLES_MARKETING
-  return ROLES_GENERIC
-}
-
-function inferSignals(query: string): SignalType[] {
-  const q = query.toLowerCase()
-  const signals: SignalType[] = []
-  if (q.includes("series") || q.includes("raised") || q.includes("seed") || q.includes("fund")) signals.push("FUNDING")
-  if (q.includes("hir") || q.includes("recruit")) signals.push("HIRING")
-  if (q.includes("launch") || q.includes("product")) signals.push("LAUNCH")
-  if (!signals.length) signals.push("FUNDING", "HIRING", "GROWTH")
-  return signals
-}
-
-const COMPANIES_SAAS = ["Luma", "Slope", "Brex", "Anrok", "Merge", "Drata", "Vanta", "Rippling", "Finch", "Vessel", "Workato", "Pendo", "Amplitude", "Heap", "Mixpanel"]
-const COMPANIES_GENERIC = ["Acme Corp", "NovaTech", "Meridian", "Apex Labs", "Stratum", "Velox", "Cirrus", "Axon", "Prism", "Orbit", "Vector", "Nexus", "Pillar", "Forge", "Atlas"]
-
-export function generateProspects(query: string, count = 15): Prospect[] {
-  const roles = inferRoles(query)
-  const signals = inferSignals(query)
-  const q = query.toLowerCase()
-  const companies = q.includes("saas") || q.includes("startup") ? COMPANIES_SAAS : COMPANIES_GENERIC
-  const seen = new Set<string>()
-  const prospects: Prospect[] = []
-
-  for (let i = 0; i < count; i++) {
-    let company: string
-    do { company = rand(companies) } while (seen.has(company) && seen.size < companies.length)
-    seen.add(company)
-
-    const confidence = Math.round((5 + Math.random() * 5) * 10) / 10
-    const signal = rand(signals)
-    prospects.push({
-      id: `prospect-${i}`,
-      name: `${rand(FIRST_NAMES)} ${rand(LAST_NAMES)}`,
-      company,
-      role: rand(roles),
-      confidence,
-      signal,
-      signalDetail: rand(SIGNAL_DETAILS[signal]),
-      daysAgo: Math.floor(Math.random() * 14) + 1,
-    })
-  }
-
-  return prospects.sort((a, b) => b.confidence - a.confidence)
+  // real-data fields
+  sources: string[]
+  sourceUrls: Record<string, string>
+  verified: boolean
+  domain?: string
 }
 
 export const SIGNAL_COLORS: Record<SignalType, string> = {
@@ -94,4 +34,52 @@ export function signalCounts(prospects: Prospect[]): Record<SignalType, number> 
   const counts: Record<SignalType, number> = { FUNDING: 0, HIRING: 0, LAUNCH: 0, GROWTH: 0 }
   for (const p of prospects) counts[p.signal]++
   return counts
+}
+
+function inferSignal(p: ProspectResult): SignalType {
+  const src = p.source
+  if (src.includes("Crunchbase")) return "FUNDING"
+  if (src.includes("ProductHunt")) return "LAUNCH"
+  if (src.includes("HackerNews") || src.includes("LinkedInJobs")) return "HIRING"
+  return "GROWTH"
+}
+
+function inferSignalDetail(p: ProspectResult): string {
+  if (p.funding_amount) return `Raised ${p.funding_amount}${p.funding_stage ? ` (${p.funding_stage})` : ""}`
+  if (p.news_signal) return p.news_signal.slice(0, 80)
+  if (p.jobs_signal) return p.jobs_signal.slice(0, 80)
+  return `Found on ${p.source}`
+}
+
+function daysAgoFrom(p: ProspectResult): number {
+  const dates = [...(p.signal_dates ?? []), p.announced_on].filter(Boolean) as string[]
+  const latest = dates.sort().at(-1)
+  if (!latest) return 0
+  return Math.max(0, Math.floor((Date.now() - new Date(latest).getTime()) / 86_400_000))
+}
+
+export function toDisplayProspect(p: ProspectResult, index: number): Prospect {
+  const sources = p.source.split(" + ").map((s) => s.trim()).filter(Boolean)
+  const sourceUrls: Record<string, string> = {}
+  if (p._github_url) sourceUrls["GitHub"] = p._github_url
+  if (p._hn_url) sourceUrls["HackerNews"] = p._hn_url
+  if (p.producthunt_url) sourceUrls["ProductHunt"] = p.producthunt_url
+  if (p.crunchbase_url) sourceUrls["Crunchbase"] = p.crunchbase_url
+  if (p.linkedin_url) sourceUrls["LinkedIn"] = p.linkedin_url
+  if (p.twitter_url) sourceUrls["Twitter"] = p.twitter_url
+
+  return {
+    id: `p-${index}`,
+    name: p.name ?? p.company ?? "Unknown",
+    company: p.company ?? p.domain ?? "",
+    role: p.role ?? "",
+    confidence: p.confidence ?? 0,
+    signal: inferSignal(p),
+    signalDetail: inferSignalDetail(p),
+    daysAgo: daysAgoFrom(p),
+    sources,
+    sourceUrls,
+    verified: sources.length >= 2 || (p.website_verified ?? false),
+    domain: p.domain,
+  }
 }
