@@ -58,18 +58,19 @@ export function generateProspects(query: string, count = 15): Prospect[] {
 
   for (let i = 0; i < count; i++) {
     let company: string
-    do { company = rand(companies) } while (seen.has(company))
+    do { company = rand(companies) } while (seen.has(company) && seen.size < companies.length)
     seen.add(company)
 
     const confidence = Math.round((5 + Math.random() * 5) * 10) / 10
+    const signal = rand(signals)
     prospects.push({
       id: `prospect-${i}`,
       name: `${rand(FIRST_NAMES)} ${rand(LAST_NAMES)}`,
       company,
       role: rand(roles),
       confidence,
-      signal: rand(signals),
-      signalDetail: rand(SIGNAL_DETAILS[rand(signals)]),
+      signal,
+      signalDetail: rand(SIGNAL_DETAILS[signal]),
       daysAgo: Math.floor(Math.random() * 14) + 1,
     })
   }
