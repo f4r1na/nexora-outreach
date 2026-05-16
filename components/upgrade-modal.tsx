@@ -9,7 +9,7 @@ type Props = {
   onClose: () => void;
 };
 
-const PLAN_ORDER: PlanKey[] = ["free", "starter", "pro", "agency"];
+const PLAN_ORDER: PlanKey[] = ["free", "pro", "agency"];
 
 export function UpgradeModal({ requiredPlan, onClose }: Props) {
   const [loading, setLoading] = useState<string | null>(null);

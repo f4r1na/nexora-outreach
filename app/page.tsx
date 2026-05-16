@@ -28,6 +28,288 @@ function NexoraLogo({ size = 36 }: { size?: number }) {
   )
 }
 
+/* ─── Signal Ticker ──────────────────────────────────────────────────────── */
+const TICKER_CONTENT =
+  "🔥 James Chen at DataFlow just triggered a funding signal   ·   Sarah Kim at CloudSync hired a VP of Sales   ·   Marcus Lee posted on HN Hiring   ·   DataPilot raised Series B   ·   3 new signals detected in last 60 seconds   ·   "
+
+function SignalTicker() {
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 60,
+        height: 32,
+        background: "#0a0a0a",
+        borderBottom: "1px solid #1a1a1a",
+        display: "flex",
+        alignItems: "center",
+        overflow: "hidden",
+      }}
+    >
+      {/* Left badge */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          padding: "0 14px",
+          flexShrink: 0,
+          borderRight: "1px solid #1a1a1a",
+        }}
+      >
+        <div
+          style={{
+            width: 5,
+            height: 5,
+            borderRadius: "50%",
+            background: "#f97316",
+            animation: "signalPulse 1.8s ease-in-out infinite",
+          }}
+        />
+        <span
+          className="font-mono"
+          style={{ fontSize: 9, color: "#f97316", letterSpacing: "0.12em", fontWeight: 600 }}
+        >
+          SIGNALS
+        </span>
+      </div>
+
+      {/* Scrolling text */}
+      <div style={{ flex: 1, overflow: "hidden" }}>
+        <div
+          style={{
+            display: "flex",
+            whiteSpace: "nowrap",
+            animation: "tickerScroll 55s linear infinite",
+          }}
+        >
+          <span className="font-mono" style={{ fontSize: 10, color: "#555" }}>{TICKER_CONTENT}</span>
+          <span className="font-mono" style={{ fontSize: 10, color: "#555" }}>{TICKER_CONTENT}</span>
+        </div>
+      </div>
+
+      {/* Right badge */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 5,
+          padding: "0 12px",
+          flexShrink: 0,
+          borderLeft: "1px solid #1a1a1a",
+        }}
+      >
+        <div
+          style={{
+            width: 5,
+            height: 5,
+            borderRadius: "50%",
+            background: "#4ade80",
+            boxShadow: "0 0 4px rgba(74,222,128,0.6)",
+            animation: "signalPulse 1.8s ease-in-out infinite 0.4s",
+          }}
+        />
+        <span
+          className="font-mono"
+          style={{ fontSize: 9, color: "#4ade80", letterSpacing: "0.12em", fontWeight: 600 }}
+        >
+          LIVE
+        </span>
+      </div>
+    </div>
+  )
+}
+
+/* ─── Social Proof bar ───────────────────────────────────────────────────── */
+const COMPANIES = ["DATAFLOW", "CLOUDSYNC", "VELOCITY AI", "NEXGEN", "STACKPILOT"]
+
+function SocialProof() {
+  const doubled = [...COMPANIES, ...COMPANIES]
+  return (
+    <div
+      style={{
+        background: "#080808",
+        borderTop: "1px solid #1a1a1a",
+        borderBottom: "1px solid #1a1a1a",
+        padding: "18px 0",
+        overflow: "hidden",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center" }}>
+        {/* Label */}
+        <div
+          style={{
+            flexShrink: 0,
+            padding: "0 32px",
+            borderRight: "1px solid #1e1e1e",
+            whiteSpace: "nowrap",
+          }}
+        >
+          <span
+            className="font-mono"
+            style={{ fontSize: 10, color: "#333", letterSpacing: "0.12em" }}
+          >
+            Trusted by founders at
+          </span>
+        </div>
+
+        {/* Marquee */}
+        <div style={{ flex: 1, overflow: "hidden" }}>
+          <div
+            style={{
+              display: "flex",
+              animation: "marqueeScroll 22s linear infinite",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {doubled.map((name, i) => (
+              <span
+                key={i}
+                className="font-mono"
+                style={{
+                  fontSize: 11,
+                  color: "#3a3a3a",
+                  letterSpacing: "0.12em",
+                  padding: "0 40px",
+                  borderRight: "1px solid #1e1e1e",
+                }}
+              >
+                {name}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ─── Before / After ─────────────────────────────────────────────────────── */
+const BEFORE_ITEMS = [
+  "2% reply rate",
+  "40 hrs/week researching",
+  "100 emails → 2 replies",
+  "$500/mo on prospect tools",
+  "Generic spray and pray",
+]
+
+const AFTER_ITEMS = [
+  "23% reply rate",
+  "2 hours/week reviewing",
+  "20 emails → 5 replies",
+  "$0 on prospect tools",
+  "Signal-driven precision",
+]
+
+function BeforeAfter() {
+  return (
+    <section className="px-6 py-24 md:px-12">
+      <div className="max-w-5xl mx-auto">
+        <FadeIn style={{ marginBottom: 40 }}>
+          <p
+            className="font-mono uppercase"
+            style={{ fontSize: 10, color: "rgba(249,115,22,0.45)", letterSpacing: "0.25em", marginBottom: 12 }}
+          >
+            The difference
+          </p>
+          <h2 className="text-3xl md:text-4xl font-black tracking-tight">
+            Before and after.
+          </h2>
+        </FadeIn>
+
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-0 md:gap-0 items-stretch">
+          {/* Before */}
+          <FadeIn>
+            <div
+              style={{
+                background: "rgba(239,68,68,0.03)",
+                border: "1px solid rgba(239,68,68,0.1)",
+                padding: "2rem",
+                height: "100%",
+              }}
+            >
+              <p
+                className="font-mono uppercase"
+                style={{ fontSize: 9, color: "rgba(239,68,68,0.55)", letterSpacing: "0.22em", marginBottom: 20 }}
+              >
+                Before Nexora
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {BEFORE_ITEMS.map((item, i) => (
+                  <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <span style={{ color: "rgba(239,68,68,0.6)", fontSize: 12, flexShrink: 0, marginTop: 1 }}>
+                      ✗
+                    </span>
+                    <span style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", lineHeight: 1.4 }}>
+                      {item}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
+
+          {/* VS */}
+          <FadeIn delay={60}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "24px 20px",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: "1.75rem",
+                  fontWeight: 900,
+                  color: "#f97316",
+                  letterSpacing: "-0.02em",
+                  opacity: 0.9,
+                }}
+              >
+                VS
+              </span>
+            </div>
+          </FadeIn>
+
+          {/* After */}
+          <FadeIn delay={120}>
+            <div
+              style={{
+                background: "rgba(249,115,22,0.03)",
+                border: "1px solid rgba(249,115,22,0.1)",
+                padding: "2rem",
+                height: "100%",
+              }}
+            >
+              <p
+                className="font-mono uppercase"
+                style={{ fontSize: 9, color: "rgba(249,115,22,0.55)", letterSpacing: "0.22em", marginBottom: 20 }}
+              >
+                After Nexora
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {AFTER_ITEMS.map((item, i) => (
+                  <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <span style={{ color: "#4ade80", fontSize: 12, flexShrink: 0, marginTop: 1 }}>✓</span>
+                    <span style={{ fontSize: 13, color: "rgba(255,255,255,0.72)", lineHeight: 1.4 }}>
+                      {item}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 /* ─── Typewriter hook ────────────────────────────────────────────────────── */
 function useTypewriter(text: string, speed = 45, startDelay = 900) {
   const [displayed, setDisplayed] = useState("")
@@ -96,10 +378,12 @@ function FadeIn({
   children,
   delay = 0,
   className = "",
+  style,
 }: {
   children: ReactNode
   delay?: number
   className?: string
+  style?: React.CSSProperties
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
@@ -118,6 +402,7 @@ function FadeIn({
       ref={ref}
       className={className}
       style={{
+        ...style,
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(20px)",
         transition: `opacity 0.55s ease ${delay}ms, transform 0.55s ease ${delay}ms`,
@@ -257,7 +542,6 @@ function LiveDemo() {
         width: "100%",
       }}
     >
-      {/* Title bar */}
       <div
         className="font-mono"
         style={{
@@ -288,14 +572,13 @@ function LiveDemo() {
               borderRadius: "50%",
               background: "#4ade80",
               boxShadow: "0 0 6px rgba(74,222,128,0.7)",
-              animation: "demoPulse 1.8s ease-in-out infinite",
+              animation: "signalPulse 1.8s ease-in-out infinite",
             }}
           />
           <span style={{ fontSize: 9, color: "#4ade80", letterSpacing: "0.12em", fontWeight: 600 }}>LIVE</span>
         </div>
       </div>
 
-      {/* Phase label */}
       <div
         className="font-mono"
         style={{ padding: "10px 16px 4px", fontSize: 9, color: "rgba(249,115,22,0.4)", letterSpacing: "0.24em" }}
@@ -303,7 +586,6 @@ function LiveDemo() {
         [{p.label}]
       </div>
 
-      {/* Content */}
       <div className="font-mono" style={{ padding: "8px 16px 22px", minHeight: 210 }}>
         {phase === 0 ? (
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -348,7 +630,6 @@ function LiveDemo() {
         )}
       </div>
 
-      {/* Bottom accent bar */}
       <div
         style={{
           position: "absolute",
@@ -449,9 +730,9 @@ export default function LandingPage() {
           0%, 100% { opacity: 1; }
           50%      { opacity: 0; }
         }
-        @keyframes demoPulse {
-          0%, 100% { opacity: 1; box-shadow: 0 0 6px rgba(74,222,128,0.7); }
-          50%      { opacity: 0.35; box-shadow: none; }
+        @keyframes signalPulse {
+          0%, 100% { opacity: 1; }
+          50%      { opacity: 0.3; }
         }
         @keyframes demoLineIn {
           from { opacity: 0; transform: translateX(-6px); }
@@ -461,23 +742,36 @@ export default function LandingPage() {
           from { opacity: 0; transform: translateY(16px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        @keyframes tickerScroll {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-50%); }
+        }
+        @keyframes marqueeScroll {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-50%); }
+        }
       `}</style>
+
+      {/* ── Signal ticker (above everything) ───────────────────────────────── */}
+      <SignalTicker />
 
       {/* ── Scanline ───────────────────────────────────────────────────────── */}
       <div
-        className="fixed inset-0 pointer-events-none z-50"
+        className="fixed inset-0 pointer-events-none"
         aria-hidden="true"
         style={{
+          zIndex: 30,
           backgroundImage:
             "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px)",
         }}
       />
 
-      {/* ── Left edge line ─────────────────────────────────────────────────── */}
+      {/* ── Left edge orange line ───────────────────────────────────────────── */}
       <div
-        className="fixed left-0 top-0 w-px z-40"
+        className="fixed left-0 top-0 w-px"
         aria-hidden="true"
         style={{
+          zIndex: 40,
           backgroundColor: "#f97316",
           animation: mounted ? "growDown 1.2s ease-out forwards" : "none",
           height: 0,
@@ -485,9 +779,11 @@ export default function LandingPage() {
       />
 
       {/* ── Navbar ─────────────────────────────────────────────────────────── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 px-6 md:px-12" style={{ paddingTop: 22, paddingBottom: 22 }}>
+      <nav
+        className="fixed left-0 right-0 px-6 md:px-12"
+        style={{ top: 32, zIndex: 50, paddingTop: 20, paddingBottom: 20 }}
+      >
         <div className="flex items-center justify-between">
-
           <Link href="/" className="flex items-center gap-2.5">
             <NexoraLogo size={36} />
           </Link>
@@ -534,7 +830,17 @@ export default function LandingPage() {
       {/* ── Hero ───────────────────────────────────────────────────────────── */}
       <section className="relative min-h-screen flex flex-col justify-center px-6 md:px-12 overflow-hidden">
 
-        {/* Ambient glow */}
+        {/* Dot grid */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          aria-hidden="true"
+          style={{
+            backgroundImage: "radial-gradient(circle, #1a1a1a 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
+          }}
+        />
+
+        {/* Ambient orange glow */}
         <div
           className="absolute inset-0 pointer-events-none"
           aria-hidden="true"
@@ -544,24 +850,49 @@ export default function LandingPage() {
           }}
         />
 
-        {/* Rotated label */}
-        <div className="absolute left-6 top-1/2 -translate-y-1/2 hidden xl:block" aria-hidden="true">
+        {/* Far-left rotated sidebar label */}
+        <div
+          className="absolute top-1/2 hidden xl:flex items-center"
+          style={{ left: 4, transform: "translateY(-50%)" }}
+          aria-hidden="true"
+        >
           <span
-            className="text-[10px] uppercase -rotate-90 block whitespace-nowrap origin-center"
-            style={{ letterSpacing: "0.35em", color: "rgba(255,255,255,0.22)" }}
+            style={{
+              fontSize: 9,
+              color: "#333",
+              letterSpacing: "0.35em",
+              textTransform: "uppercase",
+              writingMode: "vertical-lr",
+              transform: "rotate(180deg)",
+              userSelect: "none",
+            }}
           >
             AI-Powered Sales Platform
           </span>
         </div>
 
         {/* Content */}
-        <div className="max-w-7xl w-full mx-auto" style={{ paddingTop: 88, paddingBottom: 72 }}>
+        <div className="max-w-7xl w-full mx-auto" style={{ paddingTop: 120, paddingBottom: 72 }}>
 
           {/* Two-column: left = copy + terminal, right = demo */}
           <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-16 lg:gap-24 items-center">
 
             {/* Left column */}
             <div>
+              {/* Category label */}
+              <div style={{ marginBottom: 16 }}>
+                <span
+                  className="font-mono uppercase"
+                  style={{
+                    fontSize: 10,
+                    letterSpacing: "0.32em",
+                    color: "rgba(249,115,22,0.5)",
+                  }}
+                >
+                  AI-Powered Sales Platform
+                </span>
+              </div>
+
               {/* NEXORA */}
               <h1
                 className="font-black tracking-tighter"
@@ -621,7 +952,6 @@ export default function LandingPage() {
                   maxWidth: 440,
                 }}
               >
-                {/* Bar */}
                 <div
                   style={{
                     display: "flex",
@@ -646,7 +976,6 @@ export default function LandingPage() {
                     COMMAND
                   </span>
                 </div>
-                {/* Input line */}
                 <div style={{ padding: "13px 14px 15px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                     <span className="font-mono" style={{ color: "#f97316", fontSize: 13, flexShrink: 0 }}>
@@ -668,7 +997,6 @@ export default function LandingPage() {
                     />
                   </div>
                 </div>
-                {/* Edge fades */}
                 <div
                   className="absolute inset-y-0 left-0 w-6 pointer-events-none"
                   style={{ background: "linear-gradient(to right, rgba(0,0,0,0.55), transparent)" }}
@@ -689,14 +1017,16 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Stats row — below both columns */}
+          {/* Stats row */}
           <div
             style={{
               display: "flex",
               gap: 64,
               marginTop: 72,
               paddingTop: 48,
+              paddingBottom: 48,
               borderTop: "1px solid rgba(255,255,255,0.07)",
+              borderBottom: "1px solid rgba(255,255,255,0.07)",
             }}
           >
             <div>
@@ -733,8 +1063,14 @@ export default function LandingPage() {
         {/* Scroll indicator */}
         <div className="absolute bottom-8 right-6 md:right-12">
           <span
-            className="block -rotate-90 whitespace-nowrap origin-center uppercase"
-            style={{ fontSize: 10, color: "rgba(255,255,255,0.22)", letterSpacing: "0.24em" }}
+            className="block whitespace-nowrap uppercase"
+            style={{
+              fontSize: 10,
+              color: "rgba(255,255,255,0.22)",
+              letterSpacing: "0.24em",
+              writingMode: "vertical-lr",
+              transform: "rotate(180deg)",
+            }}
           >
             Scroll
           </span>
@@ -748,19 +1084,13 @@ export default function LandingPage() {
         />
       </section>
 
-      {/* ── Section divider ────────────────────────────────────────────────── */}
-      <div
-        aria-hidden="true"
-        style={{
-          height: 1,
-          background: "linear-gradient(to right, transparent, rgba(255,255,255,0.05), transparent)",
-        }}
-      />
+      {/* ── Social proof bar ───────────────────────────────────────────────── */}
+      <SocialProof />
 
       {/* ── No Limits ──────────────────────────────────────────────────────── */}
       <section className="px-6 py-32 md:px-12 relative">
         <div className="max-w-7xl mx-auto">
-          <FadeIn className="mb-14">
+          <FadeIn style={{ marginBottom: 56 }}>
             <h2 className="text-4xl md:text-5xl font-black tracking-tight">
               No limits. No compromises.
             </h2>
@@ -779,6 +1109,9 @@ export default function LandingPage() {
           style={{ background: "linear-gradient(to bottom, transparent, rgba(0,0,0,0.3))" }}
         />
       </section>
+
+      {/* ── Before / After ─────────────────────────────────────────────────── */}
+      <BeforeAfter />
 
       {/* ── Section divider ────────────────────────────────────────────────── */}
       <div
@@ -830,7 +1163,7 @@ export default function LandingPage() {
       <section id="pricing" className="px-6 py-32 md:px-12 border-t border-white/10">
         <div className="max-w-5xl mx-auto">
 
-          <FadeIn className="mb-16">
+          <FadeIn style={{ marginBottom: 64 }}>
             <h2 className="text-4xl md:text-5xl font-black tracking-tight mb-4">Pricing</h2>
             <p className="text-white/50">7-day free trial. No credit card required.</p>
           </FadeIn>
@@ -880,7 +1213,7 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <FadeIn delay={200} className="mt-12 flex justify-center">
+          <FadeIn delay={200} style={{ marginTop: 48, display: "flex", justifyContent: "center" }}>
             <Link
               href="/onboarding"
               className="group inline-flex items-center gap-3 text-sm tracking-wide"
@@ -906,7 +1239,7 @@ export default function LandingPage() {
 
       {/* ── Pricing footnotes ──────────────────────────────────────────────── */}
       <section className="px-6 pb-20 md:px-12">
-        <FadeIn className="flex flex-col items-center gap-4">
+        <FadeIn style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
           {[
             "No contracts. Cancel anytime.",
             "No credit card required for trial.",
@@ -920,20 +1253,87 @@ export default function LandingPage() {
       </section>
 
       {/* ── Footer ─────────────────────────────────────────────────────────── */}
-      <footer className="px-6 py-12 md:px-12 border-t border-white/10">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-2.5">
-            <NexoraLogo size={24} />
-            <span className="text-sm tracking-wide" style={{ color: "rgba(255,255,255,0.38)" }}>
-              Nexora
+      <footer className="px-6 md:px-12 border-t border-white/10" style={{ paddingTop: 56, paddingBottom: 48 }}>
+        <div className="max-w-7xl mx-auto">
+
+          {/* Top row */}
+          <div
+            className="flex flex-col md:flex-row justify-between items-start gap-10"
+            style={{ marginBottom: 48 }}
+          >
+            <div>
+              <div className="flex items-center gap-2.5" style={{ marginBottom: 16 }}>
+                <NexoraLogo size={26} />
+                <span className="text-sm tracking-wide" style={{ color: "rgba(255,255,255,0.38)" }}>
+                  Nexora
+                </span>
+              </div>
+              <p
+                style={{
+                  fontSize: 13,
+                  color: "rgba(255,255,255,0.32)",
+                  maxWidth: "38ch",
+                  lineHeight: 1.65,
+                }}
+              >
+                Built for founders who close deals, not craft emails.
+              </p>
+            </div>
+
+            {/* Social links */}
+            <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+              <a
+                href="https://twitter.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "rgba(255,255,255,0.28)", transition: "color 0.2s ease", display: "block" }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.7)" }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.28)" }}
+                aria-label="Twitter / X"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.259 5.629z" />
+                </svg>
+              </a>
+              <a
+                href="https://linkedin.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "rgba(255,255,255,0.28)", transition: "color 0.2s ease", display: "block" }}
+                onMouseEnter={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.7)" }}
+                onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.28)" }}
+                aria-label="LinkedIn"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+                </svg>
+              </a>
+            </div>
+          </div>
+
+          {/* Bottom row */}
+          <div
+            style={{
+              borderTop: "1px solid rgba(255,255,255,0.06)",
+              paddingTop: 20,
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: 12,
+            }}
+          >
+            <p
+              className="uppercase"
+              style={{ fontSize: 9, color: "rgba(255,255,255,0.18)", letterSpacing: "0.24em" }}
+            >
+              Cold outreach, reinvented
+            </p>
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.15)", letterSpacing: "0.04em" }}>
+              nexoraoutreach.com
             </span>
           </div>
-          <p
-            className="uppercase"
-            style={{ fontSize: 10, color: "rgba(255,255,255,0.22)", letterSpacing: "0.22em" }}
-          >
-            Cold outreach, reinvented
-          </p>
         </div>
       </footer>
 
