@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
 
         const crossed  = crossReference(all);
         const verified = await verifyWebsites(crossed);
-        const scored   = filterByConfidence(verified, 5);
+        const scored   = filterByConfidence(verified, 3);
 
         const avg = scored.length > 0
           ? Math.round(
