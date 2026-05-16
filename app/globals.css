@@ -355,3 +355,49 @@
   background-image: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
   background-size: 28px 28px;
 }
+
+/* Bar fill animation (scaleX from 0->1, preserves computed width) */
+@keyframes bar-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.bar-fill-animate {
+  animation: bar-fill 1s ease-out both;
+  transform-origin: left;
+}
+
+/* Orange burst on success */
+@keyframes orange-burst {
+  0% { box-shadow: 0 0 0 0 rgba(249,115,22,0.5); }
+  70% { box-shadow: 0 0 0 24px rgba(249,115,22,0); }
+  100% { box-shadow: 0 0 0 0 rgba(249,115,22,0); }
+}
+.animate-orange-burst {
+  animation: orange-burst 0.6s ease-out both;
+}
+
+/* Green pulse for connected badges */
+@keyframes green-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.animate-green-pulse {
+  animation: green-pulse 2s ease-in-out infinite;
+}
+
+/* Number flip (used in top bar stats) */
+@keyframes number-flip {
+  0% { transform: translateY(0); opacity: 1; }
+  45% { transform: translateY(-100%); opacity: 0; }
+  55% { transform: translateY(100%); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.animate-number-flip {
+  animation: number-flip 0.4s ease-in-out;
+}
+
+/* Halo spin (for command flow overlay input) */
+@keyframes halo-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}

@@ -24,7 +24,7 @@ export function Sidebar({ userEmail, userName, plan }: SidebarProps) {
   const pathname = usePathname()
 
   return (
-    <aside className="flex h-screen w-56 flex-col border-r border-border bg-card animate-slide-in-left">
+    <aside className="flex h-screen w-56 flex-col border-r border-border bg-background animate-slide-in-left">
       {/* Orange top accent line */}
       <div style={{ height: 2, background: "linear-gradient(90deg, #f97316, #fbbf24)" }} />
 
@@ -50,7 +50,7 @@ export function Sidebar({ userEmail, userName, plan }: SidebarProps) {
                   className={cn(
                     "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200",
                     isActive
-                      ? "bg-secondary text-primary shadow-[inset_2px_0_0_#f97316]"
+                      ? "bg-secondary text-primary shadow-[inset_3px_0_0_#f97316]"
                       : "text-muted-foreground hover:bg-secondary hover:text-foreground hover:translate-x-0.5"
                   )}
                 >
@@ -78,7 +78,7 @@ export function Sidebar({ userEmail, userName, plan }: SidebarProps) {
               className="flex items-center rounded px-1.5 py-0.5 shrink-0"
               style={{ background: "#f97316" }}
             >
-              <span className="text-[9px] font-medium text-white uppercase tracking-wide">
+              <span className="text-[9px] font-medium text-white uppercase tracking-wide whitespace-nowrap">
                 {plan}
               </span>
             </div>

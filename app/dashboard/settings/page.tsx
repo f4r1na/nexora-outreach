@@ -68,7 +68,7 @@ export default async function SettingsPage() {
                 {gmail ? (
                   <>
                     <div className="flex items-center gap-1.5">
-                      <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                      <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-green-pulse" />
                       <span className="text-xs text-muted-foreground">Connected</span>
                     </div>
                     <Button variant="outline" size="sm" className="border-border bg-card hover:bg-secondary">
@@ -110,9 +110,9 @@ export default async function SettingsPage() {
                 <span className="text-sm">Credits Used</span>
                 <span className="text-sm font-mono">{creditsUsed.toLocaleString()} / {creditsLimit.toLocaleString()}</span>
               </div>
-              <div className="h-2 rounded-full bg-secondary">
+              <div className="h-2 rounded-full bg-secondary overflow-hidden">
                 <div
-                  className="h-2 rounded-full bg-primary"
+                  className="h-2 rounded-full bg-primary bar-fill-animate"
                   style={{ width: `${Math.min(creditsPercent, 100)}%` }}
                 />
               </div>
