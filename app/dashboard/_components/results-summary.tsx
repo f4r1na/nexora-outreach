@@ -38,7 +38,7 @@ export function ResultsSummary({ prospects, onEditTemplate, onSendEmails, onClos
   ]
 
   const sourceCounts = visible
-    .flatMap((p) => p.sources)
+    .flatMap((p) => p.sources ?? [])
     .reduce((acc, s) => ({ ...acc, [s]: (acc[s] ?? 0) + 1 }), {} as Record<string, number>)
   const sources = Object.entries(sourceCounts)
     .sort((a, b) => b[1] - a[1])
@@ -119,7 +119,7 @@ export function ResultsSummary({ prospects, onEditTemplate, onSendEmails, onClos
         >
           {[
             { label: "Prospects", value: visible.length },
-            { label: "Sources", value: uniqueSourceCount },
+            { label: "Sources", value: uniqueSourceCount || "-" },
             { label: "Avg Score", value: `${avg}/10` },
             { label: "Est. Replies", value: `~${Math.round(selectedCount * (estReplyRate / 100))}` },
           ].map((stat, i) => (
@@ -309,7 +309,7 @@ export function ResultsSummary({ prospects, onEditTemplate, onSendEmails, onClos
                 }}>
                   {p.verified ? "Verified" : "Unverified"}
                 </span>
-                {p.sources.map((s) => (
+                {(p.sources ?? []).map((s) => (
                   <span key={s} style={{
                     fontSize: 10, color: "rgba(255,255,255,0.4)",
                     border: "1px solid rgba(255,255,255,0.1)",
@@ -318,9 +318,9 @@ export function ResultsSummary({ prospects, onEditTemplate, onSendEmails, onClos
                     {s}
                   </span>
                 ))}
-                {Object.values(p.sourceUrls).length > 0 && (
+                {(p.sources ?? []).length > 0 && p.sourceUrls?.[(p.sources ?? [])[0]] && (
                   <a
-                    href={Object.values(p.sourceUrls)[0]}
+                    href={p.sourceUrls[(p.sources ?? [])[0]]}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{
