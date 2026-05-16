@@ -1,36 +1,15 @@
-// app/dashboard/_components/research-overlay.tsx
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Prospect, SIGNAL_COLORS, generateProspects } from "./prospect-data"
+import { Prospect, SIGNAL_COLORS, toDisplayProspect } from "./prospect-data"
+import type { ProspectResult } from "@/lib/search/prospect-searcher"
 
 const EASE = [0.4, 0, 0.2, 1] as const
 
 interface TerminalLine {
   text: string
   done: boolean
-}
-
-function buildTerminalLines(query: string, count: number): { text: string; delay: number }[] {
-  const q = query.toLowerCase()
-  const audience = q.includes("saas") ? "SaaS founders" : q.includes("marketing") ? "marketing leaders" : "prospects"
-  const signal = q.includes("series") || q.includes("fund") ? "Series A, 90 days" : q.includes("hir") ? "hiring signals" : "recent activity"
-  return [
-    { text: "→ Parsing your request...", delay: 200 },
-    { text: `→ Identified: ${audience}, ${signal}`, delay: 700 },
-    { text: "→ Searching GitHub API...", delay: 1200 },
-    { text: `   ████████░░ ${Math.floor(count * 0.4)} prospects found`, delay: 1800 },
-    { text: "→ Searching HackerNews...", delay: 2400 },
-    { text: `   ██████████ ${Math.floor(count * 0.3)} prospects found`, delay: 2900 },
-    { text: "→ Searching ProductHunt...", delay: 3400 },
-    { text: `   ███████░░░ ${Math.floor(count * 0.3)} prospects found`, delay: 3900 },
-    { text: "→ Cross-referencing sources...", delay: 4500 },
-    { text: "→ Verifying company websites...", delay: 5000 },
-    { text: "→ Scoring confidence (0-10)...", delay: 5600 },
-    { text: "→ Filtering below 5.0...", delay: 6200 },
-    { text: `[COMPLETE] ${count} verified prospects found`, delay: 7000 },
-  ]
 }
 
 interface ResearchOverlayProps {
@@ -42,35 +21,108 @@ export function ResearchOverlay({ query, onComplete }: ResearchOverlayProps) {
   const [lines, setLines] = useState<TerminalLine[]>([])
   const [cards, setCards] = useState<Prospect[]>([])
   const [progress, setProgress] = useState(0)
-  const [prospects] = useState(() => generateProspects(query, 15))
-
+  const [statusText, setStatusText] = useState("Scanning...")
   const onCompleteRef = useRef(onComplete)
   onCompleteRef.current = onComplete
 
   useEffect(() => {
-    const schedule = buildTerminalLines(query, prospects.length)
-    const timers: ReturnType<typeof setTimeout>[] = []
+    let cancelled = false
 
-    schedule.forEach((item, i) => {
-      timers.push(setTimeout(() => {
-        setLines(prev => [...prev, { text: item.text, done: false }])
-        setProgress(Math.round(((i + 1) / schedule.length) * 100))
-        if (i % 2 === 0 && Math.floor(i / 2) < prospects.length) {
-          setCards(prev => [...prev, prospects[Math.floor(i / 2)]])
+    async function run() {
+      const addLine = (text: string, done = false) => {
+        if (cancelled) return
+        setLines((prev) => [...prev, { text, done }])
+      }
+
+      addLine("→ Parsing your request...")
+
+      let response: Response
+      try {
+        response = await fetch("/api/prospects/research", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query }),
+        })
+      } catch {
+        addLine("[ERROR] Network error — could not reach research agent", true)
+        setTimeout(() => { if (!cancelled) onCompleteRef.current([]) }, 2000)
+        return
+      }
+
+      if (!response.ok) {
+        addLine(`[ERROR] Research agent returned ${response.status}`, true)
+        setTimeout(() => { if (!cancelled) onCompleteRef.current([]) }, 2000)
+        return
+      }
+
+      addLine("→ Agent connected — querying sources in parallel...")
+
+      const reader = response.body!.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ""
+      let sourcesDone = 0
+      const TOTAL_SOURCES = 8
+      let finalCards: Prospect[] = []
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+
+        const parts = buffer.split("\n\n")
+        buffer = parts.pop() ?? ""
+
+        for (const chunk of parts) {
+          const line = chunk.trim()
+          if (!line.startsWith("data: ")) continue
+          let event: {
+            type: string
+            source?: string
+            found?: number
+            prospects?: ProspectResult[]
+            stats?: { total: number; avg_confidence: number }
+          }
+          try { event = JSON.parse(line.slice(6)) } catch { continue }
+
+          if (cancelled) return
+
+          if (event.type === "progress") {
+            sourcesDone++
+            setProgress(Math.round((sourcesDone / TOTAL_SOURCES) * 80))
+            const label = (event.found ?? 0) === 0
+              ? `→ ${event.source}: no results`
+              : `→ ${event.source}: ${event.found} found`
+            addLine(label)
+          }
+
+          if (event.type === "result" && event.prospects) {
+            finalCards = event.prospects.map((p, i) => toDisplayProspect(p, i))
+            setCards(finalCards)
+            setProgress(95)
+            addLine("→ Cross-referencing and scoring confidence...")
+          }
+
+          if (event.type === "done" && event.stats) {
+            const { total, avg_confidence } = event.stats
+            setProgress(100)
+            if (total === 0) {
+              addLine("[COMPLETE] No prospects found matching your criteria", true)
+              setStatusText("0 prospects found")
+            } else {
+              addLine(`[COMPLETE] ${total} verified prospects · avg score ${avg_confidence}/10`, true)
+              setStatusText(`${total} prospects found`)
+            }
+            setTimeout(() => {
+              if (!cancelled) onCompleteRef.current(finalCards)
+            }, 1200)
+          }
         }
-      }, item.delay))
-    })
+      }
+    }
 
-    timers.push(setTimeout(() => {
-      setLines(prev => prev.map((l, i) => i === prev.length - 1 ? { ...l, done: true } : l))
-    }, 7200))
-
-    timers.push(setTimeout(() => {
-      onCompleteRef.current(prospects)
-    }, 8000))
-
-    return () => timers.forEach(clearTimeout)
-  }, [])
+    run()
+    return () => { cancelled = true }
+  }, [query])
 
   return (
     <motion.div
@@ -85,7 +137,6 @@ export function ResearchOverlay({ query, onComplete }: ResearchOverlayProps) {
         overflow: "hidden",
       }}
     >
-      {/* Header */}
       <div style={{
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "16px 32px",
@@ -98,13 +149,11 @@ export function ResearchOverlay({ query, onComplete }: ResearchOverlayProps) {
           </span>
         </div>
         <span style={{ fontSize: 12, color: "rgba(255,255,255,0.35)" }}>
-          {progress === 100 ? `${prospects.length} prospects found` : "Scanning..."}
+          {progress === 100 ? statusText : "Scanning..."}
         </span>
       </div>
 
-      {/* Body: split layout */}
       <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", overflow: "hidden" }}>
-        {/* Terminal */}
         <div style={{
           padding: "24px 28px",
           borderRight: "1px solid rgba(255,255,255,0.05)",
@@ -131,11 +180,15 @@ export function ResearchOverlay({ query, onComplete }: ResearchOverlayProps) {
           </AnimatePresence>
         </div>
 
-        {/* Prospect cards */}
         <div style={{ padding: "24px 28px", overflowY: "auto" }}>
           <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 14 }}>
             Live Prospects
           </p>
+          {cards.length === 0 && (
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", fontStyle: "italic" }}>
+              Waiting for results...
+            </p>
+          )}
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <AnimatePresence>
               {cards.map((p, i) => (
@@ -143,7 +196,7 @@ export function ResearchOverlay({ query, onComplete }: ResearchOverlayProps) {
                   key={p.id}
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, ease: EASE, delay: i * 0.05 }}
+                  transition={{ duration: 0.3, ease: EASE, delay: i * 0.04 }}
                   style={{
                     display: "flex", alignItems: "center", gap: 12,
                     padding: "10px 14px",
@@ -158,12 +211,12 @@ export function ResearchOverlay({ query, onComplete }: ResearchOverlayProps) {
                     display: "flex", alignItems: "center", justifyContent: "center",
                     fontSize: 13, fontWeight: 500, color: "#fff", flexShrink: 0,
                   }}>
-                    {p.name[0]}
+                    {(p.name[0] ?? "?").toUpperCase()}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 13, fontWeight: 500, color: "#fff", marginBottom: 2 }}>{p.name}</p>
                     <p style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {p.company} · {p.role}
+                      {p.company}{p.role ? ` · ${p.role}` : ""}
                     </p>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
@@ -189,7 +242,6 @@ export function ResearchOverlay({ query, onComplete }: ResearchOverlayProps) {
         </div>
       </div>
 
-      {/* Progress bar */}
       <div style={{ height: 3, backgroundColor: "rgba(255,255,255,0.06)" }}>
         <motion.div
           style={{ height: "100%", backgroundColor: "#f97316" }}
