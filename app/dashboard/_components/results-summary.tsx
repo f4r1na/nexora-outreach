@@ -37,12 +37,15 @@ export function ResultsSummary({ prospects, onEditTemplate, onSendEmails, onClos
     { range: "5-6", count: visible.filter(p => p.confidence >= 5 && p.confidence < 7).length },
   ]
 
-  const sources = [
-    { name: "GitHub", count: Math.floor(visible.length * 0.4) },
-    { name: "HackerNews", count: Math.floor(visible.length * 0.3) },
-    { name: "ProductHunt", count: Math.ceil(visible.length * 0.3) },
-  ]
-  const maxSource = Math.max(...sources.map(s => s.count), 1)
+  const sourceCounts = visible
+    .flatMap((p) => p.sources)
+    .reduce((acc, s) => ({ ...acc, [s]: (acc[s] ?? 0) + 1 }), {} as Record<string, number>)
+  const sources = Object.entries(sourceCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([name, count]) => ({ name, count }))
+  const maxSource = Math.max(...sources.map((s) => s.count), 1)
+  const uniqueSourceCount = Object.keys(sourceCounts).length
 
   const toggleSelect = (id: string) => {
     setSelected(prev => {
@@ -102,6 +105,9 @@ export function ResultsSummary({ prospects, onEditTemplate, onSendEmails, onClos
           <p style={{ fontSize: 14, color: "rgba(255,255,255,0.45)" }}>
             Avg confidence: {avg}/10 · Est. reply rate: ~{estReplyRate}%
           </p>
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginTop: 6 }}>
+            These prospects were found via public sources. Verify before reaching out.
+          </p>
         </motion.div>
 
         {/* Stats row */}
@@ -113,7 +119,7 @@ export function ResultsSummary({ prospects, onEditTemplate, onSendEmails, onClos
         >
           {[
             { label: "Prospects", value: visible.length },
-            { label: "Sources", value: 3 },
+            { label: "Sources", value: uniqueSourceCount },
             { label: "Avg Score", value: `${avg}/10` },
             { label: "Est. Replies", value: `~${Math.round(selectedCount * (estReplyRate / 100))}` },
           ].map((stat, i) => (
@@ -214,6 +220,14 @@ export function ResultsSummary({ prospects, onEditTemplate, onSendEmails, onClos
 
         {/* Prospect grid */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, paddingBottom: 120 }}>
+          {visible.length === 0 && (
+            <div style={{
+              gridColumn: "1 / -1", padding: "48px 0",
+              textAlign: "center", color: "rgba(255,255,255,0.35)", fontSize: 14,
+            }}>
+              No prospects found matching your criteria.
+            </div>
+          )}
           <AnimatePresence>
             {visible.map((p, i) => (
             <motion.div
@@ -286,6 +300,42 @@ export function ResultsSummary({ prospects, onEditTemplate, onSendEmails, onClos
                 </div>
               </div>
               <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 6 }}>{p.signalDetail}</p>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 8, flexWrap: "wrap" }}>
+                <span style={{
+                  fontSize: 10,
+                  color: p.verified ? "#22c55e" : "rgba(255,255,255,0.35)",
+                  border: `1px solid ${p.verified ? "rgba(34,197,94,0.3)" : "rgba(255,255,255,0.12)"}`,
+                  borderRadius: 4, padding: "1px 6px",
+                }}>
+                  {p.verified ? "Verified" : "Unverified"}
+                </span>
+                {p.sources.map((s) => (
+                  <span key={s} style={{
+                    fontSize: 10, color: "rgba(255,255,255,0.4)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: 4, padding: "1px 6px",
+                  }}>
+                    {s}
+                  </span>
+                ))}
+                {Object.values(p.sourceUrls).length > 0 && (
+                  <a
+                    href={Object.values(p.sourceUrls)[0]}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      marginLeft: "auto", fontSize: 10,
+                      color: "rgba(255,255,255,0.4)",
+                      textDecoration: "none",
+                      border: "1px solid rgba(255,255,255,0.1)",
+                      borderRadius: 4, padding: "1px 6px",
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    View Source
+                  </a>
+                )}
+              </div>
             </motion.div>
             ))}
           </AnimatePresence>
