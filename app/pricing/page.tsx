@@ -1,10 +1,14 @@
-import Link from "next/link"
-import { Zap, Check, ArrowRight } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { Zap, Check, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const plans = [
   {
+    key: "pro",
     name: "Pro",
     price: "$199",
     period: "/month",
@@ -19,8 +23,10 @@ const plans = [
     ],
     cta: "Start Free Trial",
     highlighted: false,
+    trial: true,
   },
   {
+    key: "agency",
     name: "Agency",
     price: "$499",
     period: "/month",
@@ -37,8 +43,10 @@ const plans = [
     ],
     cta: "Start Free Trial",
     highlighted: true,
+    trial: true,
   },
   {
+    key: "enterprise",
     name: "Enterprise",
     price: "$999",
     period: "/month",
@@ -56,8 +64,9 @@ const plans = [
     ],
     cta: "Contact Sales",
     highlighted: false,
+    trial: false,
   },
-]
+];
 
 const comparisonFeatures = [
   { name: "Emails per month", pro: "1,000", agency: "5,000", enterprise: "Unlimited" },
@@ -70,12 +79,36 @@ const comparisonFeatures = [
   { name: "Custom AI training", pro: false, agency: false, enterprise: true },
   { name: "SSO/SAML", pro: false, agency: false, enterprise: true },
   { name: "SLA guarantee", pro: false, agency: false, enterprise: true },
-]
+];
 
 export default function PricingPage() {
+  const [loading, setLoading] = useState<string | null>(null);
+
+  async function handleCheckout(planKey: string, trial: boolean) {
+    if (planKey === "enterprise") {
+      window.location.href = "mailto:sales@nexora.ai";
+      return;
+    }
+    setLoading(planKey);
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: planKey, trial }),
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else if (data.error === "Unauthorized") {
+        window.location.href = "/login";
+      }
+    } finally {
+      setLoading(null);
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="flex h-14 items-center justify-between border-b border-border px-6">
         <Link href="/dashboard" className="flex items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center rounded bg-primary">
@@ -93,7 +126,6 @@ export default function PricingPage() {
         </div>
       </header>
 
-      {/* Hero */}
       <div className="border-b border-border px-6 py-16 text-center">
         <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary mb-4">
           <span>7-day free trial</span>
@@ -105,7 +137,6 @@ export default function PricingPage() {
         </p>
       </div>
 
-      {/* Pricing Cards */}
       <div className="mx-auto max-w-5xl px-6 py-12">
         <div className="grid grid-cols-3 gap-6">
           {plans.map((plan) => (
@@ -113,9 +144,7 @@ export default function PricingPage() {
               key={plan.name}
               className={cn(
                 "rounded-md border p-6",
-                plan.highlighted
-                  ? "border-primary bg-primary/5"
-                  : "border-border bg-card"
+                plan.highlighted ? "border-primary bg-primary/5" : "border-border bg-card"
               )}
             >
               {plan.highlighted && (
@@ -124,16 +153,14 @@ export default function PricingPage() {
                 </div>
               )}
               <h3 className="text-lg font-semibold">{plan.name}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {plan.description}
-              </p>
+              <p className="mt-1 text-sm text-muted-foreground">{plan.description}</p>
               <div className="mt-4 flex items-baseline gap-1">
                 <span className="text-3xl font-semibold">{plan.price}</span>
-                <span className="text-sm text-muted-foreground">
-                  {plan.period}
-                </span>
+                <span className="text-sm text-muted-foreground">{plan.period}</span>
               </div>
               <Button
+                onClick={() => handleCheckout(plan.key, plan.trial)}
+                disabled={loading === plan.key}
                 className={cn(
                   "mt-6 w-full gap-2",
                   plan.highlighted
@@ -141,7 +168,7 @@ export default function PricingPage() {
                     : "bg-secondary text-foreground hover:bg-secondary/80"
                 )}
               >
-                {plan.cta}
+                {loading === plan.key ? "Redirecting..." : plan.cta}
                 <ArrowRight className="h-4 w-4" />
               </Button>
               <ul className="mt-6 space-y-3">
@@ -157,28 +184,17 @@ export default function PricingPage() {
         </div>
       </div>
 
-      {/* Comparison Table */}
       <div className="border-t border-border px-6 py-12">
         <div className="mx-auto max-w-5xl">
-          <h2 className="mb-8 text-center text-xl font-semibold">
-            Compare plans
-          </h2>
+          <h2 className="mb-8 text-center text-xl font-semibold">Compare plans</h2>
           <div className="rounded-md border border-border bg-card overflow-hidden">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
-                    Feature
-                  </th>
-                  <th className="px-4 py-3 text-center text-sm font-medium">
-                    Pro
-                  </th>
-                  <th className="px-4 py-3 text-center text-sm font-medium text-primary">
-                    Agency
-                  </th>
-                  <th className="px-4 py-3 text-center text-sm font-medium">
-                    Enterprise
-                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">Feature</th>
+                  <th className="px-4 py-3 text-center text-sm font-medium">Pro</th>
+                  <th className="px-4 py-3 text-center text-sm font-medium text-primary">Agency</th>
+                  <th className="px-4 py-3 text-center text-sm font-medium">Enterprise</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -187,35 +203,21 @@ export default function PricingPage() {
                     <td className="px-4 py-3 text-sm">{feature.name}</td>
                     <td className="px-4 py-3 text-center text-sm">
                       {typeof feature.pro === "boolean" ? (
-                        feature.pro ? (
-                          <Check className="mx-auto h-4 w-4 text-primary" />
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )
+                        feature.pro ? <Check className="mx-auto h-4 w-4 text-primary" /> : <span className="text-muted-foreground">-</span>
                       ) : (
-                        <span className="font-mono text-muted-foreground">
-                          {feature.pro}
-                        </span>
+                        <span className="font-mono text-muted-foreground">{feature.pro}</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-center text-sm bg-primary/5">
                       {typeof feature.agency === "boolean" ? (
-                        feature.agency ? (
-                          <Check className="mx-auto h-4 w-4 text-primary" />
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )
+                        feature.agency ? <Check className="mx-auto h-4 w-4 text-primary" /> : <span className="text-muted-foreground">-</span>
                       ) : (
                         <span className="font-mono">{feature.agency}</span>
                       )}
                     </td>
                     <td className="px-4 py-3 text-center text-sm">
                       {typeof feature.enterprise === "boolean" ? (
-                        feature.enterprise ? (
-                          <Check className="mx-auto h-4 w-4 text-primary" />
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )
+                        feature.enterprise ? <Check className="mx-auto h-4 w-4 text-primary" /> : <span className="text-muted-foreground">-</span>
                       ) : (
                         <span className="font-mono">{feature.enterprise}</span>
                       )}
@@ -228,7 +230,6 @@ export default function PricingPage() {
         </div>
       </div>
 
-      {/* Footer */}
       <footer className="border-t border-border px-6 py-8">
         <div className="mx-auto max-w-5xl text-center">
           <p className="text-sm text-muted-foreground">
@@ -240,5 +241,5 @@ export default function PricingPage() {
         </div>
       </footer>
     </div>
-  )
+  );
 }
