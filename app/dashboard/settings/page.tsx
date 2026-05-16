@@ -4,6 +4,7 @@ import { Settings, Mail, CreditCard, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { PLANS, type PlanKey } from "@/lib/plans"
 import { DeleteAccount } from "./_components/delete-account"
+import Link from "next/link"
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -149,8 +150,8 @@ export default async function SettingsPage() {
                   {plan}
                 </span>
                 {plan === "free" && (
-                  <Button variant="outline" size="sm" className="border-border bg-card hover:bg-secondary">
-                    Upgrade
+                  <Button asChild variant="outline" size="sm" className="border-border bg-card hover:bg-secondary">
+                    <Link href="/dashboard/billing">Upgrade</Link>
                   </Button>
                 )}
               </div>

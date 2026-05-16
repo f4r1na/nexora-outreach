@@ -3,14 +3,8 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import {
-  LayoutDashboard,
-  Send,
-  Zap,
-  BarChart3,
-  Settings,
-  ChevronRight,
-} from "lucide-react"
+import { LayoutDashboard, Send, Zap, BarChart3, Settings } from "lucide-react"
+import { NexoraIcon } from "@/components/ui/nexora-logo"
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -30,36 +24,38 @@ export function Sidebar({ userEmail, userName, plan }: SidebarProps) {
   const pathname = usePathname()
 
   return (
-    <aside className="flex h-screen w-56 flex-col border-r border-border bg-card">
+    <aside className="flex h-screen w-56 flex-col border-r border-border bg-card animate-slide-in-left">
+      {/* Orange top accent line */}
+      <div style={{ height: 2, background: "linear-gradient(90deg, #f97316, #fbbf24)" }} />
+
       {/* Logo */}
-      <div className="flex h-14 items-center gap-2 border-b border-border px-4">
-        <div className="flex h-7 w-7 items-center justify-center rounded bg-primary">
-          <Zap className="h-4 w-4 text-primary-foreground" />
+      <div className="flex h-14 items-center gap-2.5 border-b border-border px-4">
+        <div className="animate-logo-breathe">
+          <NexoraIcon size={26} />
         </div>
         <span className="text-base font-semibold tracking-tight">Nexora</span>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 px-2 py-4">
-        <ul className="space-y-1">
+        <ul className="space-y-0.5">
           {navigation.map((item) => {
-            const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`)
+            const isActive =
+              pathname === item.href ||
+              (item.href !== "/dashboard" && pathname?.startsWith(`${item.href}/`))
             return (
               <li key={item.name}>
                 <Link
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                    "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-all duration-200",
                     isActive
-                      ? "bg-secondary text-foreground"
-                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      ? "bg-secondary text-primary shadow-[inset_2px_0_0_#f97316]"
+                      : "text-muted-foreground hover:bg-secondary hover:text-foreground hover:translate-x-0.5"
                   )}
                 >
-                  <item.icon className="h-4 w-4" />
+                  <item.icon className="h-4 w-4 shrink-0" />
                   {item.name}
-                  {isActive && (
-                    <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
-                  )}
                 </Link>
               </li>
             )
@@ -70,16 +66,21 @@ export function Sidebar({ userEmail, userName, plan }: SidebarProps) {
       {/* User Profile */}
       <div className="border-t border-border p-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-sm font-medium">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-sm font-medium shrink-0">
             {userName.charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">{userName}</p>
-            <p className="text-xs text-muted-foreground capitalize">{plan} Plan</p>
+            <p className="text-xs text-muted-foreground capitalize">{plan} plan</p>
           </div>
           {plan !== "free" && (
-            <div className="flex h-5 items-center rounded bg-primary/10 px-1.5">
-              <span className="text-[10px] font-medium text-primary uppercase">{plan.slice(0, 3)}</span>
+            <div
+              className="flex items-center rounded px-1.5 py-0.5 shrink-0"
+              style={{ background: "#f97316" }}
+            >
+              <span className="text-[9px] font-medium text-white uppercase tracking-wide">
+                {plan}
+              </span>
             </div>
           )}
         </div>

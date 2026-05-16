@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Plus } from "lucide-react";
 
 interface Campaign {
   id: string;
@@ -15,11 +15,19 @@ interface Campaign {
 }
 
 const statusStyles: Record<string, string> = {
-  active: "bg-green-500/10 text-green-500 border border-green-500/20",
-  paused: "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20",
-  stopped: "bg-red-500/10 text-red-500 border border-red-500/20",
-  sent: "bg-blue-500/10 text-blue-500 border border-blue-500/20",
-  draft: "bg-muted text-muted-foreground border border-border",
+  active: "bg-primary/10 text-primary",
+  paused: "bg-yellow-500/10 text-yellow-500",
+  stopped: "bg-red-500/10 text-red-500",
+  sent: "bg-green-500/10 text-green-500",
+  draft: "bg-secondary text-muted-foreground",
+};
+
+const statusLabels: Record<string, string> = {
+  active: "Active",
+  paused: "Paused",
+  stopped: "Stopped",
+  sent: "Complete",
+  draft: "Draft",
 };
 
 interface CampaignsTableProps {
@@ -90,6 +98,24 @@ export async function CampaignsTable({ limit, showHeader = true }: CampaignsTabl
         {showHeader && (
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <h3 className="text-sm font-medium">Recent Campaigns</h3>
+            <Link
+              href="/dashboard/campaigns/new"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "4px 12px",
+                borderRadius: 6,
+                backgroundColor: "#f97316",
+                color: "#fff",
+                fontSize: 12,
+                textDecoration: "none",
+                fontWeight: 500,
+              }}
+            >
+              <Plus style={{ width: 12, height: 12 }} />
+              New Campaign
+            </Link>
           </div>
         )}
         <div
@@ -110,7 +136,7 @@ export async function CampaignsTable({ limit, showHeader = true }: CampaignsTabl
               display: "inline-block",
               padding: "8px 20px",
               borderRadius: "6px",
-              backgroundColor: "#FF5200",
+              backgroundColor: "#f97316",
               color: "#fff",
               fontSize: "13px",
               textDecoration: "none",
@@ -128,12 +154,32 @@ export async function CampaignsTable({ limit, showHeader = true }: CampaignsTabl
       {showHeader && (
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h3 className="text-sm font-medium">Recent Campaigns</h3>
-          <Link
-            href="/dashboard/campaigns"
-            className="text-xs text-primary hover:underline"
-          >
-            View all
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/dashboard/campaigns/new"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "4px 12px",
+                borderRadius: 6,
+                backgroundColor: "#f97316",
+                color: "#fff",
+                fontSize: 12,
+                textDecoration: "none",
+                fontWeight: 500,
+              }}
+            >
+              <Plus style={{ width: 12, height: 12 }} />
+              New Campaign
+            </Link>
+            <Link
+              href="/dashboard/campaigns"
+              className="text-xs text-primary hover:underline"
+            >
+              View all
+            </Link>
+          </div>
         </div>
       )}
       <div className="overflow-x-auto">
@@ -154,7 +200,7 @@ export async function CampaignsTable({ limit, showHeader = true }: CampaignsTabl
             {campaigns.map((campaign) => (
               <tr
                 key={campaign.id}
-                className="transition-colors hover:bg-secondary/50 group"
+                className="transition-colors hover:bg-secondary/50 campaign-row group"
               >
                 <td className="px-4 py-3">
                   <Link
@@ -167,11 +213,14 @@ export async function CampaignsTable({ limit, showHeader = true }: CampaignsTabl
                 <td className="px-4 py-3">
                   <span
                     className={cn(
-                      "inline-flex rounded px-2 py-0.5 text-xs font-medium capitalize",
+                      "inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-medium",
                       statusStyles[campaign.status] ?? statusStyles.draft
                     )}
                   >
-                    {campaign.status}
+                    {campaign.status === "active" && (
+                      <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse shrink-0" />
+                    )}
+                    {statusLabels[campaign.status] ?? campaign.status}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right text-sm font-mono text-muted-foreground">
@@ -181,13 +230,13 @@ export async function CampaignsTable({ limit, showHeader = true }: CampaignsTabl
                   {campaign.sent.toLocaleString()}
                 </td>
                 <td className="px-4 py-3 text-right text-sm font-mono text-muted-foreground">
-                  {campaign.replyRate > 0 ? `${campaign.replyRate}%` : "—"}
+                  {campaign.replyRate > 0 ? `${campaign.replyRate}%` : "-"}
                 </td>
                 <td className="px-4 py-3 text-right text-sm font-mono">
                   {campaign.signals > 0 ? (
-                    <span className="text-accent">{campaign.signals}</span>
+                    <span className="text-primary">{campaign.signals}</span>
                   ) : (
-                    <span className="text-muted-foreground">—</span>
+                    <span className="text-muted-foreground">-</span>
                   )}
                 </td>
                 <td className="px-4 py-3 text-sm text-muted-foreground">

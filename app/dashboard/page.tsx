@@ -67,18 +67,20 @@ export default async function DashboardPage() {
   const isAgencyOrEnterprise = plan === "agency" || plan === "enterprise";
   const creditsLeft = (sub.credits_limit ?? 10) - (sub.credits_used ?? 0);
 
-  const stats = user ? await getDashboardStats(user.id) : { sent: 0, totalLeads: 0, responseRate: 0, signalsCount: 0 };
+  const stats = user
+    ? await getDashboardStats(user.id)
+    : { sent: 0, totalLeads: 0, responseRate: 0, signalsCount: 0 };
 
   return (
-    <div className="p-6 animate-fade-in">
+    <div className="p-6 animate-fade-in dot-grid min-h-full">
       {!isPaid && (
         <div
           style={{
             marginBottom: "24px",
             padding: "12px 16px",
             borderRadius: "8px",
-            border: "1px solid rgba(255,82,0,0.3)",
-            backgroundColor: "rgba(255,82,0,0.06)",
+            border: "1px solid rgba(249,115,22,0.25)",
+            backgroundColor: "rgba(249,115,22,0.05)",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -91,7 +93,7 @@ export default async function DashboardPage() {
             href="/pricing"
             style={{
               fontSize: "13px",
-              color: "#FF5200",
+              color: "#f97316",
               textDecoration: "none",
               fontWeight: 500,
             }}
@@ -102,8 +104,12 @@ export default async function DashboardPage() {
       )}
 
       <div className="mb-8">
-        <h1 className="mb-1 text-lg font-semibold">Mission Control</h1>
-        <p className="mb-4 text-sm text-muted-foreground">
+        <h1 className="mb-1 text-lg font-semibold">
+          <span style={{ borderBottom: "2px solid #f97316", paddingBottom: 2 }}>
+            Mission Control
+          </span>
+        </h1>
+        <p className="mb-4 text-xs text-muted-foreground">
           Your AI-powered sales command center
         </p>
         <CommandBar />
@@ -140,15 +146,21 @@ export default async function DashboardPage() {
           change={isPaid ? (stats.signalsCount > 0 ? "Leads with signals" : "No signals yet") : "Pro+ feature"}
           changeType={isPaid ? "neutral" : "negative"}
           iconName="zap"
-          iconColor="text-accent"
+          iconColor="text-primary"
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
+        <div
+          className="lg:col-span-2 animate-fade-in"
+          style={{ animationDelay: "0.15s", animationFillMode: "both" }}
+        >
           <CampaignsTable limit={isPaid ? undefined : 3} />
         </div>
-        <div className="lg:col-span-1">
+        <div
+          className="lg:col-span-1 animate-slide-in-right"
+          style={{ animationDelay: "0.2s", animationFillMode: "both" }}
+        >
           {isPaid ? (
             <SignalsFeed />
           ) : (
@@ -170,7 +182,7 @@ export default async function DashboardPage() {
                   display: "inline-block",
                   padding: "8px 20px",
                   borderRadius: "6px",
-                  backgroundColor: "#FF5200",
+                  backgroundColor: "#f97316",
                   color: "#fff",
                   fontSize: "13px",
                   textDecoration: "none",

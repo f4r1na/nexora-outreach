@@ -245,3 +245,113 @@
 .dark .card-shadow {
   box-shadow: none;
 }
+
+/* Entrance animations */
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slide-in-top {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes radar-ring {
+  0% { transform: scale(0.3); opacity: 0.8; }
+  100% { transform: scale(2.8); opacity: 0; }
+}
+
+@keyframes logo-breathe {
+  0%, 100% { filter: drop-shadow(0 0 0px rgba(249, 115, 22, 0)); }
+  50% { filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.5)); }
+}
+
+@keyframes shimmer-text {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+@keyframes ripple-out {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+@keyframes bounce-dot {
+  0%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-5px); }
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.3s ease-out forwards;
+}
+
+.animate-slide-in-top {
+  animation: slide-in-top 0.2s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.4s ease-out 0.1s both;
+}
+
+.animate-logo-breathe {
+  animation: logo-breathe 3s ease-in-out infinite;
+}
+
+.animate-shimmer-text {
+  animation: shimmer-text 2s ease-in-out infinite;
+}
+
+.animate-ripple-out {
+  animation: ripple-out 1.5s ease-out infinite;
+}
+
+.animate-bounce-dot {
+  animation: bounce-dot 1.2s ease-in-out infinite;
+}
+
+/* Stat card hover effects */
+.stat-card {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: #f97316;
+  transition: width 0.2s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+
+.dark .stat-card:hover {
+  box-shadow: 0 4px 20px rgba(249, 115, 22, 0.12);
+}
+
+.stat-card:hover::before {
+  width: 100%;
+}
+
+/* Campaign table row left accent on hover */
+.campaign-row:hover {
+  box-shadow: inset 2px 0 0 #f97316;
+}
+
+/* Dot grid background (dark mode only) */
+.dark .dot-grid {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 28px 28px;
+}

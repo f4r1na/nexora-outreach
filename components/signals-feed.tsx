@@ -102,17 +102,67 @@ export async function SignalsFeed() {
       <div className="rounded-md border border-border bg-card">
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <div className="flex items-center gap-2">
-            <Zap className="h-4 w-4 text-accent" />
+            <Zap className="h-4 w-4 text-primary" />
             <h3 className="text-sm font-medium">Live Signals</h3>
           </div>
           <span className="text-xs text-muted-foreground">0 new</span>
         </div>
         <div style={{ padding: "48px 24px", textAlign: "center" }}>
+          {/* Radar animation */}
+          <div style={{ position: "relative", width: 80, height: 80, margin: "0 auto 20px" }}>
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  borderRadius: "50%",
+                  border: "1.5px solid rgba(249,115,22,0.45)",
+                  animation: "radar-ring 2s ease-out infinite",
+                  animationDelay: `${i * 0.65}s`,
+                }}
+              />
+            ))}
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Zap style={{ width: 24, height: 24, color: "rgba(249,115,22,0.5)" }} />
+            </div>
+          </div>
           <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.45)", marginBottom: "8px" }}>
             No signals detected yet.
           </p>
-          <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.3)" }}>
-            Nexora will surface real-time signals as your campaigns run.
+          <p
+            style={{
+              fontSize: "13px",
+              color: "rgba(255,255,255,0.3)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+            }}
+          >
+            Nexora is scanning
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                style={{
+                  display: "inline-block",
+                  width: 4,
+                  height: 4,
+                  borderRadius: "50%",
+                  backgroundColor: "rgba(249,115,22,0.5)",
+                  animation: "bounce-dot 1.2s ease-in-out infinite",
+                  animationDelay: `${i * 0.2}s`,
+                }}
+              />
+            ))}
           </p>
         </div>
       </div>
@@ -120,11 +170,11 @@ export async function SignalsFeed() {
   }
 
   return (
-    <div className="rounded-md border border-border bg-card">
+    <div className="rounded-md border border-border bg-card animate-slide-in-right">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-2">
           <div className="relative">
-            <Zap className="h-4 w-4 text-accent" />
+            <Zap className="h-4 w-4 text-primary" />
             <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-green-500 animate-pulse" />
           </div>
           <h3 className="text-sm font-medium">Live Signals</h3>
@@ -142,9 +192,9 @@ export async function SignalsFeed() {
                 className={cn(
                   "h-1.5 w-1.5 rounded-full",
                   signal.priority === "high"
-                    ? "bg-accent animate-pulse"
+                    ? "bg-primary animate-pulse"
                     : signal.priority === "medium"
-                    ? "bg-primary"
+                    ? "bg-primary/60"
                     : "bg-muted-foreground"
                 )}
               />

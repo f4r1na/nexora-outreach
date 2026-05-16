@@ -1,6 +1,7 @@
 import { Plus, Search, Filter, ArrowUpDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { CampaignsTable } from "@/components/campaigns-table"
+import Link from "next/link"
 
 export default function CampaignsPage() {
   return (
@@ -13,9 +14,11 @@ export default function CampaignsPage() {
             Manage your outreach campaigns
           </p>
         </div>
-        <Button className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
-          <Plus className="h-4 w-4" />
-          New Campaign
+        <Button asChild className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90">
+          <Link href="/dashboard/campaigns/new">
+            <Plus className="h-4 w-4" />
+            New Campaign
+          </Link>
         </Button>
       </div>
 
