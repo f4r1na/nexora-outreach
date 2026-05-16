@@ -2,7 +2,7 @@
 "use client"
 
 import { useState } from "react"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts"
 import { Prospect, SIGNAL_COLORS, SignalType, avgConfidence, signalCounts } from "./prospect-data"
 import { Trash2 } from "lucide-react"
@@ -77,6 +77,18 @@ export function ResultsSummary({ prospects, onEditTemplate, onSendEmails, onClos
         display: "flex", flexDirection: "column",
       }}
     >
+      {/* Close button */}
+      <button
+        onClick={onClose}
+        style={{
+          position: "fixed", top: 20, right: 24, zIndex: 52,
+          background: "none", border: "1px solid rgba(255,255,255,0.12)",
+          borderRadius: 6, padding: "6px 12px",
+          color: "rgba(255,255,255,0.5)", fontSize: 12, cursor: "pointer",
+        }}
+      >
+        ✕ Close
+      </button>
       <div style={{ padding: "28px 40px 0", maxWidth: 1100, margin: "0 auto", width: "100%" }}>
         {/* Header */}
         <motion.div
@@ -202,7 +214,8 @@ export function ResultsSummary({ prospects, onEditTemplate, onSendEmails, onClos
 
         {/* Prospect grid */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, paddingBottom: 120 }}>
-          {visible.map((p, i) => (
+          <AnimatePresence>
+            {visible.map((p, i) => (
             <motion.div
               key={p.id}
               initial={{ opacity: 0, y: 8 }}
@@ -274,7 +287,8 @@ export function ResultsSummary({ prospects, onEditTemplate, onSendEmails, onClos
               </div>
               <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", marginTop: 6 }}>{p.signalDetail}</p>
             </motion.div>
-          ))}
+            ))}
+          </AnimatePresence>
         </div>
       </div>
 
