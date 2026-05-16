@@ -17,7 +17,11 @@ const cyclePlaceholders = [
   "Analyze my campaign performance...",
 ]
 
-export function CommandBar() {
+interface CommandBarProps {
+  onSubmit?: (query: string) => void
+}
+
+export function CommandBar({ onSubmit }: CommandBarProps = {}) {
   const [query, setQuery] = useState("")
   const [isThinking, setIsThinking] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
@@ -37,6 +41,11 @@ export function CommandBar() {
 
   const handleSubmit = () => {
     if (!query.trim()) return
+    if (onSubmit) {
+      onSubmit(query.trim())
+      setQuery("")
+      return
+    }
     setIsThinking(true)
     setTimeout(() => setIsThinking(false), 2000)
   }
