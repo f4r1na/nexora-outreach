@@ -24,6 +24,7 @@ export function ResearchOverlay({ query, onComplete }: ResearchOverlayProps) {
   const [statusText, setStatusText] = useState("Scanning...")
   const onCompleteRef = useRef(onComplete)
   onCompleteRef.current = onComplete
+  const readerRef = useRef<ReadableStreamDefaultReader<Uint8Array> | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -58,11 +59,12 @@ export function ResearchOverlay({ query, onComplete }: ResearchOverlayProps) {
       addLine("→ Agent connected — querying sources in parallel...")
 
       const reader = response.body!.getReader()
+      readerRef.current = reader
       const decoder = new TextDecoder()
       let buffer = ""
-      let sourcesDone = 0
-      const TOTAL_SOURCES = 8
+      let progressPct = 0
       let finalCards: Prospect[] = []
+      let completeCalled = false
 
       while (true) {
         const { done, value } = await reader.read()
@@ -87,8 +89,8 @@ export function ResearchOverlay({ query, onComplete }: ResearchOverlayProps) {
           if (cancelled) return
 
           if (event.type === "progress") {
-            sourcesDone++
-            setProgress(Math.round((sourcesDone / TOTAL_SOURCES) * 80))
+            progressPct = Math.min(progressPct + 10, 80)
+            setProgress(progressPct)
             const label = (event.found ?? 0) === 0
               ? `→ ${event.source}: no results`
               : `→ ${event.source}: ${event.found} found`
@@ -112,16 +114,24 @@ export function ResearchOverlay({ query, onComplete }: ResearchOverlayProps) {
               addLine(`[COMPLETE] ${total} verified prospects · avg score ${avg_confidence}/10`, true)
               setStatusText(`${total} prospects found`)
             }
+            completeCalled = true
             setTimeout(() => {
               if (!cancelled) onCompleteRef.current(finalCards)
             }, 1200)
           }
         }
       }
+
+      if (!cancelled && !completeCalled) {
+        onCompleteRef.current(finalCards)
+      }
     }
 
     run()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+      readerRef.current?.cancel().catch(() => {})
+    }
   }, [query])
 
   return (
