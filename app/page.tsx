@@ -2,14 +2,31 @@
 
 import { useState, useEffect, useRef, type ReactNode } from "react"
 import Link from "next/link"
-import { Zap, ArrowRight, Check, Users, Send, ShieldCheck, Activity } from "lucide-react"
+import { ArrowRight, Check, Users, Send, ShieldCheck, Activity } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
+
+/* ─── Nexora Logo ────────────────────────────────────────────────────────── */
+function NexoraLogo({ size = 28 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="nlg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#f97316" />
+          <stop offset="100%" stopColor="#fbbf24" />
+        </linearGradient>
+      </defs>
+      <path d="M4 4 L14 4 L34 44 L44 44 L44 4 L34 4 L14 44 L4 44 Z" fill="url(#nlg)" />
+      <path d="M27 5 L19 27 L25 27 L18 43 L33 21 L27 21 Z" fill="#050505" opacity="0.82" />
+    </svg>
+  )
+}
 
 /* ─── Typewriter ─────────────────────────────────────────────────────────── */
 function useTypewriter(text: string, speed = 45, startDelay = 900) {
   const [displayed, setDisplayed] = useState("")
   useEffect(() => {
     let i = 0
+    setDisplayed("")
     const timeout = setTimeout(() => {
       const timer = setInterval(() => {
         i++
@@ -23,7 +40,28 @@ function useTypewriter(text: string, speed = 45, startDelay = 900) {
   return displayed
 }
 
-/* ─── Animated counter (starts on mount, not scroll) ────────────────────── */
+/* ─── Command typewriter (for demo panel) ────────────────────────────────── */
+function CommandTypewriter({ text }: { text: string }) {
+  const displayed = useTypewriter(text, 28, 80)
+  return (
+    <>
+      <span style={{ color: "#e5e5e5", fontSize: 12, fontFamily: "monospace" }}>{displayed}</span>
+      <span
+        style={{
+          display: "inline-block",
+          width: 7,
+          height: 13,
+          background: "#f97316",
+          marginLeft: 2,
+          verticalAlign: "middle",
+          animation: "blink 1s step-end infinite",
+        }}
+      />
+    </>
+  )
+}
+
+/* ─── Animated counter ───────────────────────────────────────────────────── */
 function AnimatedCounter({ value, suffix = "" }: { value: number; suffix?: string }) {
   const [count, setCount] = useState(0)
   useEffect(() => {
@@ -125,6 +163,185 @@ function LimitCard({
   )
 }
 
+/* ─── Live Demo Panel ────────────────────────────────────────────────────── */
+type DemoLine = {
+  text: string
+  color: string
+  result?: string
+  sub?: string
+  indent?: boolean
+}
+
+const DEMO_PHASES: Array<{ label: string; lines: DemoLine[]; duration: number }> = [
+  {
+    label: "SEARCHING",
+    lines: [{ text: "Finding SaaS founders who raised Series A...", color: "#e5e5e5" }],
+    duration: 2300,
+  },
+  {
+    label: "SCANNING",
+    lines: [
+      { text: "🔍 Searching GitHub...", color: "#f97316", result: "12 found" },
+      { text: "🔍 Searching HackerNews...", color: "#f97316", result: "8 found" },
+      { text: "🔍 Searching ProductHunt...", color: "#f97316", result: "6 found" },
+      { text: "🔍 Cross-referencing...", color: "#fbbf24", result: "verifying..." },
+    ],
+    duration: 4000,
+  },
+  {
+    label: "RESULTS",
+    lines: [
+      { text: "✅ James Chen · DataFlow Inc · 9.2/10", color: "#4ade80", sub: "Raised $5M Series A · 2 days ago" },
+      { text: "✅ Sarah Kim · CloudSync · 8.7/10", color: "#4ade80", sub: "Hired VP of Sales · 1 week ago" },
+      { text: "✅ Marcus Lee · Velocity AI · 8.1/10", color: "#4ade80", sub: "Posted on HN Hiring · 3 days ago" },
+    ],
+    duration: 3800,
+  },
+  {
+    label: "DRAFTING",
+    lines: [
+      { text: "✉️ Writing personalized email for James...", color: "#fbbf24" },
+      { text: '"Hi James, saw DataFlow just closed Series A..."', color: "rgba(255,255,255,0.5)", indent: true },
+    ],
+    duration: 2800,
+  },
+  {
+    label: "SENT",
+    lines: [{ text: "✅ Email sent. Monitoring for reply...", color: "#4ade80" }],
+    duration: 1800,
+  },
+]
+
+function LiveDemo() {
+  const [phase, setPhase] = useState(0)
+  const [visible, setVisible] = useState(0)
+
+  useEffect(() => {
+    const p = DEMO_PHASES[phase]
+    const timers: ReturnType<typeof setTimeout>[] = []
+
+    p.lines.forEach((_, i) => {
+      timers.push(setTimeout(() => setVisible(i + 1), i * 780 + 380))
+    })
+
+    timers.push(
+      setTimeout(() => {
+        const next = (phase + 1) % DEMO_PHASES.length
+        setPhase(next)
+        setVisible(0)
+      }, p.duration)
+    )
+
+    return () => timers.forEach(clearTimeout)
+  }, [phase])
+
+  const p = DEMO_PHASES[phase]
+
+  return (
+    <div
+      style={{
+        background: "#0c0c0c",
+        border: "1px solid rgba(249,115,22,0.2)",
+        boxShadow:
+          "0 0 80px rgba(249,115,22,0.11), 0 0 0 1px rgba(249,115,22,0.06), 0 32px 80px rgba(0,0,0,0.7)",
+        fontFamily: "'Courier New', Courier, monospace",
+        position: "relative",
+        overflow: "hidden",
+        width: "100%",
+      }}
+    >
+      {/* Title bar */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "10px 14px",
+          borderBottom: "1px solid rgba(255,255,255,0.05)",
+          background: "rgba(255,255,255,0.018)",
+        }}
+      >
+        <div style={{ display: "flex", gap: 6 }}>
+          {[0, 1, 2].map((i) => (
+            <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: "rgba(255,255,255,0.14)" }} />
+          ))}
+        </div>
+        <span style={{ fontSize: 9, color: "rgba(255,255,255,0.22)", letterSpacing: "0.15em" }}>
+          NEXORA / RESEARCH AGENT
+        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+          <div
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              background: "#4ade80",
+              boxShadow: "0 0 6px #4ade80",
+              animation: "demoPulse 1.6s ease-in-out infinite",
+            }}
+          />
+          <span style={{ fontSize: 9, color: "#4ade80", letterSpacing: "0.12em", fontWeight: 700 }}>LIVE</span>
+        </div>
+      </div>
+
+      {/* Phase label */}
+      <div style={{ padding: "8px 14px 0", fontSize: 9, color: "rgba(249,115,22,0.5)", letterSpacing: "0.22em" }}>
+        [{p.label}]
+      </div>
+
+      {/* Content */}
+      <div style={{ padding: "10px 14px 18px", minHeight: 200 }}>
+        {phase === 0 ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ color: "#f97316", fontSize: 13 }}>{">"}</span>
+            {visible > 0 && <CommandTypewriter key={phase} text={p.lines[0].text} />}
+          </div>
+        ) : (
+          p.lines.slice(0, visible).map((line, i) => (
+            <div
+              key={i}
+              style={{
+                marginBottom: line.sub ? 2 : 8,
+                paddingLeft: line.indent ? 16 : 0,
+                animation: "demoLineIn 0.22s ease-out forwards",
+              }}
+            >
+              <div style={{ fontSize: 12, color: line.color, lineHeight: 1.5 }}>
+                {line.result !== undefined ? (
+                  <>
+                    {line.text}
+                    <span style={{ color: "rgba(255,255,255,0.28)", fontSize: 11 }}> {line.result}</span>
+                  </>
+                ) : (
+                  line.text
+                )}
+              </div>
+              {line.sub && (
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.26)", paddingLeft: 22, marginBottom: 6 }}>
+                  {line.sub}
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Bottom accent bar */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 2,
+          background: "linear-gradient(to right, #f97316, #fbbf24, transparent)",
+          opacity: 0.35,
+        }}
+      />
+    </div>
+  )
+}
+
 /* ─── Data ───────────────────────────────────────────────────────────────── */
 const features = [
   {
@@ -208,9 +425,21 @@ export default function LandingPage() {
           0%, 100% { opacity: 1; }
           50%      { opacity: 0; }
         }
+        @keyframes demoPulse {
+          0%, 100% { opacity: 1; box-shadow: 0 0 6px #4ade80; }
+          50%      { opacity: 0.45; box-shadow: none; }
+        }
+        @keyframes demoLineIn {
+          from { opacity: 0; transform: translateX(-8px); }
+          to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes demoFadeIn {
+          from { opacity: 0; transform: translateY(12px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
       `}</style>
 
-      {/* ── Scanline overlay (fixed, entire page, 3% opacity) ──────────────── */}
+      {/* ── Scanline overlay ───────────────────────────────────────────────── */}
       <div
         className="fixed inset-0 pointer-events-none z-50"
         aria-hidden="true"
@@ -235,7 +464,7 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 px-6 py-6 md:px-12">
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <Zap className="h-6 w-6 text-orange-500" />
+            <NexoraLogo size={28} />
           </Link>
           <div className="hidden items-center gap-12 md:flex">
             <Link href="#features" className="text-sm text-white/60 hover:text-white transition-colors tracking-wide">Features</Link>
@@ -252,7 +481,7 @@ export default function LandingPage() {
       {/* ── Hero ───────────────────────────────────────────────────────────── */}
       <section className="relative min-h-screen flex flex-col justify-end px-6 pb-16 md:px-12 md:pb-24 overflow-hidden">
 
-        {/* Subtle orange glow behind NEXORA */}
+        {/* Subtle orange glow */}
         <div
           className="absolute inset-0 pointer-events-none"
           aria-hidden="true"
@@ -269,10 +498,23 @@ export default function LandingPage() {
           </span>
         </div>
 
-        {/* Main content */}
-        <div className="max-w-7xl">
+        {/* ── Floating demo panel — top right ────────────────────────────── */}
+        <div
+          className="hidden xl:block absolute right-12 2xl:right-24"
+          style={{
+            top: "50%",
+            transform: "translateY(-50%)",
+            width: 380,
+            animation: "demoFadeIn 0.8s ease-out 1.2s both",
+          }}
+        >
+          <LiveDemo />
+        </div>
 
-          {/* NEXORA — letter-by-letter gradient animation */}
+        {/* Main content */}
+        <div className="max-w-4xl">
+
+          {/* NEXORA */}
           <h1
             className="font-black leading-[0.85] tracking-tighter mb-4"
             style={{ fontSize: "clamp(4rem, 12vw, 14rem)" }}
@@ -296,7 +538,7 @@ export default function LandingPage() {
             ))}
           </h1>
 
-          {/* Orange accent line — draws left to right */}
+          {/* Orange accent line */}
           <div
             className="h-px mb-6"
             style={{
@@ -323,7 +565,6 @@ export default function LandingPage() {
                     "0 0 48px rgba(249,115,22,0.08), 0 0 0 1px rgba(249,115,22,0.06), inset 0 1px 0 rgba(255,255,255,0.04)",
                 }}
               >
-                {/* Traffic lights */}
                 <div className="flex items-center gap-3 px-4 py-3 border-b border-white/10">
                   <div className="flex gap-1.5">
                     <div className="h-2.5 w-2.5 rounded-full bg-white/20" />
@@ -332,8 +573,6 @@ export default function LandingPage() {
                   </div>
                   <span className="text-[10px] text-white/40 font-mono tracking-wider">COMMAND</span>
                 </div>
-
-                {/* Typewriter */}
                 <div className="p-4">
                   <div className="flex items-center gap-3">
                     <span className="text-orange-500 font-mono text-sm">{">"}</span>
@@ -344,14 +583,11 @@ export default function LandingPage() {
                     />
                   </div>
                 </div>
-
-                {/* Left edge fade to black */}
                 <div
                   className="absolute inset-y-0 left-0 w-8 pointer-events-none"
                   aria-hidden="true"
                   style={{ background: "linear-gradient(to right, rgba(0,0,0,0.7), transparent)" }}
                 />
-                {/* Right edge fade to black */}
                 <div
                   className="absolute inset-y-0 right-0 w-8 pointer-events-none"
                   aria-hidden="true"
@@ -360,7 +596,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Stats — yellow numbers, count from 0 on load */}
+            {/* Stats */}
             <div className="flex gap-12 md:gap-16">
               <div>
                 <div className="text-5xl md:text-6xl font-black tracking-tight" style={{ color: "#fbbf24" }}>
@@ -385,7 +621,7 @@ export default function LandingPage() {
           </span>
         </div>
 
-        {/* Hero bottom fade to black */}
+        {/* Hero bottom fade */}
         <div
           className="absolute bottom-0 left-0 right-0 h-56 pointer-events-none"
           aria-hidden="true"
@@ -418,7 +654,6 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
-        {/* Bottom bleed into features */}
         <div
           className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
           aria-hidden="true"
@@ -483,7 +718,6 @@ export default function LandingPage() {
             <p className="text-white/50">7-day free trial. No credit card required.</p>
           </FadeIn>
 
-          {/* Header row */}
           <FadeIn delay={80}>
             <div className="grid grid-cols-4 gap-4 border-b border-white/10 pb-6 mb-6">
               <div />
@@ -502,7 +736,6 @@ export default function LandingPage() {
             </div>
           </FadeIn>
 
-          {/* Feature rows */}
           <div className="space-y-0">
             {pricingRows.map((row, index) => (
               <FadeIn key={index} delay={index * 40}>
@@ -515,7 +748,7 @@ export default function LandingPage() {
                         {typeof val === "boolean" ? (
                           val
                             ? <Check className="h-4 w-4 text-white/70 mx-auto" />
-                            : <span className="text-white/20">—</span>
+                            : <span className="text-white/20">-</span>
                         ) : (
                           <span className="text-white/70">{val}</span>
                         )}
@@ -527,7 +760,6 @@ export default function LandingPage() {
             ))}
           </div>
 
-          {/* CTA */}
           <FadeIn delay={200} className="mt-12 flex justify-center">
             <Link href="/onboarding" className="group inline-flex items-center gap-3 text-sm tracking-wide">
               <span className="text-white underline underline-offset-4">Start your free trial</span>
@@ -556,7 +788,7 @@ export default function LandingPage() {
       <footer className="px-6 py-12 md:px-12 border-t border-white/10">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-orange-500" />
+            <NexoraLogo size={22} />
             <span className="text-sm text-white/50">Nexora</span>
           </div>
           <p className="text-[10px] text-white/30 uppercase tracking-[0.2em]">
