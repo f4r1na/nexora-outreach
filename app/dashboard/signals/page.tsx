@@ -1,610 +1,248 @@
-"use client";
+import { Zap, Filter, ArrowUpDown, ExternalLink } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { Lock, Radio, Trash2, Loader2, ExternalLink, X } from "lucide-react";
-import { PageWrapper } from "../_components/motion";
+const signals = [
+  {
+    id: "1",
+    type: "Funding",
+    company: "Acme Corp",
+    description: "Raised $12M Series A led by Sequoia",
+    prospect: "Sarah Chen",
+    title: "VP of Sales",
+    time: "2m ago",
+    priority: "high",
+    source: "TechCrunch",
+  },
+  {
+    id: "2",
+    type: "Hiring",
+    company: "TechStart",
+    description: "Hiring VP of Sales - posted on LinkedIn",
+    prospect: "Michael Roberts",
+    title: "Head of Growth",
+    time: "15m ago",
+    priority: "high",
+    source: "LinkedIn",
+  },
+  {
+    id: "3",
+    type: "News",
+    company: "DataFlow",
+    description: "Launched DataFlow 2.0 with AI features",
+    prospect: "Emily Davis",
+    title: "CEO",
+    time: "1h ago",
+    priority: "medium",
+    source: "Product Hunt",
+  },
+  {
+    id: "4",
+    type: "Intent",
+    company: "CloudBase",
+    description: "Visited pricing page 3x in last 24 hours",
+    prospect: "James Wilson",
+    title: "Director of Sales",
+    time: "2h ago",
+    priority: "medium",
+    source: "Website",
+  },
+  {
+    id: "5",
+    type: "Hiring",
+    company: "ScaleUp",
+    description: "Posted 12 new sales roles this week",
+    prospect: "Lisa Thompson",
+    title: "VP Revenue",
+    time: "3h ago",
+    priority: "low",
+    source: "LinkedIn",
+  },
+  {
+    id: "6",
+    type: "Funding",
+    company: "InnovateTech",
+    description: "Closed $5M seed round",
+    prospect: "David Kim",
+    title: "Founder",
+    time: "4h ago",
+    priority: "high",
+    source: "Crunchbase",
+  },
+  {
+    id: "7",
+    type: "News",
+    company: "GrowthCo",
+    description: "Announced partnership with Salesforce",
+    prospect: "Jennifer Lee",
+    title: "Head of Partnerships",
+    time: "5h ago",
+    priority: "medium",
+    source: "PR Newswire",
+  },
+  {
+    id: "8",
+    type: "Intent",
+    company: "MarketPro",
+    description: "Downloaded pricing PDF",
+    prospect: "Robert Chen",
+    title: "CMO",
+    time: "6h ago",
+    priority: "low",
+    source: "Website",
+  },
+]
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type SignalData = {
-  company_insights: string;
-  role_insights: string;
-  pain_points: string[];
-  talking_points: string[];
-  recent_signals: string[];
-  personalization_hooks: string[];
-};
-
-type DiscreteSignal = {
-  id: string;
-  lead_id: string;
-  source: string;
-  source_url: string | null;
-  date: string | null;
-  date_iso: string | null;
-  strength: string;
-};
-
-type SignalLead = {
-  id: string;
-  campaign_id: string;
-  campaign_name: string;
-  first_name: string | null;
-  company: string | null;
-  role: string | null;
-  email: string | null;
-  signal_data: SignalData;
-  created_at: string;
-  discrete_signals?: DiscreteSignal[];
-};
-
-type Campaign = {
-  id: string;
-  name: string;
-  created_at: string;
-};
-
-type Confidence = "high" | "medium" | "low";
-
-// Confidence = AI strength × date-decay. With current data most signals will
-// score "high" because Haiku doesn't return per-signal dates yet (date_iso
-// defaults to today). The math is correct; the inputs will firm up when the
-// extraction prompt is enriched.
-function ageInDays(date_iso: string | null): number {
-  if (!date_iso) return 0;
-  const t = new Date(date_iso).getTime();
-  if (Number.isNaN(t)) return 0;
-  return Math.max(0, Math.floor((Date.now() - t) / (1000 * 60 * 60 * 24)));
+const typeStyles = {
+  Funding: "bg-accent/10 text-accent",
+  Hiring: "bg-green-500/10 text-green-500",
+  News: "bg-primary/10 text-primary",
+  Intent: "bg-blue-400/10 text-blue-400",
 }
 
-function decayFactor(days: number): number {
-  if (days <= 30) return 1.0;
-  if (days <= 60) return 0.8;
-  if (days <= 90) return 0.6;
-  return 0;
+const priorityStyles = {
+  high: "bg-accent",
+  medium: "bg-primary",
+  low: "bg-muted-foreground",
 }
-
-function strengthScore(s: string): number {
-  if (s === "high") return 1.0;
-  if (s === "medium") return 0.75;
-  return 0.5;
-}
-
-function computeConfidence(s: DiscreteSignal): { level: Confidence; pct: number } {
-  const pct = Math.round(strengthScore(s.strength) * decayFactor(ageInDays(s.date_iso)) * 100);
-  const level: Confidence = pct > 90 ? "high" : pct > 70 ? "medium" : "low";
-  return { level, pct };
-}
-
-const CONF_COLOR: Record<Confidence, { bg: string; border: string; text: string }> = {
-  high: { bg: "rgba(74,222,128,0.1)", border: "rgba(74,222,128,0.3)", text: "#4ade80" },
-  medium: { bg: "rgba(245,158,11,0.1)", border: "rgba(245,158,11,0.3)", text: "#f59e0b" },
-  low: { bg: "rgba(239,68,68,0.1)", border: "rgba(239,68,68,0.3)", text: "#f87171" },
-};
-
-
-// ─── Signal Card ──────────────────────────────────────────────────────────────
-
-function SignalCard({ lead }: { lead: SignalLead }) {
-  const [expanded, setExpanded] = useState(false);
-  const [discreteSignals, setDiscreteSignals] = useState<DiscreteSignal[]>(
-    lead.discrete_signals ?? []
-  );
-  const [discardingId, setDiscardingId] = useState<string | null>(null);
-  const sd = lead.signal_data;
-
-  const handleDiscard = async (id: string) => {
-    setDiscardingId(id);
-    const prev = discreteSignals;
-    setDiscreteSignals((s) => s.filter((x) => x.id !== id));
-    const res = await fetch("/api/signals/discard", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ signal_id: id, discarded: true }),
-    });
-    if (!res.ok) setDiscreteSignals(prev);
-    setDiscardingId(null);
-  };
-
-  return (
-    <div style={{
-      backgroundColor: "#0e0e0e",
-      border: "1px solid rgba(255,255,255,0.07)",
-      borderLeft: "3px solid rgba(255,82,0,0.4)",
-      borderRadius: 10, padding: "16px 18px",
-    }}>
-      {/* Lead header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12, gap: 12 }}>
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-            <p style={{ fontSize: 14, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", margin: 0 }}>
-              {lead.first_name || "Unknown"}
-            </p>
-            {lead.company && (
-              <span style={{
-                fontSize: 11, fontWeight: 600, color: "#FF5200",
-                backgroundColor: "rgba(255,82,0,0.08)",
-                border: "1px solid rgba(255,82,0,0.2)",
-                padding: "2px 8px", borderRadius: 999,
-                fontFamily: "var(--font-outfit)",
-              }}>
-                {lead.company}
-              </span>
-            )}
-          </div>
-          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-outfit)", margin: 0 }}>
-            {lead.role && <span>{lead.role}</span>}
-            {lead.role && lead.campaign_name && <span> · </span>}
-            {lead.campaign_name && <span style={{ color: "rgba(255,82,0,0.5)" }}>{lead.campaign_name}</span>}
-          </p>
-        </div>
-        <Radio size={16} strokeWidth={1.6} color="rgba(255,82,0,0.5)" style={{ flexShrink: 0 }} aria-hidden="true" />
-      </div>
-
-      {/* Company insights */}
-      {sd.company_insights && (
-        <div style={{
-          padding: "10px 12px", borderRadius: 8,
-          backgroundColor: "rgba(255,82,0,0.04)",
-          border: "1px solid rgba(255,82,0,0.1)",
-          marginBottom: 10,
-        }}>
-          <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,82,0,0.5)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5, fontFamily: "var(--font-outfit)" }}>
-            Company Insights
-          </p>
-          <p style={{ fontSize: 12.5, color: "rgba(255,255,255,0.65)", fontFamily: "var(--font-outfit)", lineHeight: 1.6, margin: 0 }}>
-            {sd.company_insights}
-          </p>
-        </div>
-      )}
-
-      {/* Pain points */}
-      {sd.pain_points?.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 10 }}>
-          {sd.pain_points.map((p, i) => (
-            <span key={i} style={{
-              fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 999,
-              backgroundColor: "rgba(255,82,0,0.07)",
-              border: "1px solid rgba(255,82,0,0.15)",
-              color: "rgba(255,82,0,0.7)", fontFamily: "var(--font-outfit)",
-            }}>
-              {p}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Expand toggle */}
-      <button
-        onClick={() => setExpanded(!expanded)}
-        style={{
-          fontSize: 11, color: "rgba(255,255,255,0.3)", background: "none", border: "none",
-          cursor: "pointer", fontFamily: "var(--font-outfit)", padding: 0, marginBottom: expanded ? 10 : 0,
-        }}
-      >
-        {expanded ? "Hide details ↑" : "More details ↓"}
-      </button>
-
-      {expanded && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {sd.role_insights && (
-            <div>
-              <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4, fontFamily: "var(--font-outfit)" }}>
-                Role Insights
-              </p>
-              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", fontFamily: "var(--font-outfit)", lineHeight: 1.55, margin: 0 }}>{sd.role_insights}</p>
-            </div>
-          )}
-          {sd.talking_points?.length > 0 && (
-            <div>
-              <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4, fontFamily: "var(--font-outfit)" }}>
-                Talking Points
-              </p>
-              <ul style={{ margin: 0, paddingLeft: 16 }}>
-                {sd.talking_points.map((t, i) => (
-                  <li key={i} style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", fontFamily: "var(--font-outfit)", lineHeight: 1.55, marginBottom: 3 }}>{t}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {sd.personalization_hooks?.length > 0 && (
-            <div>
-              <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4, fontFamily: "var(--font-outfit)" }}>
-                Personalization Hooks
-              </p>
-              <ul style={{ margin: 0, paddingLeft: 16 }}>
-                {sd.personalization_hooks.map((h, i) => (
-                  <li key={i} style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", fontFamily: "var(--font-outfit)", lineHeight: 1.55, marginBottom: 3 }}>{h}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {sd.recent_signals?.length > 0 && (
-            <div>
-              <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 4, fontFamily: "var(--font-outfit)" }}>
-                Signals
-              </p>
-              <ul style={{ margin: 0, paddingLeft: 16 }}>
-                {sd.recent_signals.map((s, i) => (
-                  <li key={i} style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", fontFamily: "var(--font-outfit)", lineHeight: 1.55, marginBottom: 3 }}>{s}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {discreteSignals.length > 0 && (
-            <div>
-              <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.2)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6, fontFamily: "var(--font-outfit)" }}>
-                Verified Signals · {discreteSignals.length}
-              </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {discreteSignals.map((s) => {
-                  const { level, pct } = computeConfidence(s);
-                  const c = CONF_COLOR[level];
-                  return (
-                    <div
-                      key={s.id}
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 8,
-                        padding: "8px 10px",
-                        borderRadius: 8,
-                        backgroundColor: "rgba(255,255,255,0.02)",
-                        border: "1px solid rgba(255,255,255,0.06)",
-                      }}
-                    >
-                      <span
-                        title={`Confidence ${pct}% (strength=${s.strength}, age=${ageInDays(s.date_iso)}d)`}
-                        style={{
-                          fontSize: 9.5, fontWeight: 700, padding: "2px 7px",
-                          borderRadius: 999, backgroundColor: c.bg,
-                          border: `1px solid ${c.border}`, color: c.text,
-                          fontFamily: "var(--font-outfit)", textTransform: "uppercase",
-                          letterSpacing: "0.05em", flexShrink: 0,
-                        }}
-                      >
-                        {level}
-                      </span>
-                      <div style={{ minWidth: 0, flex: 1 }}>
-                        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", fontFamily: "var(--font-outfit)", margin: 0 }}>
-                          {s.source}
-                        </p>
-                        {s.date && (
-                          <p style={{ fontSize: 10.5, color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-outfit)", margin: 0, fontVariantNumeric: "tabular-nums" }}>
-                            {s.date}
-                          </p>
-                        )}
-                      </div>
-                      {s.source_url ? (
-                        <a
-                          href={s.source_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          style={{
-                            display: "inline-flex", alignItems: "center", gap: 4,
-                            padding: "4px 9px", borderRadius: 6, fontSize: 11,
-                            color: "#FF5200",
-                            backgroundColor: "rgba(255,82,0,0.08)",
-                            border: "1px solid rgba(255,82,0,0.2)",
-                            textDecoration: "none", fontFamily: "var(--font-outfit)",
-                          }}
-                        >
-                          <ExternalLink size={11} strokeWidth={2} aria-hidden="true" />
-                          Verify
-                        </a>
-                      ) : (
-                        <span
-                          title="No source URL captured for this signal"
-                          style={{
-                            display: "inline-flex", alignItems: "center", gap: 4,
-                            padding: "4px 9px", borderRadius: 6, fontSize: 11,
-                            color: "rgba(255,255,255,0.25)",
-                            border: "1px solid rgba(255,255,255,0.06)",
-                            fontFamily: "var(--font-outfit)",
-                          }}
-                        >
-                          <ExternalLink size={11} strokeWidth={2} aria-hidden="true" />
-                          Verify
-                        </span>
-                      )}
-                      <button
-                        onClick={() => handleDiscard(s.id)}
-                        disabled={discardingId === s.id}
-                        aria-label="Discard signal"
-                        style={{
-                          display: "inline-flex", alignItems: "center", justifyContent: "center",
-                          width: 24, height: 24, borderRadius: 6,
-                          backgroundColor: "transparent",
-                          border: "1px solid rgba(255,255,255,0.08)",
-                          color: "rgba(255,255,255,0.4)",
-                          cursor: discardingId === s.id ? "not-allowed" : "pointer",
-                          opacity: discardingId === s.id ? 0.5 : 1,
-                        }}
-                      >
-                        <X size={11} strokeWidth={2.2} aria-hidden="true" />
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SignalsPage() {
-  const [plan, setPlan] = useState<string | null>(null);
-  const [planLoading, setPlanLoading] = useState(true);
-
-  const [signals, setSignals] = useState<SignalLead[]>([]);
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [filterCampaign, setFilterCampaign] = useState<string>("all");
-  const [deleting, setDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/subscription")
-      .then((r) => r.json())
-      .then((d) => { setPlan(d.subscription?.plan ?? "free"); setPlanLoading(false); })
-      .catch(() => { setPlan("free"); setPlanLoading(false); });
-  }, []);
-
-  useEffect(() => {
-    fetch("/api/signals")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.error) { setError(d.error); } else {
-          setSignals(d.signals ?? []);
-          setCampaigns(d.campaigns ?? []);
-        }
-        setLoading(false);
-      })
-      .catch(() => { setError("Failed to load signals"); setLoading(false); });
-  }, []);
-
-  const isProOrAgency = plan === "pro" || plan === "agency";
-
-  async function handleDeleteAll() {
-    const scope = filterCampaign === "all" ? "all signal data" : "signal data for this campaign";
-    if (!confirm(`Delete ${scope}? This cannot be undone.`)) return;
-    setDeleting(true);
-    setDeleteError(null);
-    try {
-      const body = filterCampaign === "all" ? {} : { campaign_id: filterCampaign };
-      const res = await fetch("/api/signals/delete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setDeleteError(data.error ?? "Failed to delete signals. Please try again.");
-        return;
-      }
-      // Remove cleared leads from local state
-      if (filterCampaign === "all") {
-        setSignals([]);
-      } else {
-        setSignals((prev) => prev.filter((s) => s.campaign_id !== filterCampaign));
-      }
-    } catch {
-      setDeleteError("Network error. Please try again.");
-    } finally {
-      setDeleting(false);
-    }
-  }
-
-  const filtered = filterCampaign === "all"
-    ? signals
-    : signals.filter((s) => s.campaign_id === filterCampaign);
-
   return (
-    <PageWrapper style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    <div className="p-6">
       {/* Header */}
-      <header style={{
-        padding: "0 32px", height: 68,
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        borderBottom: "1px solid rgba(255,255,255,0.055)",
-        backgroundColor: "rgba(6,6,6,0.94)", backdropFilter: "blur(12px)",
-        position: "sticky", top: 0, zIndex: 30, gap: 16,
-      }}>
+      <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 style={{
-            fontSize: 16, fontWeight: 500, color: "#fff",
-            fontFamily: "var(--font-syne)", margin: 0, lineHeight: 1, letterSpacing: "-0.02em",
-          }}>
-            Signal Radar
-          </h1>
-          <p style={{
-            fontSize: 11, color: "#383838",
-            fontFamily: "var(--font-outfit)", margin: 0, marginTop: 3,
-          }}>
-            AI intelligence gathered on your leads
+          <div className="flex items-center gap-2">
+            <Zap className="h-5 w-5 text-accent" />
+            <h1 className="text-lg font-semibold">Signals</h1>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            AI-detected buying signals from your prospects
           </p>
         </div>
-        {!planLoading && isProOrAgency && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {campaigns.length > 0 && (
-              <select
-                value={filterCampaign}
-                onChange={(e) => setFilterCampaign(e.target.value)}
-                style={{
-                  padding: "7px 12px", borderRadius: 8, fontSize: 12,
-                  backgroundColor: "#0e0e0e", color: "rgba(255,255,255,0.6)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  fontFamily: "var(--font-outfit)", cursor: "pointer",
-                  outline: "none",
-                }}
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="gap-2 border-border bg-card hover:bg-secondary">
+            <Filter className="h-3.5 w-3.5" />
+            Filter
+          </Button>
+          <Button variant="outline" size="sm" className="gap-2 border-border bg-card hover:bg-secondary">
+            <ArrowUpDown className="h-3.5 w-3.5" />
+            Sort
+          </Button>
+        </div>
+      </div>
+
+      {/* Signal Stats */}
+      <div className="mb-6 grid grid-cols-4 gap-4">
+        <div className="rounded-md border border-border bg-card p-4">
+          <p className="text-xs text-muted-foreground">Total Signals</p>
+          <p className="mt-1 text-2xl font-semibold">{signals.length}</p>
+        </div>
+        <div className="rounded-md border border-border bg-card p-4">
+          <p className="text-xs text-muted-foreground">High Priority</p>
+          <p className="mt-1 text-2xl font-semibold text-accent">
+            {signals.filter((s) => s.priority === "high").length}
+          </p>
+        </div>
+        <div className="rounded-md border border-border bg-card p-4">
+          <p className="text-xs text-muted-foreground">Funding Signals</p>
+          <p className="mt-1 text-2xl font-semibold">
+            {signals.filter((s) => s.type === "Funding").length}
+          </p>
+        </div>
+        <div className="rounded-md border border-border bg-card p-4">
+          <p className="text-xs text-muted-foreground">Intent Signals</p>
+          <p className="mt-1 text-2xl font-semibold">
+            {signals.filter((s) => s.type === "Intent").length}
+          </p>
+        </div>
+      </div>
+
+      {/* Signals Table */}
+      <div className="rounded-md border border-border bg-card">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-border text-left">
+              <th className="w-4 px-4 py-3"></th>
+              <th className="px-4 py-3 text-xs font-medium text-muted-foreground">
+                Type
+              </th>
+              <th className="px-4 py-3 text-xs font-medium text-muted-foreground">
+                Company
+              </th>
+              <th className="px-4 py-3 text-xs font-medium text-muted-foreground">
+                Signal
+              </th>
+              <th className="px-4 py-3 text-xs font-medium text-muted-foreground">
+                Contact
+              </th>
+              <th className="px-4 py-3 text-xs font-medium text-muted-foreground">
+                Source
+              </th>
+              <th className="px-4 py-3 text-xs font-medium text-muted-foreground">
+                Time
+              </th>
+              <th className="w-10 px-4 py-3"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {signals.map((signal) => (
+              <tr
+                key={signal.id}
+                className="transition-colors hover:bg-secondary/50"
               >
-                <option value="all">All Campaigns</option>
-                {campaigns.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            )}
-            {signals.length > 0 && (
-              <button
-                onClick={handleDeleteAll}
-                disabled={deleting}
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: 6,
-                  padding: "7px 12px", borderRadius: 8, fontSize: 12,
-                  backgroundColor: "transparent",
-                  color: deleting ? "rgba(239,68,68,0.4)" : "rgba(239,68,68,0.7)",
-                  border: `1px solid ${deleting ? "rgba(239,68,68,0.15)" : "rgba(239,68,68,0.25)"}`,
-                  fontFamily: "var(--font-outfit)", cursor: deleting ? "not-allowed" : "pointer",
-                  transition: "all 0.15s",
-                }}
-                onMouseEnter={e => { if (!deleting) { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "rgba(239,68,68,0.08)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(239,68,68,0.4)"; } }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLButtonElement).style.borderColor = deleting ? "rgba(239,68,68,0.15)" : "rgba(239,68,68,0.25)"; }}
-              >
-                {deleting ? (
-                  <Loader2 size={11} strokeWidth={2.5} style={{ animation: "spin 0.8s linear infinite" }} aria-hidden="true" />
-                ) : (
-                  <Trash2 size={11} strokeWidth={2.2} aria-hidden="true" />
-                )}
-                {filterCampaign === "all" ? "Delete All" : "Delete Campaign Signals"}
-              </button>
-            )}
-          </div>
-        )}
-      </header>
-
-      {/* Main */}
-      <main style={{ flex: 1, padding: "36px 32px 64px" }}>
-        {deleteError && (
-          <div style={{
-            marginBottom: 20, padding: "10px 14px", borderRadius: 9,
-            backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)",
-            color: "#f87171", fontSize: 13, fontFamily: "var(--font-outfit)",
-            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
-          }}>
-            {deleteError}
-            <button onClick={() => setDeleteError(null)} style={{ background: "none", border: "none", color: "#f87171", cursor: "pointer", fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
-          </div>
-        )}
-
-        {planLoading ? (
-          <div style={{ color: "rgba(255,255,255,0.25)", fontFamily: "var(--font-outfit)", fontSize: 13 }}>Loading…</div>
-
-        ) : !isProOrAgency ? (
-          /* ── Upgrade gate ── */
-          <div style={{
-            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-            minHeight: 420, textAlign: "center", gap: 20,
-          }}>
-            <div style={{
-              width: 64, height: 64, borderRadius: "50%",
-              backgroundColor: "rgba(255,82,0,0.1)",
-              border: "1px solid rgba(255,82,0,0.25)",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: "#FF5200",
-            }}>
-              <Lock size={22} strokeWidth={1.8} aria-hidden="true" />
-            </div>
-            <div>
-              <h2 style={{
-                fontSize: 20, fontWeight: 800, color: "#fff",
-                fontFamily: "var(--font-syne)", marginBottom: 8,
-              }}>
-                Upgrade to Pro to unlock Signal Radar
-              </h2>
-              <p style={{
-                fontSize: 14, color: "rgba(255,255,255,0.4)",
-                fontFamily: "var(--font-outfit)", lineHeight: 1.6, maxWidth: 400,
-              }}>
-                AI researches every lead before writing — surfacing pain points, company context, and personalization hooks that make cold emails actually land.
-              </p>
-            </div>
-            <Link
-              href="/dashboard/settings"
-              style={{
-                display: "inline-flex", alignItems: "center", gap: 8,
-                padding: "12px 28px", backgroundColor: "#FF5200", color: "#fff",
-                borderRadius: 10, fontSize: 14, fontWeight: 700,
-                fontFamily: "var(--font-outfit)", textDecoration: "none",
-              }}
-            >
-              See Plans →
-            </Link>
-          </div>
-
-        ) : loading ? (
-          <div style={{ color: "rgba(255,255,255,0.25)", fontFamily: "var(--font-outfit)", fontSize: 13 }}>Loading intelligence…</div>
-
-        ) : error ? (
-          <div style={{
-            padding: "12px 16px", borderRadius: 10,
-            backgroundColor: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)",
-            color: "#ef4444", fontFamily: "var(--font-outfit)", fontSize: 13,
-          }}>
-            {error}
-          </div>
-
-        ) : filtered.length === 0 ? (
-          /* ── Empty state ── */
-          <div style={{
-            display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-            minHeight: 420, textAlign: "center", gap: 16,
-          }}>
-            <div style={{ width: 56, height: 56, borderRadius: 14, backgroundColor: "rgba(255,82,0,0.08)", border: "1px solid rgba(255,82,0,0.15)", display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,82,0,0.5)" }}>
-              <Radio size={26} strokeWidth={1.6} aria-hidden="true" />
-            </div>
-            <h3 style={{ fontSize: 16, fontWeight: 700, color: "#fff", fontFamily: "var(--font-syne)", margin: 0 }}>
-              {filterCampaign === "all" ? "No signals yet" : "No signals for this campaign"}
-            </h3>
-            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.35)", fontFamily: "var(--font-outfit)", maxWidth: 340, lineHeight: 1.6, margin: 0 }}>
-              {filterCampaign === "all"
-                ? "Use Signal Radar when creating a campaign to gather AI intelligence on your leads."
-                : "No leads in this campaign had Signal Radar research run on them."}
-            </p>
-            <Link
-              href="/dashboard/campaigns/new"
-              style={{
-                marginTop: 4, display: "inline-flex", alignItems: "center", gap: 7,
-                padding: "9px 20px", backgroundColor: "#FF5200", color: "#fff",
-                borderRadius: 8, fontSize: 13, fontWeight: 700,
-                fontFamily: "var(--font-outfit)", textDecoration: "none",
-              }}
-            >
-              New Campaign →
-            </Link>
-          </div>
-
-        ) : (
-          /* ── Intelligence feed ── */
-          <div>
-            {/* Summary */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
-              <span style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", fontFamily: "var(--font-outfit)" }}>
-                {filtered.length} lead{filtered.length !== 1 ? "s" : ""} researched
-              </span>
-              <span style={{
-                fontSize: 10, fontWeight: 700, color: "#4ade80",
-                backgroundColor: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.2)",
-                padding: "2px 8px", borderRadius: 999, fontFamily: "var(--font-outfit)",
-              }}>
-                Intelligence Ready
-              </span>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {filtered.map((lead) => (
-                <SignalCard key={lead.id} lead={lead} />
-              ))}
-            </div>
-          </div>
-        )}
-      </main>
-    </PageWrapper>
-  );
+                <td className="px-4 py-3">
+                  <div
+                    className={cn(
+                      "h-2 w-2 rounded-full",
+                      priorityStyles[signal.priority as keyof typeof priorityStyles]
+                    )}
+                  />
+                </td>
+                <td className="px-4 py-3">
+                  <span
+                    className={cn(
+                      "rounded px-2 py-0.5 text-xs font-medium",
+                      typeStyles[signal.type as keyof typeof typeStyles]
+                    )}
+                  >
+                    {signal.type}
+                  </span>
+                </td>
+                <td className="px-4 py-3">
+                  <span className="text-sm font-medium">{signal.company}</span>
+                </td>
+                <td className="px-4 py-3">
+                  <span className="text-sm text-muted-foreground">
+                    {signal.description}
+                  </span>
+                </td>
+                <td className="px-4 py-3">
+                  <div>
+                    <p className="text-sm">{signal.prospect}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {signal.title}
+                    </p>
+                  </div>
+                </td>
+                <td className="px-4 py-3">
+                  <span className="text-sm text-primary">{signal.source}</span>
+                </td>
+                <td className="px-4 py-3">
+                  <span className="text-sm text-muted-foreground">
+                    {signal.time}
+                  </span>
+                </td>
+                <td className="px-4 py-3">
+                  <button className="rounded p-1 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground">
+                    <ExternalLink className="h-4 w-4" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
 }

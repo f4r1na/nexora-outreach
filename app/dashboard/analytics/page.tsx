@@ -1,348 +1,232 @@
-"use client";
+import { BarChart3, TrendingUp, TrendingDown, Mail, Users, MessageSquare, Clock } from "lucide-react"
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
-import { PageWrapper, StaggerList, StaggerItem, CountUp, ScrollReveal } from "../_components/motion";
-import { Lock } from "lucide-react";
-import CampaignIQCard from "../components/campaign-iq-card";
+const metrics = [
+  {
+    name: "Total Emails Sent",
+    value: "12,847",
+    change: "+18.2%",
+    changeType: "positive" as const,
+    icon: Mail,
+  },
+  {
+    name: "Unique Recipients",
+    value: "4,234",
+    change: "+12.5%",
+    changeType: "positive" as const,
+    icon: Users,
+  },
+  {
+    name: "Average Reply Rate",
+    value: "14.2%",
+    change: "-2.1%",
+    changeType: "negative" as const,
+    icon: MessageSquare,
+  },
+  {
+    name: "Avg. Response Time",
+    value: "2.4 days",
+    change: "-0.5 days",
+    changeType: "positive" as const,
+    icon: Clock,
+  },
+]
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+const campaignPerformance = [
+  { name: "Q1 Series A Outreach", sent: 180, replies: 22, rate: 12.2 },
+  { name: "VP Sales Hiring", sent: 89, replies: 16, rate: 18.0 },
+  { name: "Product Launch Follow-up", sent: 320, replies: 28, rate: 8.8 },
+  { name: "Marketing Agency Outreach", sent: 412, replies: 63, rate: 15.3 },
+  { name: "Enterprise Tech Stack", sent: 156, replies: 19, rate: 12.2 },
+]
 
-type Stats = {
-  sent: number;
-  opened: number;
-  clicked: number;
-  replied: number;
-  open_rate: number;
-  click_rate: number;
-  reply_rate: number;
-  cost_per_reply: number | null;
-};
-
-type CampaignRow = {
-  id: string;
-  name: string;
-  created_at: string;
-  sent: number;
-  opened: number;
-  clicked: number;
-  replied: number;
-  open_rate: number;
-  click_rate: number;
-  reply_rate: number;
-};
-
-type DailyPoint = { date: string; count: number };
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function rateColor(pct: number): string {
-  if (pct >= 20) return "#4ade80";
-  if (pct >= 5) return "#ccc";
-  return "#f87171";
-}
-
-function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) {
-  if (!active || !payload?.length) return null;
-  const d = label ? new Date(label + "T00:00:00") : null;
-  const formatted = d ? d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : label;
-  return (
-    <div style={{
-      backgroundColor: "#111",
-      border: "1px solid rgba(255,255,255,0.08)",
-      borderRadius: 6,
-      padding: "7px 10px",
-      fontFamily: "var(--font-outfit)",
-    }}>
-      <p style={{ fontSize: 11, color: "#555", marginBottom: 2 }}>{formatted}</p>
-      <p style={{ fontSize: 13, color: "#FF5200", fontWeight: 500 }}>{payload[0].value} sent</p>
-    </div>
-  );
-}
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
+const weeklyData = [
+  { day: "Mon", sent: 45, replies: 6 },
+  { day: "Tue", sent: 62, replies: 9 },
+  { day: "Wed", sent: 78, replies: 12 },
+  { day: "Thu", sent: 54, replies: 7 },
+  { day: "Fri", sent: 41, replies: 5 },
+  { day: "Sat", sent: 12, replies: 1 },
+  { day: "Sun", sent: 8, replies: 1 },
+]
 
 export default function AnalyticsPage() {
-  const [plan, setPlan] = useState<string | null>(null);
-  const [planLoading, setPlanLoading] = useState(true);
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [campaigns, setCampaigns] = useState<CampaignRow[]>([]);
-  const [daily, setDaily] = useState<DailyPoint[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch("/api/subscription")
-      .then((r) => r.json())
-      .then((d) => { setPlan(d.subscription?.plan ?? "free"); setPlanLoading(false); })
-      .catch(() => { setPlan("free"); setPlanLoading(false); });
-  }, []);
-
-  useEffect(() => {
-    fetch("/api/analytics")
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.error) { setError(d.error); } else {
-          setStats(d.stats);
-          setCampaigns(d.campaigns ?? []);
-          setDaily(d.daily ?? []);
-        }
-        setLoading(false);
-      })
-      .catch(() => { setError("Failed to load analytics"); setLoading(false); });
-  }, []);
-
-  const isProOrAgency = plan === "pro" || plan === "agency";
-  const hasData = (stats?.sent ?? 0) > 0 || campaigns.length > 0;
+  const maxSent = Math.max(...weeklyData.map((d) => d.sent))
 
   return (
-    <PageWrapper>
+    <div className="p-6">
       {/* Header */}
-      <header style={{
-        padding: "0 32px",
-        height: 68,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        borderBottom: "1px solid rgba(255,255,255,0.055)",
-        backgroundColor: "rgba(6,6,6,0.94)",
-        backdropFilter: "blur(12px)",
-        position: "sticky",
-        top: 0,
-        zIndex: 30,
-      }}>
-        <div>
-          <h1 style={{ fontSize: 16, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)", lineHeight: 1, letterSpacing: "-0.02em" }}>
-            Analytics
-          </h1>
-          <p style={{ fontSize: 11, color: "#383838", fontFamily: "var(--font-outfit)", marginTop: 3 }}>
-            Campaign performance
-          </p>
+      <div className="mb-6">
+        <div className="flex items-center gap-2">
+          <BarChart3 className="h-5 w-5 text-primary" />
+          <h1 className="text-lg font-semibold">Analytics</h1>
         </div>
-      </header>
+        <p className="text-sm text-muted-foreground">
+          Track your outreach performance
+        </p>
+      </div>
 
-      <main style={{ flex: 1, padding: "24px 32px 64px" }}>
-        {planLoading ? (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="skeleton" style={{ height: 84, borderRadius: 8 }} />
+      {/* Key Metrics */}
+      <div className="mb-8 grid grid-cols-4 gap-4">
+        {metrics.map((metric) => (
+          <div
+            key={metric.name}
+            className="rounded-md border border-border bg-card p-4"
+          >
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">{metric.name}</p>
+              <metric.icon className="h-4 w-4 text-muted-foreground" />
+            </div>
+            <p className="mt-2 text-2xl font-semibold">{metric.value}</p>
+            <div className="mt-1 flex items-center gap-1">
+              {metric.changeType === "positive" ? (
+                <TrendingUp className="h-3 w-3 text-green-500" />
+              ) : (
+                <TrendingDown className="h-3 w-3 text-red-500" />
+              )}
+              <span
+                className={`text-xs ${
+                  metric.changeType === "positive"
+                    ? "text-green-500"
+                    : "text-red-500"
+                }`}
+              >
+                {metric.change}
+              </span>
+              <span className="text-xs text-muted-foreground">vs last month</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-2 gap-6">
+        {/* Weekly Activity */}
+        <div className="rounded-md border border-border bg-card p-4">
+          <h3 className="mb-4 text-sm font-medium">Weekly Activity</h3>
+          <div className="flex items-end gap-2 h-40">
+            {weeklyData.map((day) => (
+              <div key={day.day} className="flex-1 flex flex-col items-center gap-1">
+                <div className="relative w-full flex flex-col items-center gap-0.5">
+                  <div
+                    className="w-full rounded-t bg-primary/20"
+                    style={{ height: `${(day.sent / maxSent) * 120}px` }}
+                  />
+                  <div
+                    className="w-full rounded-b bg-primary absolute bottom-0"
+                    style={{ height: `${(day.replies / maxSent) * 120}px` }}
+                  />
+                </div>
+                <span className="text-xs text-muted-foreground">{day.day}</span>
+              </div>
             ))}
           </div>
-
-        ) : !isProOrAgency ? (
-          <div style={{
-            display: "flex", flexDirection: "column", alignItems: "center",
-            justifyContent: "center", minHeight: 360, textAlign: "center", gap: 14,
-          }}>
-            <div style={{
-              width: 38, height: 38, borderRadius: 8,
-              border: "1px solid rgba(255,255,255,0.07)",
-              display: "flex", alignItems: "center", justifyContent: "center", color: "#484848",
-            }}>
-              <Lock size={16} strokeWidth={1.5} aria-hidden="true" />
+          <div className="mt-4 flex items-center gap-4 text-xs">
+            <div className="flex items-center gap-1.5">
+              <div className="h-2 w-2 rounded bg-primary/20" />
+              <span className="text-muted-foreground">Sent</span>
             </div>
-            <div>
-              <h2 style={{ fontSize: 15, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)", marginBottom: 6 }}>
-                Analytics requires Pro
-              </h2>
-              <p style={{ fontSize: 12, color: "#484848", fontFamily: "var(--font-outfit)", lineHeight: 1.6, maxWidth: 320 }}>
-                Track open rates, clicks, and replies across all campaigns.
-              </p>
+            <div className="flex items-center gap-1.5">
+              <div className="h-2 w-2 rounded bg-primary" />
+              <span className="text-muted-foreground">Replies</span>
             </div>
-            <Link href="/dashboard/settings" className="btn-primary" style={{
-              display: "inline-flex", alignItems: "center", gap: 6,
-              padding: "8px 16px", backgroundColor: "#FF5200", color: "#fff",
-              borderRadius: 6, fontSize: 12, fontWeight: 500,
-              fontFamily: "var(--font-outfit)", textDecoration: "none",
-            }}>
-              View plans
-            </Link>
           </div>
+        </div>
 
-        ) : loading ? (
-          <div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 20 }}>
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="skeleton" style={{ height: 84, borderRadius: 8 }} />
-              ))}
-            </div>
-            <div className="skeleton" style={{ height: 200, borderRadius: 8 }} />
-          </div>
-
-        ) : error ? (
-          <div style={{
-            padding: "10px 14px", borderRadius: 6,
-            backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.14)",
-            color: "#f87171", fontFamily: "var(--font-outfit)", fontSize: 13,
-          }}>
-            {error}
-          </div>
-
-        ) : !hasData ? (
-          <>
-            <CampaignIQCard sentCount={stats?.sent ?? 0} campaignCount={campaigns.length} />
-            <div style={{
-              display: "flex", flexDirection: "column", alignItems: "center",
-              justifyContent: "center", minHeight: 280, textAlign: "center", gap: 12,
-            }}>
-              <p style={{ fontSize: 13, color: "#484848", fontFamily: "var(--font-outfit)" }}>
-                No data yet. Send a campaign to start tracking.
-              </p>
-              <Link href="/dashboard/campaigns/new" style={{
-                fontSize: 12, color: "#FF5200", fontFamily: "var(--font-outfit)", textDecoration: "none",
-              }}>
-                Create campaign
-              </Link>
-            </div>
-          </>
-
-        ) : (
-          <>
-            <CampaignIQCard sentCount={stats?.sent ?? 0} campaignCount={campaigns.length} />
-
-            {/* Stat cards with count-up */}
-            <StaggerList style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, marginBottom: 20 }}>
-              {[
-                { label: "EMAILS SENT",   value: stats?.sent ?? 0, isNum: true },
-                { label: "OPEN RATE",     value: stats?.open_rate ?? 0, isNum: true, suffix: "%", sub: `${stats?.opened ?? 0} opens` },
-                { label: "CLICK RATE",    value: stats?.click_rate ?? 0, isNum: true, suffix: "%", sub: `${stats?.clicked ?? 0} clicks` },
-                { label: "REPLY RATE",    value: stats?.reply_rate ?? 0, isNum: true, suffix: "%", sub: `${stats?.replied ?? 0} replies` },
-                { label: "COST / REPLY",  value: stats?.cost_per_reply ?? 0, isNum: true, prefix: "$", sub: stats?.cost_per_reply == null ? "no replies yet" : `${stats?.replied ?? 0} replies` },
-              ].map((card) => (
-                <StaggerItem key={card.label}>
-                  <div className="stat-card" style={{
-                    backgroundColor: "#0e0e0e",
-                    border: "1px solid rgba(255,255,255,0.06)",
-                    borderRadius: 10,
-                    padding: "18px 22px",
-                  }}>
-                    <div className="nx-section-label" style={{ marginBottom: 10 }}>
-                      {card.label}
+        {/* Campaign Performance */}
+        <div className="rounded-md border border-border bg-card p-4">
+          <h3 className="mb-4 text-sm font-medium">Campaign Performance</h3>
+          <div className="space-y-3">
+            {campaignPerformance.map((campaign) => (
+              <div key={campaign.name} className="flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm truncate">{campaign.name}</p>
+                  <div className="mt-1 flex items-center gap-2">
+                    <div className="h-1.5 flex-1 rounded-full bg-secondary">
+                      <div
+                        className="h-1.5 rounded-full bg-primary"
+                        style={{ width: `${(campaign.rate / 20) * 100}%` }}
+                      />
                     </div>
-                    <div style={{ fontSize: 24, fontWeight: 500, color: "#fff", fontFamily: "var(--font-syne)", lineHeight: 1, marginBottom: 4 }}>
-                      {card.prefix ?? ""}
-                      <CountUp value={card.value} suffix={card.suffix ?? ""} duration={900} />
-                    </div>
-                    {card.sub && (
-                      <div style={{ fontSize: 11, color: "#484848", fontFamily: "var(--font-outfit)" }}>
-                        {card.sub}
-                      </div>
-                    )}
                   </div>
-                </StaggerItem>
-              ))}
-            </StaggerList>
-
-            {/* Chart */}
-            <ScrollReveal delay={0.1}>
-              <div style={{
-                backgroundColor: "#0e0e0e",
-                border: "1px solid rgba(255,255,255,0.06)",
-                borderRadius: 10,
-                padding: "20px 24px",
-                marginBottom: 16,
-              }}>
-                <p className="nx-section-label" style={{ marginBottom: 16 }}>
-                  Daily send volume — last 30 days
-                </p>
-                <ResponsiveContainer width="100%" height={160}>
-                  <LineChart data={daily} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
-                    <XAxis
-                      dataKey="date"
-                      tick={{ fill: "#383838", fontSize: 10, fontFamily: "var(--font-outfit)" }}
-                      tickFormatter={(v: string) => {
-                        const d = new Date(v + "T00:00:00");
-                        return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-                      }}
-                      interval={6}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      allowDecimals={false}
-                      tick={{ fill: "#383838", fontSize: 10, fontFamily: "var(--font-outfit)" }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <Tooltip content={<ChartTooltip />} />
-                    <Line
-                      type="monotone"
-                      dataKey="count"
-                      stroke="#FF5200"
-                      strokeWidth={1.5}
-                      dot={false}
-                      activeDot={{ r: 3, fill: "#FF5200", strokeWidth: 0 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </ScrollReveal>
-
-            {/* Campaign table */}
-            {campaigns.length > 0 && (
-              <ScrollReveal delay={0.16}>
-                <div style={{
-                  backgroundColor: "#0e0e0e",
-                  border: "1px solid rgba(255,255,255,0.06)",
-                  borderRadius: 10,
-                  overflow: "hidden",
-                }}>
-                  <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "2fr 60px 60px 80px 60px 80px 60px 80px",
-                    padding: "10px 22px",
-                    borderBottom: "1px solid rgba(255,255,255,0.05)",
-                  }}>
-                    {["Campaign", "Sent", "Opens", "Open %", "Clicks", "Click %", "Replies", "Reply %"].map((col) => (
-                      <div key={col} className="nx-section-label">
-                        {col}
-                      </div>
-                    ))}
-                  </div>
-
-                  {campaigns.map((camp, idx) => (
-                    <div
-                      key={camp.id}
-                      className="table-row"
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "2fr 60px 60px 80px 60px 80px 60px 80px",
-                        padding: "12px 22px",
-                        borderTop: idx === 0 ? "none" : "1px solid rgba(255,255,255,0.03)",
-                        alignItems: "center",
-                      }}
-                    >
-                      <div>
-                        <p style={{ fontSize: 13, color: "#c0c0c0", fontFamily: "var(--font-outfit)", margin: 0 }}>
-                          {camp.name}
-                        </p>
-                        <p style={{ fontSize: 10, color: "#383838", fontFamily: "var(--font-outfit)", margin: 0, marginTop: 1 }}>
-                          {new Date(camp.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                        </p>
-                      </div>
-                      <span style={{ fontSize: 13, color: "#666", fontFamily: "var(--font-outfit)" }}>{camp.sent}</span>
-                      <span style={{ fontSize: 13, color: "#666", fontFamily: "var(--font-outfit)" }}>{camp.opened}</span>
-                      <span style={{ fontSize: 13, color: rateColor(camp.open_rate), fontFamily: "var(--font-outfit)" }}>{camp.open_rate}%</span>
-                      <span style={{ fontSize: 13, color: "#666", fontFamily: "var(--font-outfit)" }}>{camp.clicked}</span>
-                      <span style={{ fontSize: 13, color: rateColor(camp.click_rate), fontFamily: "var(--font-outfit)" }}>{camp.click_rate}%</span>
-                      <span style={{ fontSize: 13, color: "#666", fontFamily: "var(--font-outfit)" }}>{camp.replied}</span>
-                      <span style={{ fontSize: 13, color: rateColor(camp.reply_rate), fontFamily: "var(--font-outfit)" }}>{camp.reply_rate}%</span>
-                    </div>
-                  ))}
                 </div>
-              </ScrollReveal>
-            )}
-          </>
-        )}
-      </main>
-    </PageWrapper>
-  );
+                <div className="text-right">
+                  <p className="text-sm font-mono font-medium">
+                    {campaign.rate}%
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {campaign.replies}/{campaign.sent}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Detailed Table */}
+      <div className="mt-6 rounded-md border border-border bg-card">
+        <div className="border-b border-border px-4 py-3">
+          <h3 className="text-sm font-medium">Performance by Campaign</h3>
+        </div>
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-border text-left">
+              <th className="px-4 py-3 text-xs font-medium text-muted-foreground">
+                Campaign
+              </th>
+              <th className="px-4 py-3 text-xs font-medium text-muted-foreground text-right">
+                Sent
+              </th>
+              <th className="px-4 py-3 text-xs font-medium text-muted-foreground text-right">
+                Opened
+              </th>
+              <th className="px-4 py-3 text-xs font-medium text-muted-foreground text-right">
+                Clicked
+              </th>
+              <th className="px-4 py-3 text-xs font-medium text-muted-foreground text-right">
+                Replied
+              </th>
+              <th className="px-4 py-3 text-xs font-medium text-muted-foreground text-right">
+                Reply Rate
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {campaignPerformance.map((campaign) => (
+              <tr
+                key={campaign.name}
+                className="transition-colors hover:bg-secondary/50"
+              >
+                <td className="px-4 py-3 text-sm">{campaign.name}</td>
+                <td className="px-4 py-3 text-sm text-right font-mono text-muted-foreground">
+                  {campaign.sent}
+                </td>
+                <td className="px-4 py-3 text-sm text-right font-mono text-muted-foreground">
+                  {Math.round(campaign.sent * 0.65)}
+                </td>
+                <td className="px-4 py-3 text-sm text-right font-mono text-muted-foreground">
+                  {Math.round(campaign.sent * 0.2)}
+                </td>
+                <td className="px-4 py-3 text-sm text-right font-mono">
+                  {campaign.replies}
+                </td>
+                <td className="px-4 py-3 text-sm text-right font-mono">
+                  <span
+                    className={
+                      campaign.rate >= 15
+                        ? "text-green-500"
+                        : campaign.rate >= 10
+                        ? "text-foreground"
+                        : "text-muted-foreground"
+                    }
+                  >
+                    {campaign.rate}%
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
 }
