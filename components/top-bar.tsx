@@ -11,8 +11,8 @@ interface TopBarProps {
 
 export function TopBar({
   systemStatus = "online",
-  emailsPerHour = 127,
-  signalsCount = 24,
+  emailsPerHour = 0,
+  signalsCount = 0,
 }: TopBarProps) {
   return (
     <div className="flex h-10 items-center justify-between border-b border-border bg-background px-6">

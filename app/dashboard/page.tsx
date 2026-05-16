@@ -15,6 +15,46 @@ async function getSubscription(userId: string) {
   return data ?? { plan: "free", credits_used: 0, credits_limit: 10 };
 }
 
+async function getDashboardStats(userId: string) {
+  const supabase = await createClient();
+
+  const { data: campaigns } = await supabase
+    .from("campaigns")
+    .select("id, lead_count")
+    .eq("user_id", userId);
+
+  const totalLeads = (campaigns ?? []).reduce((sum, c) => sum + (c.lead_count ?? 0), 0);
+  const campaignIds = (campaigns ?? []).map((c) => c.id);
+
+  const { count: sentCount } = await supabase
+    .from("email_events")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("event_type", "sent");
+
+  const { count: repliedCount } = await supabase
+    .from("email_events")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("event_type", "replied");
+
+  const sent = sentCount ?? 0;
+  const replied = repliedCount ?? 0;
+  const responseRate = sent > 0 ? Math.round((replied / sent) * 1000) / 10 : 0;
+
+  let signalsCount = 0;
+  if (campaignIds.length > 0) {
+    const { count } = await supabase
+      .from("leads")
+      .select("id", { count: "exact", head: true })
+      .in("campaign_id", campaignIds)
+      .not("signal_data", "is", null);
+    signalsCount = count ?? 0;
+  }
+
+  return { sent, totalLeads, responseRate, signalsCount };
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -26,6 +66,8 @@ export default async function DashboardPage() {
   const isPaid = plan !== "free";
   const isAgencyOrEnterprise = plan === "agency" || plan === "enterprise";
   const creditsLeft = (sub.credits_limit ?? 10) - (sub.credits_used ?? 0);
+
+  const stats = user ? await getDashboardStats(user.id) : { sent: 0, totalLeads: 0, responseRate: 0, signalsCount: 0 };
 
   return (
     <div className="p-6 animate-fade-in">
@@ -70,32 +112,32 @@ export default async function DashboardPage() {
       <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
         <StatCard
           title="Emails Sent"
-          value="2,847"
-          change="+12.3% from last week"
+          value={stats.sent.toLocaleString()}
+          change={stats.sent > 0 ? "All time" : "No emails sent yet"}
           changeType="positive"
           iconName="mail"
           iconColor="text-primary"
         />
         <StatCard
           title="Active Leads"
-          value="1,234"
-          change="+8.1% from last week"
+          value={stats.totalLeads.toLocaleString()}
+          change={stats.totalLeads > 0 ? "Across all campaigns" : "No leads yet"}
           changeType="positive"
           iconName="users"
           iconColor="text-foreground"
         />
         <StatCard
           title="Response Rate"
-          value="14.2%"
-          change="-2.1% from last week"
-          changeType="negative"
+          value={stats.responseRate > 0 ? `${stats.responseRate}%` : "0%"}
+          change={stats.sent > 0 ? `${stats.sent} emails sent` : "No data yet"}
+          changeType={stats.responseRate > 0 ? "positive" : "neutral"}
           iconName="messageSquare"
           iconColor="text-green-500"
         />
         <StatCard
           title="AI Signals"
-          value={isPaid ? "89" : "-"}
-          change={isPaid ? "24 high priority" : "Pro+ feature"}
+          value={isPaid ? stats.signalsCount.toString() : "-"}
+          change={isPaid ? (stats.signalsCount > 0 ? "Leads with signals" : "No signals yet") : "Pro+ feature"}
           changeType={isPaid ? "neutral" : "negative"}
           iconName="zap"
           iconColor="text-accent"

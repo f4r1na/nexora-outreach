@@ -1,16 +1,36 @@
-"use client"
-
-import { useState } from "react"
-import { Settings, Mail, CreditCard, AlertTriangle, Check, X } from "lucide-react"
+import { createClient } from "@/lib/supabase/server"
+import { redirect } from "next/navigation"
+import { Settings, Mail, CreditCard, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { PLANS, type PlanKey } from "@/lib/plans"
+import { DeleteAccount } from "./_components/delete-account"
 
-export default function SettingsPage() {
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+export default async function SettingsPage() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect("/login")
+
+  const [subResult, gmailResult, activeCampaignsResult] = await Promise.all([
+    supabase.from("subscriptions").select("plan, credits_used, credits_limit").eq("user_id", user.id).single(),
+    supabase.from("gmail_connections").select("gmail_email").eq("user_id", user.id).single(),
+    supabase.from("campaigns").select("id", { count: "exact", head: true }).eq("user_id", user.id).eq("status", "active"),
+  ])
+
+  const sub = subResult.data ?? { plan: "free", credits_used: 0, credits_limit: 10 }
+  const plan = sub.plan as PlanKey
+  const gmail = gmailResult.data
+  const activeCampaignCount = activeCampaignsResult.count ?? 0
+
+  const creditsUsed = sub.credits_used ?? 0
+  const creditsLimit = sub.credits_limit ?? 10
+  const creditsPercent = creditsLimit > 0 ? Math.round((creditsUsed / creditsLimit) * 100) : 0
+
+  const planInfo = plan !== "free" ? PLANS[plan as Exclude<PlanKey, "free">] : null
+  const planLabel = planInfo?.name ?? "Free"
+  const planPrice = planInfo?.price ?? 0
 
   return (
     <div className="p-6">
-      {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-2">
           <Settings className="h-5 w-5 text-muted-foreground" />
@@ -38,17 +58,27 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <p className="text-sm font-medium">Gmail</p>
-                  <p className="text-xs text-muted-foreground">john@company.com</p>
+                  <p className="text-xs text-muted-foreground">
+                    {gmail?.gmail_email ?? "Not connected"}
+                  </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 rounded bg-green-500/10 px-2 py-1">
-                  <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
-                  <span className="text-xs font-medium text-green-500">Connected</span>
-                </div>
-                <Button variant="outline" size="sm" className="border-border bg-card hover:bg-secondary">
-                  Disconnect
-                </Button>
+                {gmail ? (
+                  <>
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                      <span className="text-xs text-muted-foreground">Connected</span>
+                    </div>
+                    <Button variant="outline" size="sm" className="border-border bg-card hover:bg-secondary">
+                      Disconnect
+                    </Button>
+                  </>
+                ) : (
+                  <Button variant="outline" size="sm" className="border-border bg-card hover:bg-secondary">
+                    Connect Gmail
+                  </Button>
+                )}
               </div>
             </div>
             <div className="flex items-center justify-between">
@@ -76,42 +106,24 @@ export default function SettingsPage() {
           <div className="p-4 space-y-4">
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-sm">Emails Sent</span>
-                <span className="text-sm font-mono">847 / 1,000</span>
+                <span className="text-sm">Credits Used</span>
+                <span className="text-sm font-mono">{creditsUsed.toLocaleString()} / {creditsLimit.toLocaleString()}</span>
               </div>
               <div className="h-2 rounded-full bg-secondary">
                 <div
                   className="h-2 rounded-full bg-primary"
-                  style={{ width: "84.7%" }}
-                />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-sm">AI Signals</span>
-                <span className="text-sm font-mono">312 / 500</span>
-              </div>
-              <div className="h-2 rounded-full bg-secondary">
-                <div
-                  className="h-2 rounded-full bg-accent"
-                  style={{ width: "62.4%" }}
+                  style={{ width: `${Math.min(creditsPercent, 100)}%` }}
                 />
               </div>
             </div>
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-sm">Active Campaigns</span>
-                <span className="text-sm font-mono">2 / 3</span>
-              </div>
-              <div className="h-2 rounded-full bg-secondary">
-                <div
-                  className="h-2 rounded-full bg-green-500"
-                  style={{ width: "66.7%" }}
-                />
+                <span className="text-sm font-mono">{activeCampaignCount}</span>
               </div>
             </div>
             <p className="text-xs text-muted-foreground">
-              Usage resets on the 1st of each month
+              Account email: {user.email}
             </p>
           </div>
         </section>
@@ -127,36 +139,21 @@ export default function SettingsPage() {
           <div className="p-4 space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium">Pro Plan</p>
-                <p className="text-xs text-muted-foreground">$199/month</p>
+                <p className="text-sm font-medium">{planLabel} Plan</p>
+                <p className="text-xs text-muted-foreground">
+                  {planPrice > 0 ? `$${planPrice}/month` : "Free"}
+                </p>
               </div>
               <div className="flex items-center gap-2">
-                <span className="rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                  Active
+                <span className="rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary capitalize">
+                  {plan}
                 </span>
-                <Button variant="outline" size="sm" className="border-border bg-card hover:bg-secondary">
-                  Upgrade
-                </Button>
+                {plan === "free" && (
+                  <Button variant="outline" size="sm" className="border-border bg-card hover:bg-secondary">
+                    Upgrade
+                  </Button>
+                )}
               </div>
-            </div>
-            <div className="h-px bg-border" />
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm">Payment Method</p>
-                <p className="text-xs text-muted-foreground">Visa ending in 4242</p>
-              </div>
-              <Button variant="outline" size="sm" className="border-border bg-card hover:bg-secondary">
-                Update
-              </Button>
-            </div>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm">Next billing date</p>
-                <p className="text-xs text-muted-foreground">February 1, 2024</p>
-              </div>
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
-                View invoices
-              </Button>
             </div>
           </div>
         </section>
@@ -170,48 +167,7 @@ export default function SettingsPage() {
             </div>
           </div>
           <div className="p-4">
-            {!showDeleteConfirm ? (
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm">Delete Account</p>
-                  <p className="text-xs text-muted-foreground">
-                    Permanently delete your account and all data
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                >
-                  Delete Account
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <p className="text-sm text-destructive">
-                  Are you sure? This action cannot be undone.
-                </p>
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    className="gap-1.5 bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    <Check className="h-3.5 w-3.5" />
-                    Yes, delete
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowDeleteConfirm(false)}
-                    className="gap-1.5 border-border bg-card hover:bg-secondary"
-                  >
-                    <X className="h-3.5 w-3.5" />
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            )}
+            <DeleteAccount />
           </div>
         </section>
       </div>

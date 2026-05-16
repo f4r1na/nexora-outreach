@@ -1,87 +1,127 @@
-"use client"
-
-import Link from "next/link"
-import { cn } from "@/lib/utils"
-import { MoreHorizontal } from "lucide-react"
+import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
+import { MoreHorizontal } from "lucide-react";
 
 interface Campaign {
-  id: string
-  name: string
-  status: "active" | "paused" | "stopped" | "draft"
-  prospects: number
-  sent: number
-  replyRate: number
-  signals: number
-  created: string
+  id: string;
+  name: string;
+  status: "active" | "paused" | "stopped" | "draft" | "sent";
+  prospects: number;
+  sent: number;
+  replyRate: number;
+  signals: number;
+  created: string;
 }
 
-const campaigns: Campaign[] = [
-  {
-    id: "1",
-    name: "Q1 Series A Outreach",
-    status: "active",
-    prospects: 245,
-    sent: 180,
-    replyRate: 12.4,
-    signals: 8,
-    created: "Jan 15, 2024",
-  },
-  {
-    id: "2",
-    name: "VP Sales Hiring Companies",
-    status: "active",
-    prospects: 156,
-    sent: 89,
-    replyRate: 18.2,
-    signals: 12,
-    created: "Jan 18, 2024",
-  },
-  {
-    id: "3",
-    name: "Product Launch Follow-up",
-    status: "paused",
-    prospects: 320,
-    sent: 320,
-    replyRate: 8.7,
-    signals: 3,
-    created: "Jan 10, 2024",
-  },
-  {
-    id: "4",
-    name: "Enterprise Tech Stack",
-    status: "draft",
-    prospects: 89,
-    sent: 0,
-    replyRate: 0,
-    signals: 0,
-    created: "Jan 22, 2024",
-  },
-  {
-    id: "5",
-    name: "Marketing Agency Outreach",
-    status: "stopped",
-    prospects: 412,
-    sent: 412,
-    replyRate: 15.3,
-    signals: 24,
-    created: "Dec 28, 2023",
-  },
-]
-
-const statusStyles = {
+const statusStyles: Record<string, string> = {
   active: "bg-green-500/10 text-green-500 border border-green-500/20",
   paused: "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20",
   stopped: "bg-red-500/10 text-red-500 border border-red-500/20",
+  sent: "bg-blue-500/10 text-blue-500 border border-blue-500/20",
   draft: "bg-muted text-muted-foreground border border-border",
-}
+};
 
 interface CampaignsTableProps {
-  limit?: number
-  showHeader?: boolean
+  limit?: number;
+  showHeader?: boolean;
 }
 
-export function CampaignsTable({ limit, showHeader = true }: CampaignsTableProps) {
-  const displayCampaigns = limit ? campaigns.slice(0, limit) : campaigns
+export async function CampaignsTable({ limit, showHeader = true }: CampaignsTableProps) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return null;
+
+  const { data: rawCampaigns } = await supabase
+    .from("campaigns")
+    .select("id, name, status, lead_count, created_at")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(limit ?? 1000);
+
+  const campaignRows = rawCampaigns ?? [];
+
+  let campaigns: Campaign[] = [];
+
+  if (campaignRows.length > 0) {
+    const campaignIds = campaignRows.map((c) => c.id);
+
+    const { data: events } = await supabase
+      .from("email_events")
+      .select("event_type, campaign_id")
+      .eq("user_id", user.id)
+      .in("campaign_id", campaignIds);
+
+    const { data: leadsWithSignals } = await supabase
+      .from("leads")
+      .select("campaign_id")
+      .in("campaign_id", campaignIds)
+      .not("signal_data", "is", null);
+
+    const evts = events ?? [];
+    const signalsByCampaign: Record<string, number> = {};
+    for (const l of leadsWithSignals ?? []) {
+      signalsByCampaign[l.campaign_id] = (signalsByCampaign[l.campaign_id] ?? 0) + 1;
+    }
+
+    campaigns = campaignRows.map((c) => {
+      const ce = evts.filter((e) => e.campaign_id === c.id);
+      const cSent = ce.filter((e) => e.event_type === "sent").length;
+      const cReplied = ce.filter((e) => e.event_type === "replied").length;
+      const effectiveSent = cSent > 0 ? cSent : (c.status === "sent" ? (c.lead_count ?? 0) : 0);
+      const replyRate = effectiveSent > 0 ? Math.round((cReplied / effectiveSent) * 1000) / 10 : 0;
+      return {
+        id: c.id,
+        name: c.name,
+        status: c.status,
+        prospects: c.lead_count ?? 0,
+        sent: effectiveSent,
+        replyRate,
+        signals: signalsByCampaign[c.id] ?? 0,
+        created: new Date(c.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      };
+    });
+  }
+
+  if (campaigns.length === 0) {
+    return (
+      <div className="rounded-md border border-border bg-card">
+        {showHeader && (
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <h3 className="text-sm font-medium">Recent Campaigns</h3>
+          </div>
+        )}
+        <div
+          style={{
+            padding: "48px 24px",
+            textAlign: "center",
+          }}
+        >
+          <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.45)", marginBottom: "4px" }}>
+            No campaigns yet.
+          </p>
+          <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.3)", marginBottom: "20px" }}>
+            Use the command bar to create one.
+          </p>
+          <Link
+            href="/dashboard/campaigns/new"
+            style={{
+              display: "inline-block",
+              padding: "8px 20px",
+              borderRadius: "6px",
+              backgroundColor: "#FF5200",
+              color: "#fff",
+              fontSize: "13px",
+              textDecoration: "none",
+            }}
+          >
+            Create Campaign
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-md border border-border bg-card">
@@ -89,7 +129,7 @@ export function CampaignsTable({ limit, showHeader = true }: CampaignsTableProps
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h3 className="text-sm font-medium">Recent Campaigns</h3>
           <Link
-            href="/campaigns"
+            href="/dashboard/campaigns"
             className="text-xs text-primary hover:underline"
           >
             View all
@@ -100,39 +140,25 @@ export function CampaignsTable({ limit, showHeader = true }: CampaignsTableProps
         <table className="w-full">
           <thead>
             <tr className="border-b border-border text-left">
-              <th className="px-4 py-3 text-xs font-medium text-muted-foreground">
-                Name
-              </th>
-              <th className="px-4 py-3 text-xs font-medium text-muted-foreground">
-                Status
-              </th>
-              <th className="px-4 py-3 text-xs font-medium text-muted-foreground text-right">
-                Prospects
-              </th>
-              <th className="px-4 py-3 text-xs font-medium text-muted-foreground text-right">
-                Sent
-              </th>
-              <th className="px-4 py-3 text-xs font-medium text-muted-foreground text-right">
-                Reply Rate
-              </th>
-              <th className="px-4 py-3 text-xs font-medium text-muted-foreground text-right">
-                Signals
-              </th>
-              <th className="px-4 py-3 text-xs font-medium text-muted-foreground">
-                Created
-              </th>
+              <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Name</th>
+              <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Status</th>
+              <th className="px-4 py-3 text-xs font-medium text-muted-foreground text-right">Prospects</th>
+              <th className="px-4 py-3 text-xs font-medium text-muted-foreground text-right">Sent</th>
+              <th className="px-4 py-3 text-xs font-medium text-muted-foreground text-right">Reply Rate</th>
+              <th className="px-4 py-3 text-xs font-medium text-muted-foreground text-right">Signals</th>
+              <th className="px-4 py-3 text-xs font-medium text-muted-foreground">Created</th>
               <th className="w-10 px-4 py-3"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {displayCampaigns.map((campaign) => (
+            {campaigns.map((campaign) => (
               <tr
                 key={campaign.id}
                 className="transition-colors hover:bg-secondary/50 group"
               >
                 <td className="px-4 py-3">
                   <Link
-                    href={`/campaigns/${campaign.id}`}
+                    href={`/dashboard/campaigns/${campaign.id}`}
                     className="text-sm font-medium hover:text-primary transition-colors"
                   >
                     {campaign.name}
@@ -142,7 +168,7 @@ export function CampaignsTable({ limit, showHeader = true }: CampaignsTableProps
                   <span
                     className={cn(
                       "inline-flex rounded px-2 py-0.5 text-xs font-medium capitalize",
-                      statusStyles[campaign.status]
+                      statusStyles[campaign.status] ?? statusStyles.draft
                     )}
                   >
                     {campaign.status}
@@ -178,5 +204,5 @@ export function CampaignsTable({ limit, showHeader = true }: CampaignsTableProps
         </table>
       </div>
     </div>
-  )
+  );
 }

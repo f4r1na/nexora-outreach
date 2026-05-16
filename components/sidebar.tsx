@@ -20,7 +20,13 @@ const navigation = [
   { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  userEmail: string
+  userName: string
+  plan: string
+}
+
+export function Sidebar({ userEmail, userName, plan }: SidebarProps) {
   const pathname = usePathname()
 
   return (
@@ -65,15 +71,17 @@ export function Sidebar() {
       <div className="border-t border-border p-4">
         <div className="flex items-center gap-3">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-sm font-medium">
-            JD
+            {userName.charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">John Doe</p>
-            <p className="text-xs text-muted-foreground">Pro Plan</p>
+            <p className="text-sm font-medium truncate">{userName}</p>
+            <p className="text-xs text-muted-foreground capitalize">{plan} Plan</p>
           </div>
-          <div className="flex h-5 items-center rounded bg-primary/10 px-1.5">
-            <span className="text-[10px] font-medium text-primary">PRO</span>
-          </div>
+          {plan !== "free" && (
+            <div className="flex h-5 items-center rounded bg-primary/10 px-1.5">
+              <span className="text-[10px] font-medium text-primary uppercase">{plan.slice(0, 3)}</span>
+            </div>
+          )}
         </div>
       </div>
     </aside>
