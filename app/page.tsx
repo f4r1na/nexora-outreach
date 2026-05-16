@@ -28,9 +28,91 @@ function NexoraLogo({ size = 36 }: { size?: number }) {
   )
 }
 
+/* ─── SVG Icons ──────────────────────────────────────────────────────────── */
+function CheckSVG({ color = "#4ade80" }: { color?: string }) {
+  return (
+    <svg
+      width="11" height="11" viewBox="0 0 24 24" fill="none"
+      stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+      style={{ display: "inline", verticalAlign: "middle", flexShrink: 0 }}
+    >
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  )
+}
+
+function XMarkSVG() {
+  return (
+    <svg
+      width="11" height="11" viewBox="0 0 24 24" fill="none"
+      stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round"
+      style={{ display: "inline", verticalAlign: "middle", flexShrink: 0 }}
+    >
+      <path d="M18 6 6 18M6 6l12 12" />
+    </svg>
+  )
+}
+
+function SearchSVG() {
+  return (
+    <svg
+      width="11" height="11" viewBox="0 0 24 24" fill="none"
+      stroke="#f97316" strokeWidth="2.5" strokeLinecap="round"
+      style={{ display: "inline", verticalAlign: "middle", flexShrink: 0, animation: "searchRotate 2.5s ease-in-out infinite" }}
+    >
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.35-4.35" />
+    </svg>
+  )
+}
+
+function EnvelopeSVG() {
+  return (
+    <svg
+      width="11" height="11" viewBox="0 0 24 24" fill="none"
+      stroke="#f97316" strokeWidth="2" strokeLinecap="round"
+      style={{ display: "inline", verticalAlign: "middle", flexShrink: 0 }}
+    >
+      <rect x="2" y="4" width="20" height="16" rx="1" />
+      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+    </svg>
+  )
+}
+
 /* ─── Signal Ticker ──────────────────────────────────────────────────────── */
-const TICKER_CONTENT =
-  "🔥 James Chen at DataFlow just triggered a funding signal   ·   Sarah Kim at CloudSync hired a VP of Sales   ·   Marcus Lee posted on HN Hiring   ·   DataPilot raised Series B   ·   3 new signals detected in last 60 seconds   ·   "
+const TICKER_ITEMS = [
+  "James Chen at DataFlow just triggered a funding signal",
+  "Sarah Kim at CloudSync hired a VP of Sales",
+  "Marcus Lee posted on HN Hiring",
+  "DataPilot raised Series B",
+  "3 new signals detected in last 60 seconds",
+]
+
+function TickerContent() {
+  return (
+    <span className="font-mono" style={{ fontSize: 10, color: "#555", whiteSpace: "nowrap" }}>
+      {TICKER_ITEMS.map((item, i) => (
+        <span key={i}>
+          <span
+            style={{
+              display: "inline-block",
+              width: 5,
+              height: 5,
+              borderRadius: "50%",
+              background: "#f97316",
+              verticalAlign: "middle",
+              margin: "0 8px 1px",
+              animation: "signalPulse 1.8s ease-in-out infinite",
+              animationDelay: `${i * 0.3}s`,
+            }}
+          />
+          {item}
+          {"   ·   "}
+        </span>
+      ))}
+    </span>
+  )
+}
 
 function SignalTicker() {
   return (
@@ -49,7 +131,6 @@ function SignalTicker() {
         overflow: "hidden",
       }}
     >
-      {/* Left badge */}
       <div
         style={{
           display: "flex",
@@ -71,13 +152,12 @@ function SignalTicker() {
         />
         <span
           className="font-mono"
-          style={{ fontSize: 9, color: "#f97316", letterSpacing: "0.12em", fontWeight: 600 }}
+          style={{ fontSize: 9, color: "#f97316", letterSpacing: "0.12em", fontWeight: 500 }}
         >
           SIGNALS
         </span>
       </div>
 
-      {/* Scrolling text */}
       <div style={{ flex: 1, overflow: "hidden" }}>
         <div
           style={{
@@ -86,12 +166,11 @@ function SignalTicker() {
             animation: "tickerScroll 55s linear infinite",
           }}
         >
-          <span className="font-mono" style={{ fontSize: 10, color: "#555" }}>{TICKER_CONTENT}</span>
-          <span className="font-mono" style={{ fontSize: 10, color: "#555" }}>{TICKER_CONTENT}</span>
+          <TickerContent />
+          <TickerContent />
         </div>
       </div>
 
-      {/* Right badge */}
       <div
         style={{
           display: "flex",
@@ -108,13 +187,12 @@ function SignalTicker() {
             height: 5,
             borderRadius: "50%",
             background: "#4ade80",
-            boxShadow: "0 0 4px rgba(74,222,128,0.6)",
             animation: "signalPulse 1.8s ease-in-out infinite 0.4s",
           }}
         />
         <span
           className="font-mono"
-          style={{ fontSize: 9, color: "#4ade80", letterSpacing: "0.12em", fontWeight: 600 }}
+          style={{ fontSize: 9, color: "#4ade80", letterSpacing: "0.12em", fontWeight: 500 }}
         >
           LIVE
         </span>
@@ -124,7 +202,7 @@ function SignalTicker() {
 }
 
 /* ─── Social Proof bar ───────────────────────────────────────────────────── */
-const COMPANIES = ["DATAFLOW", "CLOUDSYNC", "VELOCITY AI", "NEXGEN", "STACKPILOT"]
+const COMPANIES = ["DATAFLOW", "CLOUDSYNC", "VELOCITY AI", "STACKPILOT", "NEXGEN", "PULSEIO", "DRIFTLAB"]
 
 function SocialProof() {
   const doubled = [...COMPANIES, ...COMPANIES]
@@ -139,7 +217,6 @@ function SocialProof() {
       }}
     >
       <div style={{ display: "flex", alignItems: "center" }}>
-        {/* Label */}
         <div
           style={{
             flexShrink: 0,
@@ -156,28 +233,42 @@ function SocialProof() {
           </span>
         </div>
 
-        {/* Marquee */}
         <div style={{ flex: 1, overflow: "hidden" }}>
           <div
+            className="marquee-track font-mono"
             style={{
               display: "flex",
-              animation: "marqueeScroll 22s linear infinite",
+              alignItems: "center",
+              animation: "marqueeScroll 30s linear infinite",
               whiteSpace: "nowrap",
             }}
           >
             {doubled.map((name, i) => (
-              <span
-                key={i}
-                className="font-mono"
-                style={{
-                  fontSize: 11,
-                  color: "#3a3a3a",
-                  letterSpacing: "0.12em",
-                  padding: "0 40px",
-                  borderRight: "1px solid #1e1e1e",
-                }}
-              >
-                {name}
+              <span key={i} style={{ display: "inline-flex", alignItems: "center" }}>
+                <span
+                  className="marquee-item"
+                  style={{
+                    fontSize: 11,
+                    color: "#3a3a3a",
+                    letterSpacing: "0.12em",
+                    padding: "0 28px",
+                    transition: "color 0.2s ease",
+                    cursor: "default",
+                  }}
+                >
+                  {name}
+                </span>
+                <span
+                  style={{
+                    display: "inline-block",
+                    width: 3,
+                    height: 3,
+                    borderRadius: "50%",
+                    background: "#f97316",
+                    opacity: 0.45,
+                    flexShrink: 0,
+                  }}
+                />
               </span>
             ))}
           </div>
@@ -189,19 +280,17 @@ function SocialProof() {
 
 /* ─── Before / After ─────────────────────────────────────────────────────── */
 const BEFORE_ITEMS = [
-  "2% reply rate",
-  "40 hrs/week researching",
+  "2% average reply rate",
+  "40 hours/week on research",
   "100 emails → 2 replies",
   "$500/mo on prospect tools",
-  "Generic spray and pray",
 ]
 
 const AFTER_ITEMS = [
-  "23% reply rate",
-  "2 hours/week reviewing",
-  "20 emails → 5 replies",
+  "23% average reply rate",
+  "2 hours/week on review",
+  "20 emails → 5 meetings",
   "$0 on prospect tools",
-  "Signal-driven precision",
 ]
 
 function BeforeAfter() {
@@ -220,29 +309,27 @@ function BeforeAfter() {
           </h2>
         </FadeIn>
 
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-0 md:gap-0 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto_1fr] gap-0 items-stretch">
           {/* Before */}
-          <FadeIn>
+          <FadeIn from="left">
             <div
               style={{
-                background: "rgba(239,68,68,0.03)",
-                border: "1px solid rgba(239,68,68,0.1)",
+                background: "#0d0000",
+                border: "1px solid rgba(239,68,68,0.18)",
                 padding: "2rem",
                 height: "100%",
               }}
             >
               <p
                 className="font-mono uppercase"
-                style={{ fontSize: 9, color: "rgba(239,68,68,0.55)", letterSpacing: "0.22em", marginBottom: 20 }}
+                style={{ fontSize: 9, color: "rgba(239,68,68,0.6)", letterSpacing: "0.22em", marginBottom: 20 }}
               >
-                Before Nexora
+                Without Nexora
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 {BEFORE_ITEMS.map((item, i) => (
-                  <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                    <span style={{ color: "rgba(239,68,68,0.6)", fontSize: 12, flexShrink: 0, marginTop: 1 }}>
-                      ✗
-                    </span>
+                  <div key={i} style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                    <XMarkSVG />
                     <span style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", lineHeight: 1.4 }}>
                       {item}
                     </span>
@@ -265,7 +352,7 @@ function BeforeAfter() {
               <span
                 style={{
                   fontSize: "1.75rem",
-                  fontWeight: 900,
+                  fontWeight: 500,
                   color: "#f97316",
                   letterSpacing: "-0.02em",
                   opacity: 0.9,
@@ -277,25 +364,25 @@ function BeforeAfter() {
           </FadeIn>
 
           {/* After */}
-          <FadeIn delay={120}>
+          <FadeIn from="right" delay={120}>
             <div
               style={{
-                background: "rgba(249,115,22,0.03)",
-                border: "1px solid rgba(249,115,22,0.1)",
+                background: "#000d00",
+                border: "1px solid rgba(74,222,128,0.16)",
                 padding: "2rem",
                 height: "100%",
               }}
             >
               <p
                 className="font-mono uppercase"
-                style={{ fontSize: 9, color: "rgba(249,115,22,0.55)", letterSpacing: "0.22em", marginBottom: 20 }}
+                style={{ fontSize: 9, color: "rgba(74,222,128,0.6)", letterSpacing: "0.22em", marginBottom: 20 }}
               >
-                After Nexora
+                With Nexora
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 {AFTER_ITEMS.map((item, i) => (
-                  <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                    <span style={{ color: "#4ade80", fontSize: 12, flexShrink: 0, marginTop: 1 }}>✓</span>
+                  <div key={i} style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                    <CheckSVG color="#4ade80" />
                     <span style={{ fontSize: 13, color: "rgba(255,255,255,0.72)", lineHeight: 1.4 }}>
                       {item}
                     </span>
@@ -307,6 +394,78 @@ function BeforeAfter() {
         </div>
       </div>
     </section>
+  )
+}
+
+/* ─── Sticky CTA ─────────────────────────────────────────────────────────── */
+function StickyCTA() {
+  const [show, setShow] = useState(false)
+  const [closed, setClosed] = useState(false)
+
+  useEffect(() => {
+    if (closed) return
+    const handleScroll = () => setShow(window.scrollY > 500)
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [closed])
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        zIndex: 55,
+        background: "#111",
+        borderTop: "1px solid #1a1a1a",
+        padding: "14px 24px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        transform: show ? "translateY(0)" : "translateY(100%)",
+        transition: "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
+        pointerEvents: show ? "auto" : "none",
+      }}
+    >
+      <span style={{ fontSize: 13, color: "rgba(255,255,255,0.55)" }}>
+        Start closing more deals today
+      </span>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <Link
+          href="/onboarding"
+          style={{
+            background: "#f97316",
+            color: "#000",
+            padding: "8px 18px",
+            fontSize: 13,
+            fontWeight: 500,
+            borderRadius: 6,
+            whiteSpace: "nowrap",
+            display: "inline-block",
+          }}
+        >
+          Start Free Trial &rarr;
+        </Link>
+        <button
+          onClick={() => { setClosed(true); setShow(false) }}
+          style={{
+            color: "rgba(255,255,255,0.3)",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            padding: 4,
+            display: "flex",
+            alignItems: "center",
+          }}
+          aria-label="Dismiss"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M18 6 6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
   )
 }
 
@@ -379,11 +538,13 @@ function FadeIn({
   delay = 0,
   className = "",
   style,
+  from = "bottom",
 }: {
   children: ReactNode
   delay?: number
   className?: string
   style?: React.CSSProperties
+  from?: "bottom" | "left" | "right"
 }) {
   const ref = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
@@ -397,6 +558,12 @@ function FadeIn({
     observer.observe(el)
     return () => observer.disconnect()
   }, [])
+
+  const hiddenTransform =
+    from === "left" ? "translateX(-28px)" :
+    from === "right" ? "translateX(28px)" :
+    "translateY(20px)"
+
   return (
     <div
       ref={ref}
@@ -404,8 +571,8 @@ function FadeIn({
       style={{
         ...style,
         opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(20px)",
-        transition: `opacity 0.55s ease ${delay}ms, transform 0.55s ease ${delay}ms`,
+        transform: visible ? "translate(0)" : hiddenTransform,
+        transition: `opacity 0.6s ease ${delay}ms, transform 0.6s ease ${delay}ms`,
       }}
     >
       {children}
@@ -458,7 +625,9 @@ function LimitCard({
 
 /* ─── Live Demo ──────────────────────────────────────────────────────────── */
 type DemoLine = {
+  icon?: "check" | "search" | "envelope"
   text: string
+  score?: string
   color: string
   result?: string
   sub?: string
@@ -474,44 +643,52 @@ const DEMO_PHASES: Array<{ label: string; lines: DemoLine[]; duration: number }>
   {
     label: "SCANNING",
     lines: [
-      { text: "🔍 Searching GitHub...", color: "#f97316", result: "12 found" },
-      { text: "🔍 Searching HackerNews...", color: "#f97316", result: "8 found" },
-      { text: "🔍 Searching ProductHunt...", color: "#f97316", result: "6 found" },
-      { text: "🔍 Cross-referencing...", color: "#fbbf24", result: "verifying..." },
+      { icon: "search", text: "Searching GitHub...", color: "#f97316", result: "12 found" },
+      { icon: "search", text: "Searching HackerNews...", color: "#f97316", result: "8 found" },
+      { icon: "search", text: "Searching ProductHunt...", color: "#f97316", result: "6 found" },
+      { icon: "search", text: "Cross-referencing...", color: "#fbbf24", result: "verifying..." },
     ],
     duration: 4200,
   },
   {
     label: "RESULTS",
     lines: [
-      { text: "✅ James Chen · DataFlow Inc · 9.2/10", color: "#4ade80", sub: "Raised $5M Series A · 2 days ago" },
-      { text: "✅ Sarah Kim · CloudSync · 8.7/10", color: "#4ade80", sub: "Hired VP of Sales · 1 week ago" },
-      { text: "✅ Marcus Lee · Velocity AI · 8.1/10", color: "#4ade80", sub: "Posted on HN Hiring · 3 days ago" },
+      { icon: "check", text: "James Chen · DataFlow Inc ·", score: " 9.2/10", color: "#4ade80", sub: "Raised $5M Series A · 2 days ago" },
+      { icon: "check", text: "Sarah Kim · CloudSync ·", score: " 8.7/10", color: "#4ade80", sub: "Hired VP of Sales · 1 week ago" },
+      { icon: "check", text: "Marcus Lee · Velocity AI ·", score: " 8.1/10", color: "#4ade80", sub: "Posted on HN Hiring · 3 days ago" },
     ],
     duration: 3800,
   },
   {
     label: "DRAFTING",
     lines: [
-      { text: "✉️ Writing personalized email for James...", color: "#fbbf24" },
+      { icon: "envelope", text: "Writing personalized email for James...", color: "#fbbf24" },
       { text: '"Hi James, saw DataFlow just closed Series A..."', color: "rgba(255,255,255,0.5)", indent: true },
     ],
     duration: 2800,
   },
   {
     label: "SENT",
-    lines: [{ text: "✅ Email sent. Monitoring for reply...", color: "#4ade80" }],
+    lines: [{ icon: "check", text: "Email sent. Monitoring for reply...", color: "#4ade80" }],
     duration: 1800,
   },
 ]
 
+const demoIcons: Record<string, ReactNode> = {
+  check: <CheckSVG />,
+  search: <SearchSVG />,
+  envelope: <EnvelopeSVG />,
+}
+
 function LiveDemo() {
   const [phase, setPhase] = useState(0)
   const [visible, setVisible] = useState(0)
+  const [fading, setFading] = useState(false)
 
   useEffect(() => {
     const p = DEMO_PHASES[phase]
     const timers: ReturnType<typeof setTimeout>[] = []
+    setFading(false)
 
     p.lines.forEach((_, i) => {
       timers.push(setTimeout(() => setVisible(i + 1), i * 720 + 420))
@@ -519,16 +696,21 @@ function LiveDemo() {
 
     timers.push(
       setTimeout(() => {
-        const next = (phase + 1) % DEMO_PHASES.length
-        setPhase(next)
-        setVisible(0)
-      }, p.duration)
+        setFading(true)
+        const switchTimer = setTimeout(() => {
+          const next = (phase + 1) % DEMO_PHASES.length
+          setPhase(next)
+          setVisible(0)
+        }, 450)
+        timers.push(switchTimer)
+      }, p.duration + 2000)
     )
 
     return () => timers.forEach(clearTimeout)
   }, [phase])
 
   const p = DEMO_PHASES[phase]
+  const totalDuration = p.duration + 2000
 
   return (
     <div
@@ -542,6 +724,7 @@ function LiveDemo() {
         width: "100%",
       }}
     >
+      {/* Header */}
       <div
         className="font-mono"
         style={{
@@ -571,14 +754,14 @@ function LiveDemo() {
               height: 6,
               borderRadius: "50%",
               background: "#4ade80",
-              boxShadow: "0 0 6px rgba(74,222,128,0.7)",
               animation: "signalPulse 1.8s ease-in-out infinite",
             }}
           />
-          <span style={{ fontSize: 9, color: "#4ade80", letterSpacing: "0.12em", fontWeight: 600 }}>LIVE</span>
+          <span style={{ fontSize: 9, color: "#4ade80", letterSpacing: "0.12em", fontWeight: 500 }}>LIVE</span>
         </div>
       </div>
 
+      {/* Phase label */}
       <div
         className="font-mono"
         style={{ padding: "10px 16px 4px", fontSize: 9, color: "rgba(249,115,22,0.4)", letterSpacing: "0.24em" }}
@@ -586,7 +769,16 @@ function LiveDemo() {
         [{p.label}]
       </div>
 
-      <div className="font-mono" style={{ padding: "8px 16px 22px", minHeight: 210 }}>
+      {/* Content */}
+      <div
+        className="font-mono"
+        style={{
+          padding: "8px 16px 22px",
+          minHeight: 210,
+          opacity: fading ? 0 : 1,
+          transition: "opacity 0.4s ease",
+        }}
+      >
         {phase === 0 ? (
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ color: "#f97316", fontSize: 13 }}>{">"}</span>
@@ -599,17 +791,30 @@ function LiveDemo() {
               style={{
                 marginBottom: line.sub ? 2 : 10,
                 paddingLeft: line.indent ? 16 : 0,
-                animation: "demoLineIn 0.2s ease-out forwards",
+                animation: "demoLineIn 0.3s ease-out forwards",
               }}
             >
-              <div style={{ fontSize: 12, color: line.color, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 12, color: line.color, lineHeight: 1.5, display: "flex", alignItems: "center", gap: 6 }}>
+                {line.icon && demoIcons[line.icon]}
                 {line.result !== undefined ? (
                   <>
-                    {line.text}
-                    <span style={{ color: "rgba(255,255,255,0.24)", fontSize: 11 }}> {line.result}</span>
+                    <span>{line.text}</span>
+                    <span style={{ color: "rgba(255,255,255,0.24)", fontSize: 11 }}>{line.result}</span>
                   </>
                 ) : (
-                  line.text
+                  <>
+                    <span>{line.text}</span>
+                    {line.score && (
+                      <span
+                        style={{
+                          animation: "confidencePulse 1.2s ease-out forwards",
+                          animationDelay: "0.05s",
+                        }}
+                      >
+                        {line.score}
+                      </span>
+                    )}
+                  </>
                 )}
               </div>
               {line.sub && (
@@ -630,6 +835,7 @@ function LiveDemo() {
         )}
       </div>
 
+      {/* Progress bar */}
       <div
         style={{
           position: "absolute",
@@ -637,10 +843,18 @@ function LiveDemo() {
           left: 0,
           right: 0,
           height: 2,
-          background: "linear-gradient(to right, #f97316, #fbbf24, transparent)",
-          opacity: 0.3,
+          background: "rgba(255,255,255,0.04)",
         }}
-      />
+      >
+        <div
+          key={phase}
+          style={{
+            height: "100%",
+            background: "linear-gradient(to right, #f97316, #fbbf24)",
+            animation: `progressFill ${totalDuration}ms linear forwards`,
+          }}
+        />
+      </div>
     </div>
   )
 }
@@ -735,7 +949,7 @@ export default function LandingPage() {
           50%      { opacity: 0.3; }
         }
         @keyframes demoLineIn {
-          from { opacity: 0; transform: translateX(-6px); }
+          from { opacity: 0; transform: translateX(-8px); }
           to   { opacity: 1; transform: translateX(0); }
         }
         @keyframes heroRise {
@@ -750,9 +964,24 @@ export default function LandingPage() {
           from { transform: translateX(0); }
           to   { transform: translateX(-50%); }
         }
+        @keyframes searchRotate {
+          0%, 100% { transform: rotate(0deg); }
+          25%      { transform: rotate(-12deg); }
+          75%      { transform: rotate(12deg); }
+        }
+        @keyframes progressFill {
+          from { width: 0%; }
+          to   { width: 100%; }
+        }
+        @keyframes confidencePulse {
+          0%, 20% { color: #f97316; }
+          100%    { color: #4ade80; }
+        }
+        .marquee-track:hover { animation-play-state: paused; }
+        .marquee-item:hover  { color: #ffffff !important; }
       `}</style>
 
-      {/* ── Signal ticker (above everything) ───────────────────────────────── */}
+      {/* ── Signal ticker ──────────────────────────────────────────────────── */}
       <SignalTicker />
 
       {/* ── Scanline ───────────────────────────────────────────────────────── */}
@@ -874,12 +1103,10 @@ export default function LandingPage() {
         {/* Content */}
         <div className="max-w-7xl w-full mx-auto" style={{ paddingTop: 120, paddingBottom: 72 }}>
 
-          {/* Two-column: left = copy + terminal, right = demo */}
           <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-16 lg:gap-24 items-center">
 
             {/* Left column */}
             <div>
-              {/* Category label */}
               <div style={{ marginBottom: 16 }}>
                 <span
                   className="font-mono uppercase"
@@ -893,7 +1120,6 @@ export default function LandingPage() {
                 </span>
               </div>
 
-              {/* NEXORA */}
               <h1
                 className="font-black tracking-tighter"
                 style={{ fontSize: "clamp(3.5rem, 9vw, 10rem)", lineHeight: 0.88, marginBottom: 20 }}
@@ -917,7 +1143,6 @@ export default function LandingPage() {
                 ))}
               </h1>
 
-              {/* Orange line — exactly 200px */}
               <div
                 style={{
                   height: 1,
@@ -928,7 +1153,6 @@ export default function LandingPage() {
                 }}
               />
 
-              {/* Subheadline */}
               <p
                 className="font-light leading-relaxed"
                 style={{
@@ -1008,7 +1232,7 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Right column — demo terminal */}
+            {/* Right column */}
             <div
               className="hidden lg:block"
               style={{ animation: "heroRise 0.65s ease-out 0.85s both" }}
@@ -1017,11 +1241,11 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Stats row */}
+          {/* Stats row — 3 stats evenly spaced */}
           <div
             style={{
               display: "flex",
-              gap: 64,
+              justifyContent: "space-between",
               marginTop: 72,
               paddingTop: 48,
               paddingBottom: 48,
@@ -1055,6 +1279,20 @@ export default function LandingPage() {
                 style={{ fontSize: 10, color: "rgba(255,255,255,0.33)", marginTop: 10, letterSpacing: "0.24em" }}
               >
                 Reply Rate
+              </p>
+            </div>
+            <div>
+              <div
+                className="font-black tracking-tight"
+                style={{ fontSize: "3.5rem", color: "#fbbf24", lineHeight: 1 }}
+              >
+                2 min
+              </div>
+              <p
+                className="uppercase"
+                style={{ fontSize: 10, color: "rgba(255,255,255,0.33)", marginTop: 10, letterSpacing: "0.24em" }}
+              >
+                Setup Time
               </p>
             </div>
           </div>
@@ -1256,7 +1494,6 @@ export default function LandingPage() {
       <footer className="px-6 md:px-12 border-t border-white/10" style={{ paddingTop: 56, paddingBottom: 48 }}>
         <div className="max-w-7xl mx-auto">
 
-          {/* Top row */}
           <div
             className="flex flex-col md:flex-row justify-between items-start gap-10"
             style={{ marginBottom: 48 }}
@@ -1280,7 +1517,6 @@ export default function LandingPage() {
               </p>
             </div>
 
-            {/* Social links */}
             <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
               <a
                 href="https://twitter.com"
@@ -1311,7 +1547,6 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Bottom row */}
           <div
             style={{
               borderTop: "1px solid rgba(255,255,255,0.06)",
@@ -1336,6 +1571,9 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* ── Sticky CTA ─────────────────────────────────────────────────────── */}
+      <StickyCTA />
 
     </div>
   )
