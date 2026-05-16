@@ -6,24 +6,35 @@ import Stripe from "stripe";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// ── Price ID → plan map ────────────────────────────────────────────────────────
-const PRICE_TO_PLAN: Record<string, string> = {
-  price_1TIxNI7InZIqSYCH1KgzwAOK: "starter",
-  price_1TIxOD7InZIqSYCHBz2RiHz0: "pro",
-  price_1TIxOc7InZIqSYCHdnKyz9lA: "agency",
-};
+// ── Price ID → plan map (dynamic, from env) ───────────────────────────────────
+function buildPriceMap(): Record<string, string> {
+  const map: Record<string, string> = {};
+  const ids: Record<string, string | undefined> = {
+    pro:        process.env.STRIPE_PRICE_PRO,
+    agency:     process.env.STRIPE_PRICE_AGENCY,
+    enterprise: process.env.STRIPE_PRICE_ENTERPRISE,
+  };
+  for (const [plan, id] of Object.entries(ids)) {
+    if (id) map[id] = plan;
+  }
+  return map;
+}
+
+const PRICE_TO_PLAN = buildPriceMap();
 
 // ── Plan limits ────────────────────────────────────────────────────────────────
 const PLAN_CREDITS: Record<string, number> = {
-  starter: 300,
-  pro: 1000,
-  agency: 3000,
+  free:       10,
+  pro:        1000,
+  agency:     5000,
+  enterprise: 999999,
 };
 
 const PLAN_SENDS: Record<string, number> = {
-  starter: 0,
-  pro: 500,
-  agency: 1500,
+  free:       0,
+  pro:        200,
+  agency:     1000,
+  enterprise: 999999,
 };
 
 // ── Service-role Supabase client (bypasses RLS) ────────────────────────────────
