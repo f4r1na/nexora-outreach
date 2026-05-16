@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-import { CommandBar } from "@/components/command-bar";
+import { CommandBarSection } from "@/app/dashboard/_components/command-bar-section";
 import { StatCard } from "@/components/stat-card";
 import { CampaignsTable } from "@/components/campaigns-table";
 import { SignalsFeed } from "@/components/signals-feed";
@@ -71,6 +71,15 @@ export default async function DashboardPage() {
     ? await getDashboardStats(user.id)
     : { sent: 0, totalLeads: 0, responseRate: 0, signalsCount: 0 };
 
+  const { data: styleProfile } = user
+    ? await supabase
+        .from("style_profiles")
+        .select("id")
+        .eq("user_id", user.id)
+        .maybeSingle()
+    : { data: null }
+  const hasCompanyProfile = !!styleProfile
+
   return (
     <div className="p-6 animate-fade-in dot-grid min-h-full">
       {!isPaid && (
@@ -112,7 +121,7 @@ export default async function DashboardPage() {
         <p className="mb-4 text-xs text-muted-foreground">
           Your AI-powered sales command center
         </p>
-        <CommandBar />
+        <CommandBarSection hasCompanyProfile={hasCompanyProfile} />
       </div>
 
       <div className="mb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 stagger-children">
