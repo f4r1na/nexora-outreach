@@ -77,57 +77,62 @@ export default function LeadsTab({
       .catch(() => setEnriching(false));
   }, []);
 
-  const handleSelect = useCallback((lead: Lead, i: number) => {
+  const handleSelect = (lead: Lead, i: number) => {
     setSelectedLead(lead);
     setSelectedIndex(i);
-  }, []);
+  };
 
-  const handleClose = useCallback(() => setSelectedLead(null), []);
+  const handleClose = () => setSelectedLead(null);
 
   const handleSkip = useCallback(
     (leadId: string) => {
-      const i = leads.findIndex((l) => l.id === leadId);
-      if (i < leads.length - 1) {
-        setSelectedLead(leads[i + 1]);
+      const i = visibleLeads.findIndex((l) => l.id === leadId);
+      if (i < visibleLeads.length - 1) {
+        setSelectedLead(visibleLeads[i + 1]);
         setSelectedIndex(i + 1);
       } else {
         setSelectedLead(null);
       }
     },
-    [leads]
+    [visibleLeads]
   );
 
   const handlePrev = useCallback(() => {
     if (selectedIndex <= 0) return;
-    const next = leads[selectedIndex - 1];
+    const next = visibleLeads[selectedIndex - 1];
     if (next) { setSelectedLead(next); setSelectedIndex(selectedIndex - 1); }
-  }, [leads, selectedIndex]);
+  }, [visibleLeads, selectedIndex]);
 
   const handleNext = useCallback(() => {
-    if (selectedIndex >= leads.length - 1) return;
-    const next = leads[selectedIndex + 1];
+    if (selectedIndex >= visibleLeads.length - 1) return;
+    const next = visibleLeads[selectedIndex + 1];
     if (next) { setSelectedLead(next); setSelectedIndex(selectedIndex + 1); }
-  }, [leads, selectedIndex]);
+  }, [visibleLeads, selectedIndex]);
 
   const handleDeleteSingle = async (id: string) => {
     setDeletingIds(prev => new Set([...prev, id]));
-    await fetch(`/api/leads/${id}`, { method: "DELETE" });
-    setVisibleLeads(prev => prev.filter(l => l.id !== id));
-    setSelectedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
+    const res = await fetch(`/api/leads/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      setVisibleLeads(prev => prev.filter(l => l.id !== id));
+      setSelectedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
+    }
     setDeletingIds(prev => { const n = new Set(prev); n.delete(id); return n; });
     setConfirmingId(null);
   };
 
   const handleBulkDelete = async () => {
     const ids = [...selectedIds];
+    const idSet = new Set(ids);
     setDeletingIds(new Set(ids));
-    await fetch("/api/leads/bulk-delete", {
+    const res = await fetch("/api/leads/bulk-delete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ leadIds: ids }),
     });
-    setVisibleLeads(prev => prev.filter(l => !selectedIds.has(l.id)));
-    setSelectedIds(new Set());
+    if (res.ok) {
+      setVisibleLeads(prev => prev.filter(l => !idSet.has(l.id)));
+      setSelectedIds(new Set());
+    }
     setDeletingIds(new Set());
     setBulkConfirming(false);
   };
@@ -408,7 +413,7 @@ export default function LeadsTab({
                       onClick={(e) => { e.stopPropagation(); setConfirmingId(null); }}
                       style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, border: "1px solid rgba(255,255,255,0.1)", backgroundColor: "transparent", color: "rgba(255,255,255,0.4)", cursor: "pointer" }}
                     >
-                      ✕
+                      x
                     </button>
                   </div>
                 ) : (
