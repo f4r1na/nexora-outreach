@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { Trash2 } from "lucide-react";
 import LeadPanel, { Lead } from "./lead-panel";
 import SignalProgressBanner from "./signal-progress-banner";
 
@@ -40,6 +41,11 @@ export default function LeadsTab({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [enriching, setEnriching] = useState(false);
   const enrichFiredRef = useRef(false);
+  const [visibleLeads, setVisibleLeads] = useState(leads);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [bulkConfirming, setBulkConfirming] = useState(false);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
 
   // Background enrichment: trigger for leads with pending/null signals
   useEffect(() => {
@@ -103,7 +109,38 @@ export default function LeadsTab({
     if (next) { setSelectedLead(next); setSelectedIndex(selectedIndex + 1); }
   }, [leads, selectedIndex]);
 
-  if (leads.length === 0) {
+  const handleDeleteSingle = async (id: string) => {
+    setDeletingIds(prev => new Set([...prev, id]));
+    await fetch(`/api/leads/${id}`, { method: "DELETE" });
+    setVisibleLeads(prev => prev.filter(l => l.id !== id));
+    setSelectedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
+    setDeletingIds(prev => { const n = new Set(prev); n.delete(id); return n; });
+    setConfirmingId(null);
+  };
+
+  const handleBulkDelete = async () => {
+    const ids = [...selectedIds];
+    setDeletingIds(new Set(ids));
+    await fetch("/api/leads/bulk-delete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ leadIds: ids }),
+    });
+    setVisibleLeads(prev => prev.filter(l => !selectedIds.has(l.id)));
+    setSelectedIds(new Set());
+    setDeletingIds(new Set());
+    setBulkConfirming(false);
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  };
+
+  if (visibleLeads.length === 0) {
     return (
       <div
         style={{
@@ -170,15 +207,50 @@ export default function LeadsTab({
         </div>
       )}
 
+      {/* Bulk delete bar */}
+      {selectedIds.size > 0 && (
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "8px 14px", marginBottom: 8,
+          backgroundColor: "rgba(255,82,0,0.06)",
+          border: "1px solid rgba(255,82,0,0.15)",
+          borderRadius: 8,
+        }}>
+          <span style={{ fontSize: 13, color: "rgba(255,82,0,0.8)" }}>
+            {selectedIds.size} lead{selectedIds.size > 1 ? "s" : ""} selected
+          </span>
+          {bulkConfirming ? (
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.5)" }}>Delete {selectedIds.size} leads?</span>
+              <button onClick={handleBulkDelete} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 4, border: "1px solid #f97316", backgroundColor: "transparent", color: "#f97316", cursor: "pointer" }}>
+                Confirm
+              </button>
+              <button onClick={() => setBulkConfirming(false)} style={{ fontSize: 12, padding: "4px 10px", borderRadius: 4, border: "1px solid rgba(255,255,255,0.1)", backgroundColor: "transparent", color: "rgba(255,255,255,0.4)", cursor: "pointer" }}>
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setBulkConfirming(true)}
+              style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, padding: "4px 12px", borderRadius: 4, border: "1px solid rgba(248,113,113,0.3)", backgroundColor: "transparent", color: "#f87171", cursor: "pointer" }}
+            >
+              <Trash2 size={12} />
+              Delete selected
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Column headers */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "2fr 1.5fr 1.5fr 48px",
+          gridTemplateColumns: "24px 2fr 1.5fr 1.5fr 48px 52px",
           gap: 12,
           padding: "0 14px 8px",
         }}
       >
+        <div /> {/* checkbox column header */}
         {["Lead", "Company", "Role", "Intel"].map((h, i) => (
           <p
             key={h}
@@ -194,11 +266,12 @@ export default function LeadsTab({
             {h}
           </p>
         ))}
+        <div /> {/* delete column header */}
       </div>
 
       {/* Rows */}
       <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-        {leads.map((lead, i) => {
+        {visibleLeads.map((lead, i) => {
           const dot = getSignalDot(
             enriching && (!lead.signal_status || lead.signal_status === "pending")
               ? { ...lead, signal_status: "researching" }
@@ -212,7 +285,7 @@ export default function LeadsTab({
               onClick={() => handleSelect(lead, i)}
               style={{
                 display: "grid",
-                gridTemplateColumns: "2fr 1.5fr 1.5fr 48px",
+                gridTemplateColumns: "24px 2fr 1.5fr 1.5fr 48px 52px",
                 gap: 12,
                 alignItems: "center",
                 padding: "12px 14px",
@@ -228,9 +301,19 @@ export default function LeadsTab({
                 cursor: "pointer",
                 textAlign: "left",
                 width: "100%",
-                transition: "background-color 0.14s, border-color 0.14s",
+                transition: "background-color 0.14s, border-color 0.14s, opacity 0.3s ease, transform 0.3s ease",
+                opacity: deletingIds.has(lead.id) ? 0 : 1,
+                transform: deletingIds.has(lead.id) ? "translateX(-8px)" : "none",
               }}
             >
+              <input
+                type="checkbox"
+                checked={selectedIds.has(lead.id)}
+                onChange={(e) => { e.stopPropagation(); toggleSelect(lead.id); }}
+                onClick={(e) => e.stopPropagation()}
+                style={{ accentColor: "#f97316", cursor: "pointer", width: 14, height: 14 }}
+              />
+
               <div style={{ minWidth: 0 }}>
                 <p
                   style={{
@@ -311,6 +394,34 @@ export default function LeadsTab({
                   }}
                 />
               </div>
+
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {confirmingId === lead.id ? (
+                  <div style={{ display: "flex", gap: 4 }}>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDeleteSingle(lead.id); }}
+                      style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, border: "1px solid #f97316", backgroundColor: "transparent", color: "#f97316", cursor: "pointer" }}
+                    >
+                      Del
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setConfirmingId(null); }}
+                      style={{ fontSize: 10, padding: "2px 6px", borderRadius: 4, border: "1px solid rgba(255,255,255,0.1)", backgroundColor: "transparent", color: "rgba(255,255,255,0.4)", cursor: "pointer" }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setConfirmingId(lead.id); }}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "rgba(255,255,255,0.2)", padding: 4, borderRadius: 4 }}
+                    onMouseEnter={e => (e.currentTarget.style.color = "#f87171")}
+                    onMouseLeave={e => (e.currentTarget.style.color = "rgba(255,255,255,0.2)")}
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                )}
+              </div>
             </button>
           );
         })}
@@ -319,7 +430,7 @@ export default function LeadsTab({
       <LeadPanel
         lead={selectedLead}
         index={selectedIndex}
-        totalLeads={leads.length}
+        totalLeads={visibleLeads.length}
         onClose={handleClose}
         onSkip={handleSkip}
         onPrev={handlePrev}
