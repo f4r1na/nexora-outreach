@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import { createClient as createServiceClient } from "@supabase/supabase-js";
 
 export type AuthState = { error: string | null };
 
@@ -18,6 +19,19 @@ export async function login(
 
   if (error) {
     return { error: error.message };
+  }
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const { data: sub } = await supabase
+      .from("subscriptions")
+      .select("user_id")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!sub) {
+      redirect("/onboarding");
+    }
   }
 
   redirect("/dashboard");
@@ -49,11 +63,7 @@ export async function signup(
     return { error: error.message };
   }
 
-  // Save founder type to subscriptions (service role bypasses RLS).
-  // The subscription row is created by a DB trigger on auth.users insert;
-  // this update runs after the trigger fires.
   if (authData.user) {
-    const { createClient: createServiceClient } = await import("@supabase/supabase-js");
     const db = createServiceClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -65,7 +75,7 @@ export async function signup(
       .eq("user_id", authData.user.id);
   }
 
-  redirect("/dashboard");
+  redirect("/onboarding");
 }
 
 export async function logout() {

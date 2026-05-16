@@ -1,47 +1,53 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Zap, ArrowRight, ArrowLeft, Check, Mail } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Zap, ArrowRight, ArrowLeft, Check, Mail } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const steps = [
   { id: 1, title: "What do you sell?", description: "Tell us about your product or service" },
   { id: 2, title: "Who do you sell to?", description: "Describe your ideal customer" },
   { id: 3, title: "Connect email", description: "Link your email account" },
-]
+];
 
 export default function OnboardingPage() {
-  const router = useRouter()
-  const [currentStep, setCurrentStep] = useState(1)
+  const router = useRouter();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
     product: "",
     icp: "",
     emailConnected: false,
-  })
+  });
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStep < 3) {
-      setCurrentStep(currentStep + 1)
-    } else {
-      router.push("/dashboard")
+      setCurrentStep(currentStep + 1);
+      return;
     }
-  }
+    setSaving(true);
+    try {
+      await fetch("/api/onboarding", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product: formData.product, icp: formData.icp }),
+      });
+    } finally {
+      setSaving(false);
+      router.push("/dashboard");
+    }
+  };
+
+  const handleSkip = () => router.push("/dashboard");
 
   const handleBack = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1)
-    }
-  }
-
-  const handleConnectGmail = () => {
-    setFormData({ ...formData, emailConnected: true })
-  }
+    if (currentStep > 1) setCurrentStep(currentStep - 1);
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      {/* Header */}
       <header className="flex h-14 items-center justify-between border-b border-border px-6">
         <div className="flex items-center gap-2">
           <div className="flex h-7 w-7 items-center justify-center rounded bg-primary">
@@ -62,11 +68,7 @@ export default function OnboardingPage() {
                     : "bg-secondary text-muted-foreground"
                 )}
               >
-                {currentStep > step.id ? (
-                  <Check className="h-3 w-3" />
-                ) : (
-                  step.id
-                )}
+                {currentStep > step.id ? <Check className="h-3 w-3" /> : step.id}
               </div>
               {index < steps.length - 1 && (
                 <div
@@ -82,92 +84,58 @@ export default function OnboardingPage() {
         <div className="w-24" />
       </header>
 
-      {/* Main Content */}
       <main className="flex flex-1 items-center justify-center p-6">
         <div className="w-full max-w-xl">
-          {/* Step 1: What do you sell? */}
           {currentStep === 1 && (
             <div className="space-y-6">
               <div className="text-center">
                 <h1 className="text-2xl font-semibold">What do you sell?</h1>
-                <p className="mt-2 text-muted-foreground">
-                  Describe your product or service in a few sentences
-                </p>
+                <p className="mt-2 text-muted-foreground">Describe your product or service in a few sentences</p>
               </div>
               <textarea
                 value={formData.product}
-                onChange={(e) =>
-                  setFormData({ ...formData, product: e.target.value })
-                }
-                placeholder="e.g., We sell AI-powered sales automation software that helps B2B companies increase their outbound reply rates by 3x..."
+                onChange={(e) => setFormData({ ...formData, product: e.target.value })}
+                placeholder="e.g., We sell AI-powered sales automation software..."
                 className="h-40 w-full resize-none rounded-md border border-border bg-card p-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
-              <p className="text-xs text-muted-foreground text-center">
-                This helps our AI craft personalized emails that resonate with your prospects
-              </p>
             </div>
           )}
 
-          {/* Step 2: Who do you sell to? */}
           {currentStep === 2 && (
             <div className="space-y-6">
               <div className="text-center">
                 <h1 className="text-2xl font-semibold">Who do you sell to?</h1>
-                <p className="mt-2 text-muted-foreground">
-                  Describe your ideal customer profile (ICP)
-                </p>
+                <p className="mt-2 text-muted-foreground">Describe your ideal customer profile (ICP)</p>
               </div>
               <textarea
                 value={formData.icp}
-                onChange={(e) =>
-                  setFormData({ ...formData, icp: e.target.value })
-                }
-                placeholder="e.g., VP of Sales or Head of Growth at Series A-C SaaS companies with 50-500 employees, based in North America..."
+                onChange={(e) => setFormData({ ...formData, icp: e.target.value })}
+                placeholder="e.g., VP of Sales at Series A-C SaaS companies with 50-500 employees..."
                 className="h-40 w-full resize-none rounded-md border border-border bg-card p-4 text-sm placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
-              <p className="text-xs text-muted-foreground text-center">
-                Our AI will use this to find and prioritize the right prospects for you
-              </p>
             </div>
           )}
 
-          {/* Step 3: Connect Email */}
           {currentStep === 3 && (
             <div className="space-y-6">
               <div className="text-center">
                 <h1 className="text-2xl font-semibold">Connect your email</h1>
-                <p className="mt-2 text-muted-foreground">
-                  Link your email account to start sending campaigns
-                </p>
+                <p className="mt-2 text-muted-foreground">Link your email account to start sending campaigns</p>
               </div>
               <div className="space-y-3">
                 <button
-                  onClick={handleConnectGmail}
+                  onClick={() => setFormData({ ...formData, emailConnected: true })}
                   disabled={formData.emailConnected}
                   className={cn(
                     "flex w-full items-center justify-center gap-3 rounded-md border border-border bg-card p-4 text-sm font-medium transition-colors",
-                    formData.emailConnected
-                      ? "border-green-500/50 bg-green-500/10"
-                      : "hover:bg-secondary"
+                    formData.emailConnected ? "border-green-500/50 bg-green-500/10" : "hover:bg-secondary"
                   )}
                 >
                   {formData.emailConnected ? (
-                    <>
-                      <Check className="h-5 w-5 text-green-500" />
-                      <span className="text-green-500">Gmail Connected</span>
-                    </>
+                    <><Check className="h-5 w-5 text-green-500" /><span className="text-green-500">Gmail Connected</span></>
                   ) : (
-                    <>
-                      <Mail className="h-5 w-5" />
-                      <span>Connect Gmail</span>
-                    </>
+                    <><Mail className="h-5 w-5" /><span>Connect Gmail</span></>
                   )}
-                </button>
-                <button
-                  className="flex w-full items-center justify-center gap-3 rounded-md border border-border bg-card p-4 text-sm font-medium transition-colors hover:bg-secondary"
-                >
-                  <Mail className="h-5 w-5" />
-                  <span>Connect Outlook</span>
                 </button>
               </div>
               <p className="text-xs text-muted-foreground text-center">
@@ -176,7 +144,6 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* Navigation */}
           <div className="mt-8 flex items-center justify-between">
             <Button
               variant="ghost"
@@ -187,21 +154,32 @@ export default function OnboardingPage() {
               <ArrowLeft className="h-4 w-4" />
               Back
             </Button>
-            <Button
-              onClick={handleNext}
-              className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
-              disabled={
-                (currentStep === 1 && !formData.product) ||
-                (currentStep === 2 && !formData.icp) ||
-                (currentStep === 3 && !formData.emailConnected)
-              }
-            >
-              {currentStep === 3 ? "Get Started" : "Continue"}
-              <ArrowRight className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-3">
+              {currentStep === 3 && (
+                <Button
+                  variant="ghost"
+                  onClick={handleSkip}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  Skip for now
+                </Button>
+              )}
+              <Button
+                onClick={handleNext}
+                disabled={
+                  saving ||
+                  (currentStep === 1 && !formData.product) ||
+                  (currentStep === 2 && !formData.icp)
+                }
+                className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+              >
+                {saving ? "Saving..." : currentStep === 3 ? "Get Started" : "Continue"}
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
       </main>
     </div>
-  )
+  );
 }
