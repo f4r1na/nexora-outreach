@@ -1,7 +1,7 @@
 // app/dashboard/_components/research-overlay.tsx
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Prospect, SIGNAL_COLORS, generateProspects } from "./prospect-data"
 
@@ -44,6 +44,9 @@ export function ResearchOverlay({ query, onComplete }: ResearchOverlayProps) {
   const [progress, setProgress] = useState(0)
   const [prospects] = useState(() => generateProspects(query, 15))
 
+  const onCompleteRef = useRef(onComplete)
+  onCompleteRef.current = onComplete
+
   useEffect(() => {
     const schedule = buildTerminalLines(query, prospects.length)
     const timers: ReturnType<typeof setTimeout>[] = []
@@ -63,7 +66,7 @@ export function ResearchOverlay({ query, onComplete }: ResearchOverlayProps) {
     }, 7200))
 
     timers.push(setTimeout(() => {
-      onComplete(prospects)
+      onCompleteRef.current(prospects)
     }, 8000))
 
     return () => timers.forEach(clearTimeout)
@@ -89,7 +92,7 @@ export function ResearchOverlay({ query, onComplete }: ResearchOverlayProps) {
         borderBottom: "1px solid rgba(255,255,255,0.06)",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#22c55e", animation: "pulse 2s ease-in-out infinite" }} />
+          <div style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: "#22c55e", animation: "green-pulse 2s ease-in-out infinite" }} />
           <span style={{ fontSize: 12, fontWeight: 500, color: "rgba(255,255,255,0.7)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
             Nexora Research Agent
           </span>
