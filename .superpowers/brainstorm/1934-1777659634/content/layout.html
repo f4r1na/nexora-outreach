@@ -1,0 +1,160 @@
+<h2>Agent Chat Layout</h2>
+<p class="subtitle">2-column layout — click to select your preferred sidebar content</p>
+
+<div class="section" style="margin-bottom:32px">
+  <div class="mockup" style="max-width:900px;margin:0 auto">
+    <div class="mockup-header">http://localhost:3000/dashboard/agent/[chatId]</div>
+    <div class="mockup-body" style="padding:0;overflow:hidden">
+
+      <!-- Navbar -->
+      <div style="height:40px;background:#0a0a14;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;padding:0 16px;gap:16px">
+        <div style="width:60px;height:18px;background:#FF5200;border-radius:3px;opacity:0.9"></div>
+        <div style="display:flex;gap:8px">
+          <div style="padding:3px 8px;background:rgba(255,255,255,0.06);border-radius:4px;font-size:10px;color:#fff">Agent</div>
+          <div style="padding:3px 8px;font-size:10px;color:rgba(255,255,255,0.3)">Campaigns</div>
+          <div style="padding:3px 8px;font-size:10px;color:rgba(255,255,255,0.3)">Inbox</div>
+        </div>
+        <div style="margin-left:auto;width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,0.1)"></div>
+      </div>
+
+      <!-- 2-column body -->
+      <div style="display:flex;height:420px">
+
+        <!-- Chat column (55%) -->
+        <div style="flex:0 0 55%;border-right:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;background:#080810">
+          <div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:8px">
+            <div style="width:6px;height:6px;border-radius:50%;background:#FF5200"></div>
+            <div style="font-size:10px;color:rgba(255,255,255,0.5)">New conversation</div>
+          </div>
+          <!-- Messages -->
+          <div style="flex:1;padding:14px;display:flex;flex-direction:column;gap:10px;overflow:hidden">
+            <!-- Agent welcome message -->
+            <div style="display:flex;align-items:flex-start;gap:8px">
+              <div style="width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#FF5200,#F59E0B);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-weight:700">N</div>
+              <div style="max-width:75%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:4px 12px 12px 12px;padding:8px 10px">
+                <div style="font-size:10px;color:rgba(255,255,255,0.75);line-height:1.5">Hey! I'm your Nexora agent. Ask me about campaigns, leads, analytics, or tell me what you want to do.</div>
+              </div>
+            </div>
+            <!-- User message -->
+            <div style="display:flex;justify-content:flex-end">
+              <div style="max-width:70%;background:rgba(255,82,0,0.12);border:1px solid rgba(255,82,0,0.2);border-radius:12px 4px 12px 12px;padding:8px 10px">
+                <div style="font-size:10px;color:rgba(255,255,255,0.85)">Show me my top 3 campaigns by open rate</div>
+              </div>
+            </div>
+            <!-- Agent thinking -->
+            <div style="display:flex;align-items:flex-start;gap:8px">
+              <div style="width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#FF5200,#F59E0B);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-weight:700">N</div>
+              <div style="max-width:80%">
+                <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:4px 12px 12px 12px;padding:8px 10px;margin-bottom:6px">
+                  <div style="font-size:10px;color:rgba(255,255,255,0.75);line-height:1.5;margin-bottom:8px">Here are your top 3 campaigns by open rate:</div>
+                  <!-- Action cards -->
+                  <div style="display:flex;flex-direction:column;gap:5px">
+                    <div style="background:rgba(0,208,132,0.06);border:1px solid rgba(0,208,132,0.2);border-radius:6px;padding:6px 8px;display:flex;justify-content:space-between;align-items:center">
+                      <div style="font-size:9px;color:rgba(255,255,255,0.7)">SaaS Founders Q1</div>
+                      <div style="font-size:9px;color:#00D084;font-weight:600">67% open</div>
+                    </div>
+                    <div style="background:rgba(0,208,132,0.06);border:1px solid rgba(0,208,132,0.2);border-radius:6px;padding:6px 8px;display:flex;justify-content:space-between;align-items:center">
+                      <div style="font-size:9px;color:rgba(255,255,255,0.7)">Agency Pitch Wave</div>
+                      <div style="font-size:9px;color:#00D084;font-weight:600">54% open</div>
+                    </div>
+                    <div style="background:rgba(0,208,132,0.06);border:1px solid rgba(0,208,132,0.2);border-radius:6px;padding:6px 8px;display:flex;justify-content:space-between;align-items:center">
+                      <div style="font-size:9px;color:rgba(255,255,255,0.7)">E-comm DTC Outreach</div>
+                      <div style="font-size:9px;color:#00D084;font-weight:600">48% open</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Input area -->
+          <div style="padding:10px 12px;border-top:1px solid rgba(255,255,255,0.06)">
+            <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:8px">
+              <div style="flex:1;font-size:10px;color:rgba(255,255,255,0.2)">Ask anything about your outreach...</div>
+              <div style="width:24px;height:24px;border-radius:6px;background:#FF5200;display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff">↑</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sidebar (45%) -->
+        <div style="flex:0 0 45%;background:#070710;display:flex;flex-direction:column">
+          <div style="padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.06)">
+            <div style="font-size:9px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.08em">Context Panel</div>
+          </div>
+          <div style="flex:1;padding:12px;overflow:hidden;display:flex;flex-direction:column;gap:10px">
+
+            <!-- Campaign context card -->
+            <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:10px">
+              <div style="font-size:9px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px">Active Campaign</div>
+              <div style="font-size:11px;color:#fff;font-weight:600;margin-bottom:4px">SaaS Founders Q1</div>
+              <div style="display:flex;gap:8px;margin-bottom:8px">
+                <div style="font-size:9px;color:rgba(255,255,255,0.4)">142 leads</div>
+                <div style="font-size:9px;color:rgba(255,255,255,0.2)">·</div>
+                <div style="font-size:9px;color:#4ade80">active</div>
+              </div>
+              <!-- Progress bar -->
+              <div style="height:3px;background:rgba(255,255,255,0.06);border-radius:999px;overflow:hidden">
+                <div style="width:67%;height:100%;background:linear-gradient(90deg,#FF5200,#F59E0B);border-radius:999px"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;margin-top:4px">
+                <div style="font-size:8px;color:rgba(255,255,255,0.25)">67% sent</div>
+                <div style="font-size:8px;color:rgba(255,255,255,0.25)">95 / 142</div>
+              </div>
+            </div>
+
+            <!-- Quick actions -->
+            <div>
+              <div style="font-size:9px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px">Quick Actions</div>
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <div style="padding:6px 10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:6px;font-size:10px;color:rgba(255,255,255,0.55);cursor:pointer">📊 View analytics</div>
+                <div style="padding:6px 10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:6px;font-size:10px;color:rgba(255,255,255,0.55);cursor:pointer">✉ Check inbox</div>
+                <div style="padding:6px 10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:6px;font-size:10px;color:rgba(255,255,255,0.55);cursor:pointer">➕ New campaign</div>
+              </div>
+            </div>
+
+            <!-- Recent chats -->
+            <div>
+              <div style="font-size:9px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px">Recent Chats</div>
+              <div style="display:flex;flex-direction:column;gap:3px">
+                <div style="padding:5px 8px;border-radius:5px;background:rgba(255,82,0,0.08);border:1px solid rgba(255,82,0,0.15);font-size:10px;color:rgba(255,255,255,0.65)">Top campaigns by open rate</div>
+                <div style="padding:5px 8px;border-radius:5px;font-size:10px;color:rgba(255,255,255,0.35)">Check inbox for replies</div>
+                <div style="padding:5px 8px;border-radius:5px;font-size:10px;color:rgba(255,255,255,0.35)">Draft SaaS outreach</div>
+                <div style="padding:5px 8px;border-radius:5px;font-size:10px;color:rgba(255,255,255,0.35)">Show follow-ups due today</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Does this layout look right to you?</h3>
+  <p class="subtitle">Chat (left, 55%) with agent avatar bubbles + embedded action cards — Sidebar (right, 45%) with active campaign context, quick actions, and recent chat history</p>
+
+  <div class="options">
+    <div class="option" data-choice="yes" onclick="toggleSelect(this)">
+      <div class="letter">✓</div>
+      <div class="content">
+        <h3>Looks good — proceed</h3>
+        <p>This layout matches the vision. Move on to the next design decision.</p>
+      </div>
+    </div>
+    <div class="option" data-choice="tweak-sidebar" onclick="toggleSelect(this)">
+      <div class="letter">↕</div>
+      <div class="content">
+        <h3>Tweak sidebar content</h3>
+        <p>Layout is right but I want to change what's in the sidebar panels.</p>
+      </div>
+    </div>
+    <div class="option" data-choice="tweak-ratio" onclick="toggleSelect(this)">
+      <div class="letter">⇔</div>
+      <div class="content">
+        <h3>Adjust column ratio</h3>
+        <p>The 55/45 split feels off — I want more or less chat area.</p>
+      </div>
+    </div>
+  </div>
+</div>
