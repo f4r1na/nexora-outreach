@@ -1,10 +1,13 @@
 // app/api/research/route.ts
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
+
 import { NextRequest } from "next/server"
-import OpenAI from "openai"
+import Anthropic from "@anthropic-ai/sdk"
 import { createClient } from "@/lib/supabase/server"
 import type { Prospect } from "@/app/dashboard/_components/types"
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+const anthropic = new Anthropic()
 
 function ts(startMs: number) {
   const s = Math.floor((Date.now() - startMs) / 1000)
@@ -32,20 +35,13 @@ export async function POST(req: NextRequest) {
         emit(ctrl, { type: "log", timestamp: ts(start), message: "Parsing query..." })
 
         // Parse ICP
-        const icpRaw = await openai.chat.completions.create({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content:
-                'Extract the ICP from this outreach query. Return JSON: { "role": string, "industry": string, "signal": string, "timeframe": string, "searchTerms": string[] }',
-            },
-            { role: "user", content: query },
-          ],
-          response_format: { type: "json_object" },
+        const icpRaw = await anthropic.messages.create({
+          model: "claude-haiku-4-5-20251001",
           max_tokens: 200,
+          system: 'Extract the ICP from this outreach query. Return only valid JSON, no markdown. Format: { "role": string, "industry": string, "signal": string, "timeframe": string, "searchTerms": string[] }',
+          messages: [{ role: "user", content: query }],
         })
-        const icp = JSON.parse(icpRaw.choices[0].message.content ?? "{}")
+        const icp = JSON.parse(icpRaw.content[0].type === "text" ? icpRaw.content[0].text : "{}")
 
         emit(ctrl, {
           type: "log",
@@ -70,20 +66,18 @@ export async function POST(req: NextRequest) {
         const hnRes = await fetch(
           `https://hn.algolia.com/api/v1/search?query=${encodeURIComponent(searchTerm)}&tags=story&hitsPerPage=20`
         )
+        if (!hnRes.ok) throw new Error(`HackerNews API error: ${hnRes.status}`)
         const hnData = await hnRes.json()
         const hnHits: Array<{ title?: string; url?: string; objectID?: string; author?: string; created_at?: string }> =
           hnData.hits ?? []
 
         let hnCount = 0
         if (hnHits.length > 0) {
-          const hnExtract = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
+          const hnExtract = await anthropic.messages.create({
+            model: "claude-haiku-4-5-20251001",
+            max_tokens: 600,
+            system: 'Extract up to 5 real prospects from these HackerNews posts. Return only valid JSON, no markdown. Format: { "prospects": [{ "name": string, "company": string, "role": string, "confidence": number, "signalType": string, "signalDescription": string, "sourceUrl": string, "daysAgo": number }] }',
             messages: [
-              {
-                role: "system",
-                content:
-                  'Extract up to 5 real prospects from these HackerNews posts. Return JSON: { "prospects": [{ "name": string, "company": string, "role": string, "confidence": number, "signalType": string, "signalDescription": string, "sourceUrl": string, "daysAgo": number }] }',
-              },
               {
                 role: "user",
                 content: JSON.stringify(
@@ -96,10 +90,8 @@ export async function POST(req: NextRequest) {
                 ),
               },
             ],
-            response_format: { type: "json_object" },
-            max_tokens: 600,
           })
-          const parsed = JSON.parse(hnExtract.choices[0].message.content ?? "{}")
+          const parsed = JSON.parse(hnExtract.content[0].type === "text" ? hnExtract.content[0].text : "{}")
           const list: Array<{ name?: string; company?: string; role?: string; confidence?: number; signalType?: string; signalDescription?: string; sourceUrl?: string; daysAgo?: number }> =
             parsed.prospects ?? []
           for (const p of list.slice(0, 5)) {
@@ -138,6 +130,7 @@ export async function POST(req: NextRequest) {
           `https://api.github.com/search/users?q=${encodeURIComponent(searchTerm)}+type:org&per_page=10`,
           { headers: ghHeaders }
         )
+        if (!ghRes.ok) throw new Error(`GitHub API error: ${ghRes.status}`)
         const ghData = await ghRes.json()
         const ghItems: Array<{ login?: string; html_url?: string }> = ghData.items ?? []
         let ghCount = 0
@@ -167,22 +160,15 @@ export async function POST(req: NextRequest) {
         emit(ctrl, {
           type: "source_start",
           source: "producthunt",
-          label: "ProductHunt API",
+          label: "ProductHunt (AI)",
         })
-        const phRaw = await openai.chat.completions.create({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content:
-                'Generate 3 realistic prospects who recently launched on ProductHunt matching this ICP. Use realistic names. Return JSON: { "prospects": [{ "name": string, "company": string, "role": string, "signalDescription": string, "daysAgo": number }] }',
-            },
-            { role: "user", content: JSON.stringify(icp) },
-          ],
-          response_format: { type: "json_object" },
+        const phRaw = await anthropic.messages.create({
+          model: "claude-haiku-4-5-20251001",
           max_tokens: 350,
+          system: 'Generate 3 realistic prospects who recently launched on ProductHunt matching this ICP. Use realistic names. Return only valid JSON, no markdown. Format: { "prospects": [{ "name": string, "company": string, "role": string, "signalDescription": string, "daysAgo": number }] }',
+          messages: [{ role: "user", content: JSON.stringify(icp) }],
         })
-        const phParsed = JSON.parse(phRaw.choices[0].message.content ?? "{}")
+        const phParsed = JSON.parse(phRaw.content[0].type === "text" ? phRaw.content[0].text : "{}")
         const phList: Array<{ name?: string; company?: string; role?: string; signalDescription?: string; daysAgo?: number }> =
           phParsed.prospects ?? []
         let phCount = 0
@@ -223,7 +209,7 @@ export async function POST(req: NextRequest) {
           message: "Filtering below threshold (5.0)...",
         })
 
-        const total = allProspects.length
+        const total = allProspects.filter(p => p.confidence >= 5).length
         emit(ctrl, {
           type: "log",
           timestamp: ts(start),
