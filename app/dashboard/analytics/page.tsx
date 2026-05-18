@@ -53,19 +53,22 @@ export default async function AnalyticsPage() {
   const overallRate = totalSent > 0 ? Math.round((totalReplied / totalSent) * 100) : 0
 
   return (
-    <div style={{ padding: "32px 24px", minHeight: "100vh", backgroundColor: "#0a0a0a" }}>
-      <h1 style={{ fontSize: 20, fontWeight: 500, color: "#ffffff", margin: "0 0 4px", fontFamily: "var(--font-space-grotesk)" }}>Analytics</h1>
-      <p style={{ fontSize: 13, color: "#666666", margin: "0 0 24px" }}>Last 30 days</p>
+    <div style={{ padding: "32px 36px", overflowY: "auto", height: "100%", background: "#050505" }}>
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ fontSize: 9, fontFamily: "monospace", color: "rgba(255,107,53,0.45)", letterSpacing: "0.22em", textTransform: "uppercase" as const, marginBottom: 6 }}>Performance</div>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: "#fff", letterSpacing: "-0.02em" }}>Analytics</h1>
+        <p style={{ fontSize: 11, fontFamily: "monospace", color: "rgba(255,255,255,0.22)", margin: "6px 0 0", letterSpacing: "0.06em" }}>Last 30 days</p>
+      </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 24 }}>
         {[
           { label: "Emails Sent", value: totalSent.toLocaleString() },
-          { label: "Replies", value: totalReplied.toLocaleString() },
-          { label: "Reply Rate", value: totalSent > 0 ? `${overallRate}%` : "-" },
+          { label: "Replies",     value: totalReplied.toLocaleString() },
+          { label: "Reply Rate",  value: totalSent > 0 ? `${overallRate}%` : "--" },
         ].map(({ label, value }) => (
-          <div key={label} style={{ backgroundColor: "#111111", border: "1px solid #1a1a1a", borderRadius: 8, padding: "16px 20px" }}>
-            <p style={{ fontSize: 11, color: "#666666", margin: "0 0 6px" }}>{label}</p>
-            <p style={{ fontSize: 24, fontWeight: 500, color: "#ffffff", margin: 0 }}>{value}</p>
+          <div key={label} style={{ background: "#0a0a0a", border: "1px solid rgba(255,255,255,0.06)", padding: "16px 20px" }}>
+            <p style={{ fontSize: 9, fontFamily: "monospace", color: "rgba(255,255,255,0.25)", margin: "0 0 8px", letterSpacing: "0.14em", textTransform: "uppercase" as const }}>{label}</p>
+            <p style={{ fontSize: 26, fontWeight: 700, color: "#fff", margin: 0 }}>{value}</p>
           </div>
         ))}
       </div>
