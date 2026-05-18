@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexora — Design Direction</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0a; color: #fff; font-family: 'Segoe UI', system-ui, sans-serif; padding: 32px 24px 80px; }
+
+  .header { text-align: center; margin-bottom: 40px; }
+  .header h1 { font-size: 22px; font-weight: 600; color: #fff; margin-bottom: 8px; }
+  .header p { font-size: 14px; color: rgba(255,255,255,0.45); max-width: 520px; margin: 0 auto; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 1100px; margin: 0 auto; }
+
+  .card {
+    border: 2px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.2s;
+    position: relative;
+  }
+  .card:hover { border-color: rgba(255,107,53,0.5); transform: translateY(-2px); }
+  .card.selected { border-color: #FF6B35; }
+  .card.selected::after {
+    content: '✓ Selected';
+    position: absolute; top: 10px; right: 10px;
+    background: #FF6B35; color: #000;
+    font-size: 11px; font-weight: 700;
+    padding: 4px 10px; border-radius: 20px;
+  }
+
+  .preview { height: 320px; position: relative; overflow: hidden; }
+  .label-tag {
+    position: absolute; top: 12px; left: 12px;
+    background: rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.15);
+    font-size: 10px; letter-spacing: 0.14em; color: rgba(255,255,255,0.5);
+    padding: 4px 10px; border-radius: 4px; font-family: monospace;
+    text-transform: uppercase;
+  }
+
+  /* DIRECTION A — BRUTALIST / RAW */
+  .dir-a { background: #0F0F0F; }
+  .dir-a .big-word {
+    font-size: 90px; font-weight: 900; line-height: 0.85;
+    letter-spacing: -0.04em; color: #fff;
+    padding: 28px 20px 0;
+    font-family: 'Arial Black', 'Segoe UI', sans-serif;
+  }
+  .dir-a .accent-word { color: #FF6B35; display: block; }
+  .dir-a .sub-text {
+    font-size: 11px; color: rgba(255,255,255,0.35); letter-spacing: 0.18em;
+    text-transform: uppercase; padding: 12px 20px;
+    font-family: monospace;
+  }
+  .dir-a .bar-grid { padding: 14px 20px; display: flex; gap: 3px; }
+  .dir-a .bar { height: 3px; flex: 1; background: rgba(255,255,255,0.08); border-radius: 2px; }
+  .dir-a .bar.active { background: #FF6B35; }
+  .dir-a .terminal-block {
+    margin: 10px 20px 0;
+    background: #111; border: 1px solid rgba(255,255,255,0.06);
+    padding: 10px 14px; font-family: monospace; font-size: 11px;
+  }
+  .dir-a .terminal-line { color: rgba(255,255,255,0.4); line-height: 2; }
+  .dir-a .terminal-line .prompt { color: #FF6B35; }
+  .dir-a .terminal-line .val { color: #FFD700; }
+  .dir-a .big-num {
+    position: absolute; bottom: 0; right: 0;
+    font-size: 140px; font-weight: 900; line-height: 1;
+    color: rgba(255,107,53,0.06);
+    letter-spacing: -0.06em;
+    font-family: 'Arial Black', sans-serif;
+  }
+
+  /* DIRECTION B — EDITORIAL / MAGAZINE */
+  .dir-b { background: #0F0F0F; }
+  .dir-b .top-bar {
+    height: 4px;
+    background: linear-gradient(to right, #FF6B35, #FFD700);
+  }
+  .dir-b .issue-meta {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-family: monospace; font-size: 10px;
+    color: rgba(255,255,255,0.25); letter-spacing: 0.14em; text-transform: uppercase;
+  }
+  .dir-b .hero-img {
+    height: 140px; background: #111; position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .dir-b .hero-inner {
+    display: flex; gap: 12px; align-items: stretch; height: 100%; width: 100%; padding: 0;
+  }
+  .dir-b .col-left {
+    flex: 1.2; background: #1a1a1a;
+    display: flex; flex-direction: column; justify-content: flex-end; padding: 14px;
+  }
+  .dir-b .col-right {
+    flex: 0.8; display: flex; flex-direction: column; gap: 6px; padding: 10px 10px 10px 0;
+  }
+  .dir-b .mini-card {
+    flex: 1; background: #151515; border-left: 2px solid #FF6B35;
+    padding: 8px 10px; display: flex; align-items: center;
+  }
+  .dir-b .mini-card span { font-size: 10px; color: rgba(255,255,255,0.5); line-height: 1.3; }
+  .dir-b .headline {
+    font-size: 28px; font-weight: 800; line-height: 1; letter-spacing: -0.03em; color: #fff;
+    font-family: 'Georgia', serif; font-style: italic;
+  }
+  .dir-b .headline em { color: #FF6B35; font-style: normal; }
+  .dir-b .body-copy { padding: 14px 20px; }
+  .dir-b .pull-quote {
+    font-size: 16px; font-weight: 700; color: #fff; line-height: 1.3;
+    border-left: 3px solid #FFD700; padding-left: 12px; margin-bottom: 10px;
+  }
+  .dir-b .body-text {
+    font-size: 11px; color: rgba(255,255,255,0.4); line-height: 1.7;
+  }
+  .dir-b .stat-row {
+    display: flex; gap: 0; border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .dir-b .stat { flex: 1; padding: 12px 20px; border-right: 1px solid rgba(255,255,255,0.06); }
+  .dir-b .stat:last-child { border-right: none; }
+  .dir-b .stat-num { font-size: 24px; font-weight: 800; color: #FFD700; }
+  .dir-b .stat-label { font-size: 10px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.1em; }
+
+  /* DIRECTION C — CINEMATIC / DARK */
+  .dir-c { background: #050505; }
+  .dir-c .scene {
+    height: 100%; position: relative; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 24px 20px;
+  }
+  .dir-c .glow-orb {
+    position: absolute; width: 200px; height: 200px;
+    border-radius: 50%; background: radial-gradient(circle, rgba(255,107,53,0.2) 0%, transparent 70%);
+    top: 50%; left: 50%; transform: translate(-50%, -50%);
+  }
+  .dir-c .glow-orb-2 {
+    position: absolute; width: 120px; height: 120px;
+    border-radius: 50%; background: radial-gradient(circle, rgba(255,215,0,0.12) 0%, transparent 70%);
+    top: 20%; right: 10%;
+  }
+  .dir-c .scan-lines {
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(255,255,255,0.01) 3px, rgba(255,255,255,0.01) 4px);
+  }
+  .dir-c .time-code {
+    position: absolute; top: 12px; right: 12px;
+    font-family: monospace; font-size: 9px; color: rgba(255,107,53,0.4); letter-spacing: 0.1em;
+  }
+  .dir-c .main-copy {
+    position: relative; text-align: center; z-index: 2;
+  }
+  .dir-c .pre-title {
+    font-family: monospace; font-size: 9px; color: rgba(255,107,53,0.6);
+    letter-spacing: 0.3em; text-transform: uppercase; margin-bottom: 14px;
+  }
+  .dir-c .hero-word {
+    font-size: 64px; font-weight: 900; line-height: 0.9;
+    letter-spacing: -0.04em; color: #fff;
+    text-shadow: 0 0 60px rgba(255,107,53,0.4);
+    margin-bottom: 6px;
+  }
+  .dir-c .hero-sub {
+    font-size: 13px; color: rgba(255,255,255,0.4); letter-spacing: 0.08em; margin-bottom: 20px;
+  }
+  .dir-c .pill-row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .dir-c .pill {
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    border: 1px solid rgba(255,255,255,0.12); padding: 5px 12px; border-radius: 20px;
+    color: rgba(255,255,255,0.45);
+  }
+  .dir-c .pill.active { border-color: #FF6B35; color: #FF6B35; }
+  .dir-c .bottom-bar {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 40px;
+    background: linear-gradient(to top, #050505, transparent);
+    display: flex; align-items: flex-end; padding-bottom: 10px; justify-content: center;
+    z-index: 3;
+  }
+  .dir-c .progress-track { width: 80%; height: 1px; background: rgba(255,255,255,0.06); position: relative; }
+  .dir-c .progress-fill { width: 35%; height: 100%; background: linear-gradient(to right, #FF6B35, #FFD700); }
+
+  /* Card footer */
+  .card-footer {
+    padding: 16px 20px; border-top: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+  }
+  .card-footer h3 { font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+  .card-footer p { font-size: 12px; color: rgba(255,255,255,0.4); line-height: 1.5; }
+
+  .bottom-note { text-align: center; margin-top: 32px; font-size: 12px; color: rgba(255,255,255,0.25); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Which visual direction feels right for Nexora?</h1>
+  <p>Click a card to select it. All three use your Orange / Black / Yellow theme — the difference is the emotional register and layout language.</p>
+</div>
+
+<div class="grid">
+
+  <!-- DIRECTION A: BRUTALIST -->
+  <div class="card" data-choice="a" onclick="toggleCard(this)">
+    <div class="preview dir-a">
+      <div class="label-tag">Direction A</div>
+      <div class="big-word">
+        CLOSE<br>
+        <span class="accent-word">MORE.</span>
+      </div>
+      <div class="sub-text">// signal-driven outreach engine</div>
+      <div class="bar-grid">
+        <div class="bar active"></div><div class="bar active"></div><div class="bar active"></div>
+        <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+      </div>
+      <div class="terminal-block">
+        <div class="terminal-line"><span class="prompt">></span> reply_rate   <span class="val">+1,040%</span></div>
+        <div class="terminal-line"><span class="prompt">></span> time_saved   <span class="val">38h/wk</span></div>
+        <div class="terminal-line"><span class="prompt">></span> leads_found  <span class="val">247 today</span></div>
+      </div>
+      <div class="big-num">N</div>
+    </div>
+    <div class="card-footer">
+      <h3>Brutalist / Raw Power</h3>
+      <p>Oversized type, terminal readouts, heavy grid lines. Feels like a weapon, not a tool. Designed to shock. No hand-holding.</p>
+    </div>
+  </div>
+
+  <!-- DIRECTION B: EDITORIAL -->
+  <div class="card" data-choice="b" onclick="toggleCard(this)">
+    <div class="preview dir-b">
+      <div class="label-tag">Direction B</div>
+      <div class="top-bar"></div>
+      <div class="issue-meta">
+        <span>Nexora Outreach</span>
+        <span>Vol. 1 · The Closer's Edition</span>
+      </div>
+      <div class="hero-img">
+        <div class="hero-inner">
+          <div class="col-left">
+            <div class="headline">The <em>only</em> email<br>that gets replies</div>
+          </div>
+          <div class="col-right">
+            <div class="mini-card"><span>Signal detected:<br>Series A closed</span></div>
+            <div class="mini-card"><span>Draft ready<br>in 8 seconds</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="body-copy">
+        <div class="pull-quote">"Nexora isn't software — it's a closer."</div>
+        <div class="body-text">Real buying signals. Real personalization. The email your prospect actually wanted to receive.</div>
+      </div>
+      <div class="stat-row">
+        <div class="stat"><div class="stat-num">23%</div><div class="stat-label">Reply Rate</div></div>
+        <div class="stat"><div class="stat-num">8s</div><div class="stat-label">Per Email</div></div>
+        <div class="stat"><div class="stat-num">0</div><div class="stat-label">Manual Work</div></div>
+      </div>
+    </div>
+    <div class="card-footer">
+      <h3>Editorial / Magazine</h3>
+      <p>Newspaper layout, pull quotes, serif headline accents. Premium, credible, sophisticated. Like <em>The Atlantic</em> built a SaaS product page.</p>
+    </div>
+  </div>
+
+  <!-- DIRECTION C: CINEMATIC -->
+  <div class="card" data-choice="c" onclick="toggleCard(this)">
+    <div class="preview dir-c">
+      <div class="label-tag">Direction C</div>
+      <div class="scene">
+        <div class="glow-orb"></div>
+        <div class="glow-orb-2"></div>
+        <div class="scan-lines"></div>
+        <div class="time-code">00:00:08:14</div>
+        <div class="main-copy">
+          <div class="pre-title">// signal detected</div>
+          <div class="hero-word">NEXORA</div>
+          <div class="hero-sub">Cold email that reads minds</div>
+          <div class="pill-row">
+            <div class="pill active">Funded</div>
+            <div class="pill active">Hiring</div>
+            <div class="pill">Launched</div>
+            <div class="pill">Expanding</div>
+          </div>
+        </div>
+        <div class="bottom-bar">
+          <div class="progress-track"><div class="progress-fill"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-footer">
+      <h3>Cinematic / Dark Atmosphere</h3>
+      <p>Radial glows, film grain, slow scroll reveals. Full-bleed sections that feel like scenes in a film. Emotional and immersive.</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="bottom-note">Click a card to select · You can change your mind before responding in the terminal</div>
+
+<script>
+function toggleCard(el) {
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  const choice = el.getAttribute('data-choice');
+  const text = el.querySelector('h3').textContent;
+  if (window.__recordEvent) window.__recordEvent(choice, text);
+}
+</script>
+</body>
+</html>

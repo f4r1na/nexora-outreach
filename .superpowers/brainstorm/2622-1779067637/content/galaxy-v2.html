@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexora — Galaxy Dashboard v2</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #030303;
+  color: #fff;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── TOPBAR ─────────────────────────────────── */
+.topbar {
+  height: 38px;
+  background: #070707;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  display: flex; align-items: center;
+  padding: 0 20px; gap: 20px;
+  flex-shrink: 0; z-index: 20;
+  position: relative;
+}
+/* scanning line across topbar when agent works */
+.topbar::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,107,53,0.08) 50%, transparent 100%);
+  background-size: 200% 100%;
+  animation: none;
+  pointer-events: none;
+}
+body.agent-working .topbar::after {
+  animation: scanTopbar 1.8s linear infinite;
+}
+@keyframes scanTopbar {
+  0%   { background-position: -100% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.topbar-logo {
+  font-size: 12px; font-weight: 700; letter-spacing: 0.22em;
+  color: #FF6B35; text-transform: uppercase;
+  transition: text-shadow 0.4s;
+}
+body.agent-working .topbar-logo {
+  text-shadow: 0 0 12px rgba(255,107,53,0.8), 0 0 30px rgba(255,107,53,0.4);
+  animation: logoPulse 1s ease-in-out infinite;
+}
+@keyframes logoPulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
+
+.topbar-sep { width: 1px; height: 16px; background: rgba(255,255,255,0.05); }
+.topbar-nav { display: flex; }
+.topbar-nav-item {
+  font-size: 11px; color: rgba(255,255,255,0.25);
+  padding: 0 14px; height: 38px; display: flex; align-items: center;
+  letter-spacing: 0.06em; border-bottom: 2px solid transparent;
+  cursor: pointer; transition: color 0.15s;
+}
+.topbar-nav-item:hover { color: rgba(255,255,255,0.5); }
+.topbar-nav-item.active { color: #fff; border-bottom-color: #FF6B35; }
+
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+
+.status-pill {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 9px; font-family: monospace; letter-spacing: 0.12em;
+  text-transform: uppercase; padding: 3px 10px;
+  border: 1px solid rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.25);
+  transition: all 0.4s;
+}
+body.agent-working .status-pill {
+  border-color: rgba(255,107,53,0.3);
+  color: #FF6B35;
+  background: rgba(255,107,53,0.05);
+}
+.status-dot {
+  width: 5px; height: 5px; border-radius: 50%; background: #4ade80;
+  animation: statusPulse 2s ease-in-out infinite;
+}
+body.agent-working .status-dot {
+  background: #FF6B35;
+  animation: statusPulse 0.5s ease-in-out infinite;
+}
+@keyframes statusPulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
+
+#statusText { transition: all 0.3s; }
+
+.topbar-avatar {
+  width: 24px; height: 24px;
+  background: rgba(255,107,53,0.12);
+  border: 1px solid rgba(255,107,53,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: #FF6B35;
+}
+
+/* ─── MAIN ───────────────────────────────────── */
+.main { flex: 1; display: flex; overflow: hidden; }
+
+/* ─── GALAXY PANEL ───────────────────────────── */
+.galaxy-panel {
+  width: 270px; min-width: 270px;
+  background: #020202;
+  border-right: 1px solid rgba(255,255,255,0.04);
+  position: relative; overflow: hidden;
+  display: flex; flex-direction: column;
+}
+
+/* Deep space nebula glow */
+.galaxy-panel::before {
+  content: '';
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 180px 220px at 50% 40%, rgba(255,107,53,0.04) 0%, transparent 70%),
+    radial-gradient(ellipse 140px 160px at 30% 70%, rgba(255,215,0,0.03) 0%, transparent 70%),
+    radial-gradient(ellipse 100px 100px at 80% 20%, rgba(255,107,53,0.025) 0%, transparent 70%);
+  pointer-events: none;
+  transition: opacity 0.6s;
+}
+body.agent-working .galaxy-panel::before {
+  background:
+    radial-gradient(ellipse 200px 250px at 50% 40%, rgba(255,107,53,0.09) 0%, transparent 70%),
+    radial-gradient(ellipse 160px 180px at 30% 70%, rgba(255,215,0,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 120px 120px at 80% 20%, rgba(255,107,53,0.05) 0%, transparent 70%);
+  animation: nebulaBreath 3s ease-in-out infinite;
+}
+@keyframes nebulaBreath {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 1.4; }
+}
+
+/* scan line that sweeps the galaxy panel */
+.galaxy-scan {
+  position: absolute; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255,107,53,0.4), rgba(255,215,0,0.2), transparent);
+  box-shadow: 0 0 10px rgba(255,107,53,0.3), 0 0 30px rgba(255,107,53,0.1);
+  top: -2px;
+  animation: none; z-index: 8; pointer-events: none;
+  opacity: 0;
+}
+body.agent-working .galaxy-scan {
+  opacity: 1;
+  animation: scanSweep 2.2s cubic-bezier(0.4,0,0.6,1) infinite;
+}
+@keyframes scanSweep {
+  0%   { top: -2px; opacity: 0; }
+  5%   { opacity: 1; }
+  95%  { opacity: 1; }
+  100% { top: 100%; opacity: 0; }
+}
+
+/* main canvas */
+.galaxy-canvas {
+  flex: 1; position: relative; overflow: hidden;
+}
+
+/* bg particle canvas */
+#bgCanvas {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+}
+
+/* SVG for constellation lines */
+.galaxy-svg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Orb base */
+.orb {
+  position: absolute; border-radius: 50%;
+  cursor: pointer; z-index: 4;
+  transition: filter 0.4s;
+}
+.orb:hover .orb-label { opacity: 1; transform: translateY(-50%) translateX(0); }
+
+.orb-core { border-radius: 50%; width: 100%; height: 100%; position: relative; z-index: 2; }
+
+.orb-label {
+  position: absolute;
+  left: calc(100% + 10px); top: 50%;
+  transform: translateY(-50%) translateX(-4px);
+  white-space: nowrap; pointer-events: none;
+  background: rgba(5,5,5,0.92);
+  border: 1px solid rgba(255,255,255,0.07);
+  padding: 5px 10px;
+  opacity: 0; transition: opacity 0.2s, transform 0.2s;
+  z-index: 20;
+}
+.orb-label strong { font-size: 10px; color: #fff; display: block; margin-bottom: 2px; }
+.orb-label span   { font-size: 9px; color: rgba(255,255,255,0.35); font-family: monospace; }
+
+/* Orange orbs — campaigns */
+.orb-orange .orb-core {
+  background: radial-gradient(circle at 32% 30%, #ffaa77, #FF6B35 45%, #a02800);
+  box-shadow:
+    0 0 10px rgba(255,107,53,0.9),
+    0 0 25px rgba(255,107,53,0.45),
+    0 0 60px rgba(255,107,53,0.15);
+  transition: box-shadow 0.4s;
+}
+body.agent-working .orb-orange .orb-core {
+  box-shadow:
+    0 0 18px rgba(255,107,53,1),
+    0 0 45px rgba(255,107,53,0.65),
+    0 0 90px rgba(255,107,53,0.25);
+}
+
+/* Yellow orbs — signals */
+.orb-yellow .orb-core {
+  background: radial-gradient(circle at 32% 30%, #fff4a0, #FFD700 45%, #9a7500);
+  box-shadow:
+    0 0 8px rgba(255,215,0,0.85),
+    0 0 20px rgba(255,215,0,0.35),
+    0 0 50px rgba(255,215,0,0.12);
+  transition: box-shadow 0.4s;
+}
+body.agent-working .orb-yellow .orb-core {
+  box-shadow:
+    0 0 14px rgba(255,215,0,1),
+    0 0 35px rgba(255,215,0,0.55),
+    0 0 80px rgba(255,215,0,0.2);
+}
+
+/* White orbs — prospects */
+.orb-white .orb-core {
+  background: radial-gradient(circle at 35% 30%, #ffffff, #aaaaaa 60%, #555);
+  box-shadow: 0 0 6px rgba(255,255,255,0.55), 0 0 16px rgba(255,255,255,0.15);
+  transition: box-shadow 0.4s;
+}
+body.agent-working .orb-white .orb-core {
+  box-shadow: 0 0 10px rgba(255,255,255,0.8), 0 0 28px rgba(255,255,255,0.3);
+}
+
+/* Pulse rings */
+.orb-ring {
+  position: absolute; border-radius: 50%; border: 1px solid;
+  top: 50%; left: 50%; transform: translate(-50%,-50%);
+  animation: ringExpand 2.8s ease-out infinite;
+  pointer-events: none; z-index: 1;
+}
+body.agent-working .orb-ring { animation-duration: 1.4s; }
+@keyframes ringExpand {
+  0%   { width: 100%; height: 100%; opacity: 0.7; }
+  100% { width: 320%; height: 320%; opacity: 0; }
+}
+
+/* Float animations — sped up when agent is working */
+:root { --float-speed: 1; }
+body.agent-working { --float-speed: 3; }
+
+@keyframes f1 { 0%,100%{transform:translate(0px,0px)}   25%{transform:translate(4px,-5px)}   75%{transform:translate(-3px,4px)} }
+@keyframes f2 { 0%,100%{transform:translate(0px,0px)}   33%{transform:translate(-5px,-3px)}  66%{transform:translate(3px,5px)}  }
+@keyframes f3 { 0%,100%{transform:translate(0px,0px)}   40%{transform:translate(3px,5px)}    80%{transform:translate(-4px,-3px)} }
+@keyframes f4 { 0%,100%{transform:translate(0px,0px)}   50%{transform:translate(5px,-4px)}   }
+@keyframes f5 { 0%,100%{transform:translate(0px,0px)}   30%{transform:translate(-3px,5px)}   70%{transform:translate(4px,-3px)} }
+@keyframes f6 { 0%,100%{transform:translate(0px,0px)}   20%{transform:translate(2px,6px)}    60%{transform:translate(-5px,-2px)} }
+
+.f1 { animation: f1 8s  ease-in-out infinite; }
+.f2 { animation: f2 10s ease-in-out infinite; }
+.f3 { animation: f3 7s  ease-in-out infinite; }
+.f4 { animation: f4 9s  ease-in-out infinite; }
+.f5 { animation: f5 6s  ease-in-out infinite; }
+.f6 { animation: f6 11s ease-in-out infinite; }
+
+body.agent-working .f1 { animation-duration: 2.6s; }
+body.agent-working .f2 { animation-duration: 3.2s; }
+body.agent-working .f3 { animation-duration: 2.2s; }
+body.agent-working .f4 { animation-duration: 2.9s; }
+body.agent-working .f5 { animation-duration: 1.9s; }
+body.agent-working .f6 { animation-duration: 3.5s; }
+
+/* Galaxy legend */
+.galaxy-legend {
+  padding: 10px 14px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  display: flex; flex-direction: column; gap: 5px;
+  background: rgba(0,0,0,0.5); z-index: 10; position: relative;
+}
+.legend-item {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 9px; font-family: monospace;
+  color: rgba(255,255,255,0.22); letter-spacing: 0.09em;
+  transition: color 0.4s;
+}
+body.agent-working .legend-item { color: rgba(255,255,255,0.38); }
+.legend-orb { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.legend-orb.orange { background: #FF6B35; box-shadow: 0 0 5px rgba(255,107,53,0.9); }
+.legend-orb.yellow { background: #FFD700; box-shadow: 0 0 5px rgba(255,215,0,0.8); }
+.legend-orb.white  { background: #ccc;    box-shadow: 0 0 4px rgba(255,255,255,0.5); }
+
+.agent-status-bar {
+  height: 0; overflow: hidden;
+  background: rgba(255,107,53,0.05);
+  border-top: 1px solid rgba(255,107,53,0.15);
+  font-size: 9px; font-family: monospace; letter-spacing: 0.12em;
+  color: #FF6B35; text-transform: uppercase;
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 14px;
+  transition: height 0.3s ease;
+}
+body.agent-working .agent-status-bar { height: 28px; }
+.agent-status-dots { display: flex; gap: 3px; }
+.agent-status-dot {
+  width: 3px; height: 3px; border-radius: 50%; background: #FF6B35;
+  animation: statusPulse 0.6s ease-in-out infinite;
+}
+.agent-status-dot:nth-child(2) { animation-delay: 0.2s; }
+.agent-status-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* ─── CONTENT AREA ───────────────────────────── */
+.content-area {
+  flex: 1; display: flex; flex-direction: column;
+  background: #050505; overflow: hidden;
+}
+
+/* ─── CHAT ───────────────────────────────────── */
+.chat-area {
+  flex: 1; overflow-y: auto; padding: 28px 32px;
+  display: flex; flex-direction: column; gap: 0;
+  scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.05) transparent;
+}
+
+.chat-date-marker {
+  text-align: center; font-size: 9px; font-family: monospace;
+  color: rgba(255,255,255,0.12); letter-spacing: 0.16em;
+  text-transform: uppercase; margin-bottom: 24px;
+}
+
+/* AI message */
+.msg-ai { display: flex; gap: 14px; margin-bottom: 24px; align-items: flex-start; max-width: 700px; }
+.msg-ai-avatar {
+  width: 28px; height: 28px; flex-shrink: 0;
+  background: rgba(255,107,53,0.08);
+  border: 1px solid rgba(255,107,53,0.18);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: #FF6B35;
+  font-family: monospace;
+  transition: box-shadow 0.4s, border-color 0.4s;
+}
+body.agent-working .msg-ai-avatar {
+  box-shadow: 0 0 12px rgba(255,107,53,0.5);
+  border-color: rgba(255,107,53,0.5);
+  animation: avatarPulse 1s ease-in-out infinite;
+}
+@keyframes avatarPulse { 0%,100%{box-shadow:0 0 12px rgba(255,107,53,0.5)} 50%{box-shadow:0 0 22px rgba(255,107,53,0.9)} }
+
+.msg-ai-body { flex: 1; }
+.msg-ai-name {
+  font-size: 9px; font-family: monospace; color: #FF6B35;
+  letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 7px;
+  display: flex; align-items: center; gap: 8px;
+}
+.msg-ai-time { color: rgba(255,255,255,0.12); font-size: 9px; }
+.msg-ai-text {
+  font-size: 13px; color: rgba(255,255,255,0.68); line-height: 1.7;
+}
+.msg-ai-text strong { color: #fff; font-weight: 500; }
+
+/* Thinking indicator */
+.msg-thinking {
+  display: flex; gap: 14px; margin-bottom: 24px; align-items: center;
+  opacity: 0; transition: opacity 0.3s;
+}
+.msg-thinking.visible { opacity: 1; }
+.thinking-avatar {
+  width: 28px; height: 28px; flex-shrink: 0;
+  background: rgba(255,107,53,0.08); border: 1px solid rgba(255,107,53,0.3);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 700; color: #FF6B35; font-family: monospace;
+  box-shadow: 0 0 12px rgba(255,107,53,0.4);
+  animation: avatarPulse 1s ease-in-out infinite;
+}
+.thinking-body { display: flex; flex-direction: column; gap: 5px; }
+.thinking-label {
+  font-size: 9px; font-family: monospace; letter-spacing: 0.14em;
+  color: #FF6B35; text-transform: uppercase;
+}
+.thinking-task {
+  font-size: 11px; color: rgba(255,255,255,0.3); font-family: monospace;
+  animation: taskFade 2.5s ease-in-out infinite;
+}
+@keyframes taskFade { 0%,100%{opacity:0.3} 50%{opacity:0.8} }
+.thinking-dots { display: flex; gap: 5px; }
+.thinking-dot {
+  width: 4px; height: 4px; border-radius: 50%; background: rgba(255,107,53,0.5);
+  animation: dotBounce 1s ease-in-out infinite;
+}
+.thinking-dot:nth-child(2) { animation-delay: 0.18s; }
+.thinking-dot:nth-child(3) { animation-delay: 0.36s; }
+@keyframes dotBounce { 0%,100%{transform:translateY(0);opacity:0.4} 50%{transform:translateY(-4px);opacity:1} }
+
+/* data card */
+.data-card {
+  margin-top: 12px;
+  border: 1px solid rgba(255,255,255,0.07);
+  background: #0a0a0a;
+  animation: cardSlideIn 0.3s ease-out;
+}
+@keyframes cardSlideIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+.data-card-header {
+  padding: 8px 14px; border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-size: 9px; font-family: monospace;
+  color: rgba(255,255,255,0.22); letter-spacing: 0.14em; text-transform: uppercase;
+  display: flex; justify-content: space-between;
+}
+.data-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 14px; border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 11px; transition: background 0.15s; cursor: pointer;
+}
+.data-row:hover { background: rgba(255,255,255,0.02); }
+.data-row:last-child { border-bottom: none; }
+.sig-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.sig-dot.o { background:#FF6B35; box-shadow:0 0 5px rgba(255,107,53,0.9); }
+.sig-dot.y { background:#FFD700; box-shadow:0 0 5px rgba(255,215,0,0.8); }
+.dr-name { color: rgba(255,255,255,0.75); flex: 1; }
+.dr-meta { font-family: monospace; font-size: 10px; color: rgba(255,255,255,0.22); }
+.dr-score { font-family: monospace; font-size: 10px; color: #4ade80; font-weight: 600; }
+
+.data-actions { display: flex; gap: 6px; padding: 10px 14px; border-top: 1px solid rgba(255,255,255,0.05); flex-wrap: wrap; }
+.data-btn {
+  font-size: 10px; font-family: monospace; letter-spacing: 0.06em;
+  padding: 5px 14px; border: 1px solid; cursor: pointer;
+  text-transform: uppercase; transition: all 0.15s; outline: none;
+  background: transparent;
+}
+.btn-primary { border-color: rgba(255,107,53,0.35); color: #FF6B35; }
+.btn-primary:hover { background: rgba(255,107,53,0.1); border-color: rgba(255,107,53,0.6); }
+.btn-ghost { border-color: rgba(255,255,255,0.07); color: rgba(255,255,255,0.28); }
+.btn-ghost:hover { border-color: rgba(255,255,255,0.18); color: rgba(255,255,255,0.5); }
+
+/* Email draft card */
+.draft-card {
+  margin-top: 12px; border: 1px solid rgba(255,107,53,0.15);
+  background: rgba(255,107,53,0.03);
+  animation: cardSlideIn 0.35s ease-out;
+}
+.draft-header {
+  padding: 8px 14px; border-bottom: 1px solid rgba(255,107,53,0.1);
+  font-size: 9px; font-family: monospace; letter-spacing: 0.14em;
+  text-transform: uppercase; display: flex; justify-content: space-between;
+  color: rgba(255,107,53,0.5);
+}
+.draft-body {
+  padding: 14px; font-size: 12px; color: rgba(255,255,255,0.6);
+  line-height: 1.9; font-family: monospace;
+  border-bottom: 1px solid rgba(255,107,53,0.08);
+}
+.draft-subject { color: rgba(255,255,255,0.28); font-size: 10px; margin-bottom: 10px; letter-spacing: 0.04em; }
+
+/* User message */
+.msg-user { display: flex; justify-content: flex-end; margin-bottom: 24px; }
+.msg-user-bubble {
+  background: rgba(255,107,53,0.05);
+  border: 1px solid rgba(255,107,53,0.1);
+  padding: 10px 16px; max-width: 500px;
+  font-size: 13px; color: rgba(255,255,255,0.75); line-height: 1.6;
+}
+
+/* ─── INPUT BAR ──────────────────────────────── */
+.input-area {
+  border-top: 1px solid rgba(255,255,255,0.05);
+  padding: 14px 32px 20px;
+  background: #050505;
+  transition: border-color 0.4s;
+}
+body.agent-working .input-area {
+  border-top-color: rgba(255,107,53,0.2);
+}
+.context-tags { display: flex; gap: 5px; margin-bottom: 10px; flex-wrap: wrap; }
+.ctx-tag {
+  font-size: 9px; font-family: monospace; letter-spacing: 0.1em;
+  padding: 3px 10px; border: 1px solid rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.22); text-transform: uppercase; cursor: pointer;
+  transition: all 0.15s;
+}
+.ctx-tag:hover { border-color: rgba(255,107,53,0.25); color: rgba(255,107,53,0.55); }
+.ctx-tag.active { border-color: rgba(255,107,53,0.3); color: #FF6B35; background: rgba(255,107,53,0.05); }
+.input-row { display: flex; gap: 8px; align-items: flex-end; }
+.input-field {
+  flex: 1; background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.07);
+  padding: 11px 16px; font-size: 13px;
+  color: rgba(255,255,255,0.8); font-family: inherit;
+  resize: none; outline: none; height: 44px; line-height: 1.4;
+  transition: border-color 0.2s;
+}
+.input-field:focus { border-color: rgba(255,107,53,0.3); }
+.input-field::placeholder { color: rgba(255,255,255,0.15); }
+.send-btn {
+  width: 44px; height: 44px; flex-shrink: 0;
+  background: rgba(255,107,53,0.08);
+  border: 1px solid rgba(255,107,53,0.22); color: #FF6B35;
+  font-size: 16px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+}
+.send-btn:hover { background: rgba(255,107,53,0.18); }
+.input-hint {
+  font-size: 9px; font-family: monospace; color: rgba(255,255,255,0.1);
+  letter-spacing: 0.08em; margin-top: 8px;
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-logo">Nexora</div>
+  <div class="topbar-sep"></div>
+  <div class="topbar-nav">
+    <div class="topbar-nav-item active">Overview</div>
+    <div class="topbar-nav-item">Campaigns</div>
+    <div class="topbar-nav-item">Inbox</div>
+    <div class="topbar-nav-item">Signals</div>
+    <div class="topbar-nav-item">Ghostwriter</div>
+    <div class="topbar-nav-item">Analytics</div>
+  </div>
+  <div class="topbar-right">
+    <div class="status-pill">
+      <div class="status-dot"></div>
+      <span id="statusText">12 signals live</span>
+    </div>
+    <div class="topbar-avatar">G</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- GALAXY PANEL -->
+  <div class="galaxy-panel">
+    <div class="galaxy-scan"></div>
+
+    <div class="galaxy-canvas" id="galaxyCanvas">
+      <!-- background particle canvas -->
+      <canvas id="bgCanvas"></canvas>
+
+      <!-- constellation SVG -->
+      <svg class="galaxy-svg" id="galaxySvg" xmlns="http://www.w3.org/2000/svg"></svg>
+
+      <!-- CAMPAIGN ORBS (orange, largest) -->
+      <div class="orb orb-orange f1" id="o1" style="width:20px;height:20px;left:108px;top:78px">
+        <div class="orb-core"></div>
+        <div class="orb-ring" style="border-color:rgba(255,107,53,0.5);animation-delay:0s"></div>
+        <div class="orb-ring" style="border-color:rgba(255,107,53,0.25);animation-delay:1.4s"></div>
+        <div class="orb-label"><strong>SaaS Founders · A</strong><span>47 leads · 22% reply</span></div>
+      </div>
+
+      <div class="orb orb-orange f2" id="o2" style="width:15px;height:15px;left:55px;top:168px">
+        <div class="orb-core"></div>
+        <div class="orb-ring" style="border-color:rgba(255,107,53,0.45);animation-delay:0.7s"></div>
+        <div class="orb-label"><strong>FinTech CTOs</strong><span>23 leads · sending</span></div>
+      </div>
+
+      <div class="orb orb-orange f3" id="o3" style="width:12px;height:12px;left:172px;top:198px">
+        <div class="orb-core"></div>
+        <div class="orb-ring" style="border-color:rgba(255,107,53,0.35);animation-delay:0.3s"></div>
+        <div class="orb-label" style="left:auto;right:calc(100%+10px);"><strong>DevTools</strong><span>89 leads · 31% reply</span></div>
+      </div>
+
+      <div class="orb orb-orange f4" id="o4" style="width:13px;height:13px;left:125px;top:310px">
+        <div class="orb-core"></div>
+        <div class="orb-ring" style="border-color:rgba(255,107,53,0.3);animation-delay:1s"></div>
+        <div class="orb-label"><strong>E-comm Founders</strong><span>draft · 12 leads</span></div>
+      </div>
+
+      <!-- SIGNAL ORBS (yellow) -->
+      <div class="orb orb-yellow f5" id="s1" style="width:9px;height:9px;left:148px;top:118px">
+        <div class="orb-core"></div>
+        <div class="orb-label"><strong>DataFlow · $5M</strong><span>Series A · 2d ago</span></div>
+      </div>
+      <div class="orb orb-yellow f1" id="s2" style="width:8px;height:8px;left:82px;top:222px">
+        <div class="orb-core"></div>
+        <div class="orb-label"><strong>CloudSync</strong><span>Hiring VP Sales</span></div>
+      </div>
+      <div class="orb orb-yellow f3" id="s3" style="width:10px;height:10px;left:44px;top:282px">
+        <div class="orb-core"></div>
+        <div class="orb-ring" style="border-color:rgba(255,215,0,0.35);animation-delay:0.5s"></div>
+        <div class="orb-label"><strong>Velocity AI</strong><span>HN Hiring · 3d ago</span></div>
+      </div>
+      <div class="orb orb-yellow f6" id="s4" style="width:7px;height:7px;left:190px;top:262px">
+        <div class="orb-core"></div>
+        <div class="orb-label" style="left:auto;right:calc(100%+10px);"><strong>StackPilot</strong><span>Launched v2</span></div>
+      </div>
+      <div class="orb orb-yellow f2" id="s5" style="width:8px;height:8px;left:158px;top:368px">
+        <div class="orb-core"></div>
+        <div class="orb-label"><strong>NexGen</strong><span>Raised $2M</span></div>
+      </div>
+
+      <!-- PROSPECT ORBS (white, tiny) -->
+      <div class="orb orb-white f6" id="p1" style="width:5px;height:5px;left:128px;top:96px">
+        <div class="orb-core"></div>
+        <div class="orb-label"><strong>James Chen</strong><span>9.2 / 10</span></div>
+      </div>
+      <div class="orb orb-white f2" id="p2" style="width:5px;height:5px;left:94px;top:148px"><div class="orb-core"></div></div>
+      <div class="orb orb-white f4" id="p3" style="width:4px;height:4px;left:138px;top:178px"><div class="orb-core"></div></div>
+      <div class="orb orb-white f1" id="p4" style="width:4px;height:4px;left:68px;top:196px"><div class="orb-core"></div></div>
+      <div class="orb orb-white f5" id="p5" style="width:5px;height:5px;left:100px;top:258px"><div class="orb-core"></div></div>
+      <div class="orb orb-white f3" id="p6" style="width:4px;height:4px;left:155px;top:340px"><div class="orb-core"></div></div>
+    </div>
+
+    <div class="agent-status-bar">
+      <div class="agent-status-dots">
+        <div class="agent-status-dot"></div>
+        <div class="agent-status-dot"></div>
+        <div class="agent-status-dot"></div>
+      </div>
+      <span id="agentStatusText">Scanning signals...</span>
+    </div>
+
+    <div class="galaxy-legend">
+      <div class="legend-item"><div class="legend-orb orange"></div>Campaigns (4 active)</div>
+      <div class="legend-item"><div class="legend-orb yellow"></div>Signals (12 detected)</div>
+      <div class="legend-item"><div class="legend-orb white"></div>Prospects (247 found)</div>
+    </div>
+  </div>
+
+  <!-- CHAT + INPUT -->
+  <div class="content-area">
+    <div class="chat-area" id="chatArea">
+      <div class="chat-date-marker">Today — May 17, 2026</div>
+
+      <!-- AI opening -->
+      <div class="msg-ai">
+        <div class="msg-ai-avatar">NX</div>
+        <div class="msg-ai-body">
+          <div class="msg-ai-name">Nexora AI <span class="msg-ai-time">09:14</span></div>
+          <div class="msg-ai-text">
+            Good morning, Gustavo. I detected <strong>12 new buying signals</strong> overnight —
+            3 companies in your SaaS Founders campaign just triggered funding events.
+            Top match: <strong>James Chen at DataFlow</strong> closed a $5M Series A. His inbox is untouched.
+          </div>
+          <div class="data-card">
+            <div class="data-card-header"><span>Top signals — last 24h</span><span style="color:rgba(255,107,53,0.45)">3 of 12 shown</span></div>
+            <div class="data-row"><div class="sig-dot o"></div><div class="dr-name">James Chen · DataFlow Inc</div><div class="dr-meta">Raised $5M Series A · 2d ago</div><div class="dr-score">9.2</div></div>
+            <div class="data-row"><div class="sig-dot y"></div><div class="dr-name">Sarah Kim · CloudSync</div><div class="dr-meta">Hired VP of Sales · 5d ago</div><div class="dr-score">8.7</div></div>
+            <div class="data-row"><div class="sig-dot y"></div><div class="dr-name">Marcus Lee · Velocity AI</div><div class="dr-meta">Posted HN Hiring · 3d ago</div><div class="dr-score">8.1</div></div>
+            <div class="data-actions">
+              <button class="data-btn btn-primary" onclick="triggerAgentWork()">Draft emails for all 3</button>
+              <button class="data-btn btn-ghost">View all 12 signals</button>
+              <button class="data-btn btn-ghost">Dismiss</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- thinking indicator (hidden initially) -->
+      <div class="msg-thinking" id="thinkingMsg">
+        <div class="thinking-avatar">NX</div>
+        <div class="thinking-body">
+          <div class="thinking-label">Working <span style="opacity:0.4">—</span></div>
+          <div class="thinking-task" id="thinkingTask">Scanning GitHub, LinkedIn, HackerNews...</div>
+          <div class="thinking-dots">
+            <div class="thinking-dot"></div>
+            <div class="thinking-dot"></div>
+            <div class="thinking-dot"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="context-tags">
+        <div class="ctx-tag active">Signals</div>
+        <div class="ctx-tag">Campaigns</div>
+        <div class="ctx-tag">Inbox</div>
+        <div class="ctx-tag">Ghostwriter</div>
+        <div class="ctx-tag">Analytics</div>
+        <div class="ctx-tag">Settings</div>
+        <div class="ctx-tag">Export</div>
+      </div>
+      <div class="input-row">
+        <textarea class="input-field" id="chatInput" placeholder="Ask anything — find prospects, draft emails, check analytics, configure settings..."></textarea>
+        <div class="send-btn" onclick="handleSend()">&#x2192;</div>
+      </div>
+      <div class="input-hint">Enter to send &nbsp;·&nbsp; Shift+Enter for new line &nbsp;·&nbsp; Context tags narrow what Nexora searches</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── Background particle system ─────────────────────────────── */
+const canvas = document.getElementById('bgCanvas');
+const ctx = canvas.getContext('2d');
+const galaxyCanvas = document.getElementById('galaxyCanvas');
+
+let particles = [];
+let agentWorking = false;
+let animFrame;
+
+function resizeCanvas() {
+  canvas.width  = galaxyCanvas.offsetWidth;
+  canvas.height = galaxyCanvas.offsetHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', () => { resizeCanvas(); rebuildLines(); });
+
+function randomParticle() {
+  return {
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    r: Math.random() * 0.8 + 0.2,
+    vx: (Math.random() - 0.5) * 0.12,
+    vy: (Math.random() - 0.5) * 0.12,
+    opacity: Math.random() * 0.35 + 0.05,
+    color: Math.random() > 0.65 ? 'orange' : Math.random() > 0.5 ? 'yellow' : 'white',
+  };
+}
+
+function spawnStreamParticle(targetX, targetY) {
+  // flows from random spot toward a campaign orb
+  const angle = Math.random() * Math.PI * 2;
+  const dist  = 60 + Math.random() * 80;
+  return {
+    x: targetX + Math.cos(angle) * dist,
+    y: targetY + Math.sin(angle) * dist,
+    tx: targetX, ty: targetY,
+    r: Math.random() * 1.2 + 0.4,
+    speed: 0.4 + Math.random() * 0.6,
+    opacity: 0.6 + Math.random() * 0.4,
+    color: Math.random() > 0.5 ? 'orange' : 'yellow',
+    stream: true,
+    life: 1,
+  };
+}
+
+for (let i = 0; i < 60; i++) particles.push(randomParticle());
+
+const COLORS = {
+  orange: 'rgba(255,107,53,',
+  yellow: 'rgba(255,215,0,',
+  white:  'rgba(200,200,200,',
+};
+
+let streamTick = 0;
+const orbCenters = [
+  { x: 118, y: 88 },   // o1
+  { x: 63,  y: 176 },  // o2
+  { x: 178, y: 204 },  // o3
+  { x: 132, y: 317 },  // o4
+];
+
+function tick() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (agentWorking) {
+    streamTick++;
+    if (streamTick % 4 === 0) {
+      const orb = orbCenters[Math.floor(Math.random() * orbCenters.length)];
+      particles.push(spawnStreamParticle(orb.x, orb.y));
+    }
+  }
+
+  particles = particles.filter(p => {
+    if (p.stream) {
+      // move toward target
+      const dx = p.tx - p.x, dy = p.ty - p.y;
+      const d  = Math.sqrt(dx*dx + dy*dy);
+      if (d < 4) { return false; }
+      p.x += (dx/d) * p.speed;
+      p.y += (dy/d) * p.speed;
+      p.life -= 0.008;
+      if (p.life <= 0) return false;
+
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = COLORS[p.color] + (p.opacity * p.life) + ')';
+      ctx.fill();
+      // trail
+      ctx.beginPath();
+      ctx.moveTo(p.x, p.y);
+      ctx.lineTo(p.x - (dx/d)*6, p.y - (dy/d)*6);
+      ctx.strokeStyle = COLORS[p.color] + (p.opacity * p.life * 0.35) + ')';
+      ctx.lineWidth = p.r * 0.6;
+      ctx.stroke();
+      return true;
+    }
+
+    // ambient particle
+    const speed = agentWorking ? 3.5 : 1;
+    p.x += p.vx * speed;
+    p.y += p.vy * speed;
+    if (p.x < 0) p.x = canvas.width;
+    if (p.x > canvas.width) p.x = 0;
+    if (p.y < 0) p.y = canvas.height;
+    if (p.y > canvas.height) p.y = 0;
+
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r * (agentWorking ? 1.4 : 1), 0, Math.PI * 2);
+    ctx.fillStyle = COLORS[p.color] + (p.opacity * (agentWorking ? 1.5 : 1)) + ')';
+    ctx.fill();
+    return true;
+  });
+
+  // keep ambient count
+  while (particles.filter(p => !p.stream).length < 60) {
+    particles.push(randomParticle());
+  }
+
+  animFrame = requestAnimationFrame(tick);
+}
+tick();
+
+/* ── Constellation lines ─────────────────────────────────────── */
+const SVG_NS = 'http://www.w3.org/2000/svg';
+const galaxySvg = document.getElementById('galaxySvg');
+const PAIRS = [
+  ['o1','s1'],['o1','p1'],['o1','p2'],['o1','o3'],
+  ['o2','s2'],['o2','p4'],['o2','s3'],['o2','p2'],
+  ['o3','s4'],['o3','p3'],['o3','o4'],
+  ['o4','s5'],['o4','p5'],['o4','p6'],
+  ['s1','p1'],['s3','p5'],['p2','p3'],['p3','o3'],
+];
+
+let svgLines = [];
+
+function getCenter(id) {
+  const el  = document.getElementById(id);
+  const cr  = galaxyCanvas.getBoundingClientRect();
+  const er  = el.getBoundingClientRect();
+  return { x: er.left - cr.left + er.width/2, y: er.top - cr.top + er.height/2 };
+}
+
+function rebuildLines() {
+  svgLines.forEach(l => l.remove());
+  svgLines = [];
+  PAIRS.forEach(([a, b]) => {
+    const pa = getCenter(a), pb = getCenter(b);
+    const line = document.createElementNS(SVG_NS, 'line');
+    line.setAttribute('x1', pa.x); line.setAttribute('y1', pa.y);
+    line.setAttribute('x2', pb.x); line.setAttribute('y2', pb.y);
+    line.setAttribute('stroke', 'rgba(255,107,53,0.09)');
+    line.setAttribute('stroke-width', '0.6');
+    line.setAttribute('stroke-dasharray', '4 6');
+    galaxySvg.appendChild(line);
+    svgLines.push(line);
+  });
+}
+
+setTimeout(() => {
+  rebuildLines();
+  // animate lines in when working
+  setInterval(() => {
+    if (!agentWorking) return;
+    svgLines.forEach(l => {
+      l.setAttribute('stroke', `rgba(255,107,53,${(0.06 + Math.random()*0.14).toFixed(2)})`);
+    });
+  }, 600);
+}, 200);
+
+/* ── Agent working state ─────────────────────────────────────── */
+const STATUS_MESSAGES = [
+  'Scanning GitHub, LinkedIn, HackerNews...',
+  'Cross-referencing funding signals...',
+  'Verifying prospects on 3 sources...',
+  'Pulling company data — DataFlow...',
+  'Analyzing writing style profile...',
+  'Drafting personalized subject lines...',
+  'Running confidence scoring...',
+  'Queuing emails for delivery...',
+];
+let statusIdx = 0, statusInterval;
+
+function startAgentWork() {
+  agentWorking = true;
+  document.body.classList.add('agent-working');
+  document.getElementById('statusText').textContent = 'Agent running...';
+  document.getElementById('thinkingMsg').classList.add('visible');
+
+  statusInterval = setInterval(() => {
+    statusIdx = (statusIdx + 1) % STATUS_MESSAGES.length;
+    document.getElementById('thinkingTask').textContent = STATUS_MESSAGES[statusIdx];
+    document.getElementById('agentStatusText').textContent = STATUS_MESSAGES[statusIdx];
+  }, 1800);
+
+  // auto-stop after demo
+  setTimeout(stopAgentWork, 7000);
+}
+
+function stopAgentWork() {
+  agentWorking = false;
+  document.body.classList.remove('agent-working');
+  document.getElementById('statusText').textContent = '12 signals live';
+  document.getElementById('thinkingMsg').classList.remove('visible');
+  clearInterval(statusInterval);
+
+  // inject result
+  setTimeout(() => appendAgentResult(), 400);
+}
+
+function triggerAgentWork() {
+  if (agentWorking) return;
+
+  // add user confirmation message
+  appendUserMsg('Draft the email for all 3. Make each one reference their specific signal.');
+  startAgentWork();
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+const chatArea = document.getElementById('chatArea');
+
+function appendUserMsg(text) {
+  const div = document.createElement('div');
+  div.className = 'msg-user';
+  div.innerHTML = `<div class="msg-user-bubble">${text}</div>`;
+  chatArea.insertBefore(div, document.getElementById('thinkingMsg'));
+}
+
+function appendAgentResult() {
+  const div = document.createElement('div');
+  div.className = 'msg-ai';
+  div.innerHTML = `
+    <div class="msg-ai-avatar">NX</div>
+    <div class="msg-ai-body">
+      <div class="msg-ai-name">Nexora AI <span class="msg-ai-time">09:17</span></div>
+      <div class="msg-ai-text">Done. 3 drafts ready — each references their exact trigger event. Tone matched to your Ghostwriter profile.</div>
+      <div class="draft-card">
+        <div class="draft-header"><span>Draft 1 · James Chen · DataFlow</span><span>3 lines · Ghostwriter v3</span></div>
+        <div class="draft-body">
+          <div class="draft-subject">Subject: Congrats on the DataFlow raise — quick question</div>
+          James — saw the $5M news, congrats on the Series A.<br>
+          We help post-raise founders automate cold outreach so your new sales team can focus on closing.<br>
+          Worth a 15-min call this week?
+        </div>
+        <div class="data-actions">
+          <button class="data-btn btn-primary">Send now</button>
+          <button class="data-btn btn-ghost">Edit</button>
+          <button class="data-btn btn-ghost">Schedule</button>
+          <button class="data-btn btn-ghost">Regenerate</button>
+        </div>
+      </div>
+    </div>`;
+  chatArea.insertBefore(div, document.getElementById('thinkingMsg'));
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+function handleSend() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  appendUserMsg(text);
+  input.value = '';
+  startAgentWork();
+  chatArea.scrollTop = chatArea.scrollHeight;
+}
+
+document.getElementById('chatInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
+});
+
+// context tag toggle
+document.querySelectorAll('.ctx-tag').forEach(tag => {
+  tag.addEventListener('click', () => tag.classList.toggle('active'));
+});
+</script>
+</body>
+</html>

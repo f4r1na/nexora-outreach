@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexora — Dashboard Layout</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0a; color: #fff; font-family: 'Segoe UI', system-ui, sans-serif; padding: 28px 20px 80px; }
+
+  .header { text-align: center; margin-bottom: 36px; }
+  .header h1 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+  .header p { font-size: 13px; color: rgba(255,255,255,0.4); max-width: 500px; margin: 0 auto; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; max-width: 1160px; margin: 0 auto; }
+
+  .card {
+    border: 2px solid rgba(255,255,255,0.07);
+    border-radius: 10px; overflow: hidden; cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s;
+    position: relative;
+  }
+  .card:hover { border-color: rgba(255,107,53,0.45); transform: translateY(-3px); }
+  .card.selected { border-color: #FF6B35; }
+  .card.selected::after {
+    content: '✓ Selected'; position: absolute; top: 10px; right: 10px;
+    background: #FF6B35; color: #000; font-size: 10px; font-weight: 700;
+    padding: 3px 9px; border-radius: 20px;
+  }
+
+  /* ─── SHARED CHROME ─── */
+  .chrome { background: #0d0d0d; }
+  .chrome-bar {
+    height: 28px; background: #111; border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center; gap: 5px; padding: 0 10px;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .dot-r { background: #ff5f57; }
+  .dot-y { background: #ffbd2e; }
+  .dot-g { background: #28c941; }
+  .chrome-url {
+    flex: 1; margin-left: 8px; height: 16px;
+    background: rgba(255,255,255,0.04); border-radius: 3px;
+    font-size: 9px; color: rgba(255,255,255,0.2); display: flex; align-items: center; padding: 0 8px;
+    font-family: monospace;
+  }
+
+  /* ─── LAYOUT A: Command Bar + Open Canvas ─── */
+  .layout-a { height: 360px; display: flex; flex-direction: column; }
+  .la-topbar {
+    background: #0f0f0f; border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+  }
+  .la-cmd {
+    flex: 1; background: rgba(255,107,53,0.07); border: 1px solid rgba(255,107,53,0.2);
+    border-radius: 6px; padding: 6px 12px; display: flex; align-items: center; gap: 8px;
+  }
+  .la-cmd-icon { font-size: 12px; opacity: 0.6; }
+  .la-cmd-text { font-size: 11px; color: rgba(255,255,255,0.5); font-style: italic; flex: 1; }
+  .la-cmd-hint { font-size: 9px; background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 3px; color: rgba(255,255,255,0.25); font-family: monospace; }
+  .la-nav-icon { width: 28px; height: 28px; background: rgba(255,255,255,0.04); border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+  .la-body { flex: 1; display: flex; }
+  .la-sidebar { width: 44px; background: #0c0c0c; border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; align-items: center; padding: 10px 0; gap: 6px; }
+  .la-side-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 13px; color: rgba(255,255,255,0.3); }
+  .la-side-icon.active { background: rgba(255,107,53,0.12); color: #FF6B35; }
+  .la-canvas { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 8px; background: #0a0a0a; }
+  .la-ai-card {
+    background: rgba(255,107,53,0.06); border: 1px solid rgba(255,107,53,0.15);
+    border-radius: 6px; padding: 10px 12px;
+  }
+  .la-ai-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .ai-dot { width: 6px; height: 6px; border-radius: 50%; background: #FF6B35; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.3} }
+  .la-ai-title { font-size: 10px; color: #FF6B35; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
+  .la-ai-msg { font-size: 11px; color: rgba(255,255,255,0.6); line-height: 1.5; margin-bottom: 8px; }
+  .la-ai-actions { display: flex; gap: 6px; }
+  .la-ai-btn { font-size: 10px; padding: 4px 10px; border-radius: 4px; background: rgba(255,107,53,0.15); color: #FF6B35; border: 1px solid rgba(255,107,53,0.2); cursor: pointer; }
+  .la-ai-btn.secondary { background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.3); border-color: rgba(255,255,255,0.06); }
+  .la-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .la-mini { background: #111; border: 1px solid rgba(255,255,255,0.05); border-radius: 5px; padding: 8px 10px; }
+  .la-mini-label { font-size: 9px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+  .la-mini-val { font-size: 18px; font-weight: 700; color: #FFD700; }
+  .la-mini-val.green { color: #4ade80; }
+  .la-mini-sub { font-size: 9px; color: rgba(255,255,255,0.2); margin-top: 2px; }
+
+  /* ─── LAYOUT B: Full Left Rail + Main Feed ─── */
+  .layout-b { height: 360px; display: flex; flex-direction: column; }
+  .lb-body { flex: 1; display: flex; }
+  .lb-rail { width: 110px; background: #0e0e0e; border-right: 1px solid rgba(255,255,255,0.05); padding: 10px 0; display: flex; flex-direction: column; gap: 2px; }
+  .lb-rail-item { padding: 7px 12px; display: flex; align-items: center; gap: 8px; border-radius: 0; cursor: pointer; }
+  .lb-rail-item.active { background: rgba(255,107,53,0.1); border-right: 2px solid #FF6B35; }
+  .lb-rail-icon { font-size: 13px; }
+  .lb-rail-label { font-size: 10px; color: rgba(255,255,255,0.4); }
+  .lb-rail-item.active .lb-rail-label { color: #FF6B35; }
+  .lb-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .lb-header { padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: space-between; }
+  .lb-page-title { font-size: 13px; font-weight: 600; }
+  .lb-search { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 5px; padding: 4px 10px; font-size: 10px; color: rgba(255,255,255,0.3); width: 120px; }
+  .lb-content { flex: 1; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; background: #080808; }
+  .lb-ai-banner { background: linear-gradient(135deg, rgba(255,107,53,0.08), rgba(255,215,0,0.04)); border: 1px solid rgba(255,107,53,0.15); border-radius: 6px; padding: 8px 12px; display: flex; align-items: center; gap: 10px; }
+  .lb-ai-text { font-size: 11px; color: rgba(255,255,255,0.6); flex: 1; line-height: 1.4; }
+  .lb-ai-cta { font-size: 10px; padding: 5px 12px; background: #FF6B35; color: #000; border-radius: 4px; font-weight: 600; white-space: nowrap; }
+  .lb-row { background: #111; border: 1px solid rgba(255,255,255,0.05); border-radius: 5px; padding: 8px 12px; display: flex; align-items: center; gap: 10px; }
+  .lb-row-status { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; flex-shrink: 0; }
+  .lb-row-status.yellow { background: #FFD700; }
+  .lb-row-name { font-size: 11px; color: rgba(255,255,255,0.7); flex: 1; }
+  .lb-row-stat { font-size: 10px; color: rgba(255,255,255,0.3); }
+  .lb-row-action { font-size: 10px; padding: 3px 8px; background: rgba(255,107,53,0.1); color: #FF6B35; border-radius: 3px; }
+
+  /* ─── LAYOUT C: Quadrant / Cockpit ─── */
+  .layout-c { height: 360px; display: flex; flex-direction: column; }
+  .lc-topbar { background: #0f0f0f; border-bottom: 1px solid rgba(255,255,255,0.06); padding: 6px 12px; display: flex; align-items: center; justify-content: space-between; }
+  .lc-logo { font-size: 11px; font-weight: 700; color: #FF6B35; letter-spacing: 0.08em; }
+  .lc-tabs { display: flex; gap: 0; }
+  .lc-tab { font-size: 10px; padding: 4px 10px; color: rgba(255,255,255,0.3); border-bottom: 2px solid transparent; cursor: pointer; }
+  .lc-tab.active { color: #FF6B35; border-color: #FF6B35; }
+  .lc-user { width: 22px; height: 22px; border-radius: 50%; background: rgba(255,107,53,0.2); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #FF6B35; }
+  .lc-body { flex: 1; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 1px; background: rgba(255,255,255,0.04); }
+  .lc-quad { background: #0a0a0a; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+  .lc-quad-title { font-size: 9px; color: rgba(255,255,255,0.25); text-transform: uppercase; letter-spacing: 0.14em; font-family: monospace; display: flex; align-items: center; gap: 5px; }
+  .lc-quad-title span { width: 5px; height: 5px; border-radius: 50%; background: #FF6B35; }
+  /* Q1: AI Pulse */
+  .lc-ai-msg { font-size: 11px; color: rgba(255,255,255,0.65); line-height: 1.5; }
+  .lc-ai-highlight { color: #FF6B35; font-weight: 600; }
+  .lc-suggest-row { display: flex; gap: 5px; flex-wrap: wrap; }
+  .lc-chip { font-size: 9px; padding: 3px 8px; border-radius: 3px; border: 1px solid rgba(255,107,53,0.2); color: rgba(255,107,53,0.7); background: rgba(255,107,53,0.05); }
+  /* Q2: Metrics */
+  .lc-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+  .lc-metric { background: rgba(255,255,255,0.03); border-radius: 4px; padding: 6px 8px; }
+  .lc-m-val { font-size: 20px; font-weight: 800; color: #FFD700; line-height: 1; }
+  .lc-m-label { font-size: 9px; color: rgba(255,255,255,0.25); margin-top: 2px; }
+  /* Q3: Recent */
+  .lc-activity { display: flex; flex-direction: column; gap: 5px; }
+  .lc-act-row { display: flex; gap: 6px; align-items: flex-start; }
+  .lc-act-icon { font-size: 11px; }
+  .lc-act-text { font-size: 10px; color: rgba(255,255,255,0.45); line-height: 1.4; flex: 1; }
+  .lc-act-time { font-size: 9px; color: rgba(255,255,255,0.2); font-family: monospace; white-space: nowrap; }
+  /* Q4: Quick actions */
+  .lc-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+  .lc-action-btn { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 5px; padding: 8px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .lc-action-btn.primary { background: rgba(255,107,53,0.08); border-color: rgba(255,107,53,0.2); }
+  .lc-action-emoji { font-size: 16px; }
+  .lc-action-label { font-size: 9px; color: rgba(255,255,255,0.4); text-align: center; }
+  .lc-action-btn.primary .lc-action-label { color: rgba(255,107,53,0.8); }
+
+  /* Card footer */
+  .card-footer { padding: 14px 18px; border-top: 1px solid rgba(255,255,255,0.05); background: rgba(255,255,255,0.015); }
+  .card-footer h3 { font-size: 13px; font-weight: 600; color: #fff; margin-bottom: 4px; }
+  .card-footer p { font-size: 11px; color: rgba(255,255,255,0.38); line-height: 1.55; }
+
+  .note { text-align: center; margin-top: 28px; font-size: 11px; color: rgba(255,255,255,0.2); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>How should the dashboard be structured?</h1>
+  <p>All three have the AI copilot baked in and full access to everything. The difference is how the space is organized.</p>
+</div>
+
+<div class="grid">
+
+  <!-- LAYOUT A: Command Bar + Open Canvas -->
+  <div class="card" data-choice="a" onclick="selectCard(this)">
+    <div class="chrome">
+      <div class="chrome-bar">
+        <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+        <div class="chrome-url">nexora.app/dashboard</div>
+      </div>
+    </div>
+    <div class="layout-a">
+      <div class="la-topbar">
+        <div class="la-cmd">
+          <span class="la-cmd-icon">✦</span>
+          <span class="la-cmd-text">Ask Nexora anything... "find fintech founders who raised this week"</span>
+          <span class="la-cmd-hint">⌘K</span>
+        </div>
+        <div class="la-nav-icon">🔔</div>
+        <div class="la-nav-icon">👤</div>
+      </div>
+      <div class="la-body">
+        <div class="la-sidebar">
+          <div class="la-side-icon active">⚡</div>
+          <div class="la-side-icon">📨</div>
+          <div class="la-side-icon">📊</div>
+          <div class="la-side-icon">🎯</div>
+          <div class="la-side-icon">⚙️</div>
+        </div>
+        <div class="la-canvas">
+          <div class="la-ai-card">
+            <div class="la-ai-header">
+              <div class="ai-dot"></div>
+              <span class="la-ai-title">Nexora AI</span>
+            </div>
+            <div class="la-ai-msg">You have <strong style="color:#FFD700">3 warm replies</strong> waiting and 12 new funding signals. Want me to draft follow-ups for the replies?</div>
+            <div class="la-ai-actions">
+              <div class="la-ai-btn">Draft now →</div>
+              <div class="la-ai-btn secondary">Show signals</div>
+              <div class="la-ai-btn secondary">Dismiss</div>
+            </div>
+          </div>
+          <div class="la-grid">
+            <div class="la-mini"><div class="la-mini-label">Campaigns Live</div><div class="la-mini-val">4</div><div class="la-mini-sub">+1 this week</div></div>
+            <div class="la-mini"><div class="la-mini-label">Reply Rate</div><div class="la-mini-val green">23%</div><div class="la-mini-sub">↑ from 4%</div></div>
+            <div class="la-mini"><div class="la-mini-label">Emails Sent</div><div class="la-mini-val">847</div><div class="la-mini-sub">this month</div></div>
+            <div class="la-mini"><div class="la-mini-label">Prospects Found</div><div class="la-mini-val">2.4k</div><div class="la-mini-sub">verified</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-footer">
+      <h3>A — Command Bar + Open Canvas</h3>
+      <p>A single AI command bar at the top (⌘K opens it anywhere). Below it: icon-only sidebar + a breathing canvas. The AI suggestion card is always first, but the rest of the canvas is yours.</p>
+    </div>
+  </div>
+
+  <!-- LAYOUT B: Full Rail + Feed -->
+  <div class="card" data-choice="b" onclick="selectCard(this)">
+    <div class="chrome">
+      <div class="chrome-bar">
+        <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+        <div class="chrome-url">nexora.app/dashboard</div>
+      </div>
+    </div>
+    <div class="layout-b">
+      <div class="lb-body">
+        <div class="lb-rail">
+          <div class="lb-rail-item active"><span class="lb-rail-icon">⚡</span><span class="lb-rail-label">Home</span></div>
+          <div class="lb-rail-item"><span class="lb-rail-icon">🎯</span><span class="lb-rail-label">Campaigns</span></div>
+          <div class="lb-rail-item"><span class="lb-rail-icon">📨</span><span class="lb-rail-label">Inbox</span></div>
+          <div class="lb-rail-item"><span class="lb-rail-icon">📡</span><span class="lb-rail-label">Signals</span></div>
+          <div class="lb-rail-item"><span class="lb-rail-icon">✍️</span><span class="lb-rail-label">Writer</span></div>
+          <div class="lb-rail-item"><span class="lb-rail-icon">📊</span><span class="lb-rail-label">Analytics</span></div>
+          <div class="lb-rail-item"><span class="lb-rail-icon">⚙️</span><span class="lb-rail-label">Settings</span></div>
+        </div>
+        <div class="lb-main">
+          <div class="lb-header">
+            <span class="lb-page-title">Good morning, Gustavo 👋</span>
+            <div class="lb-search">Search anything...</div>
+          </div>
+          <div class="lb-content">
+            <div class="lb-ai-banner">
+              <div class="ai-dot"></div>
+              <div class="lb-ai-text"><strong style="color:#FF6B35">Nexora</strong> — 12 new signals today. 3 replies need attention. Your top lead: James Chen just closed $5M.</div>
+              <div class="lb-ai-cta">Act now</div>
+            </div>
+            <div class="lb-row"><div class="lb-row-status"></div><div class="lb-row-name">SaaS Founders · Series A</div><div class="lb-row-stat">47 leads · 22% reply</div><div class="lb-row-action">View</div></div>
+            <div class="lb-row"><div class="lb-row-status yellow"></div><div class="lb-row-name">FinTech CTOs · NYC</div><div class="lb-row-stat">23 leads · sending</div><div class="lb-row-action">View</div></div>
+            <div class="lb-row"><div class="lb-row-status"></div><div class="lb-row-name">DevTools Founders</div><div class="lb-row-stat">89 leads · 31% reply</div><div class="lb-row-action">View</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-footer">
+      <h3>B — Full Sidebar + Activity Feed</h3>
+      <p>Labeled sidebar shows every section clearly. Main area is a personalized feed — AI banner at top, then your campaigns, inbox items, and signals in a unified stream.</p>
+    </div>
+  </div>
+
+  <!-- LAYOUT C: Quadrant Cockpit -->
+  <div class="card" data-choice="c" onclick="selectCard(this)">
+    <div class="chrome">
+      <div class="chrome-bar">
+        <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+        <div class="chrome-url">nexora.app/dashboard</div>
+      </div>
+    </div>
+    <div class="layout-c">
+      <div class="lc-topbar">
+        <div class="lc-logo">NEXORA</div>
+        <div class="lc-tabs">
+          <div class="lc-tab active">Home</div>
+          <div class="lc-tab">Campaigns</div>
+          <div class="lc-tab">Inbox</div>
+          <div class="lc-tab">Signals</div>
+          <div class="lc-tab">Analytics</div>
+        </div>
+        <div class="lc-user">G</div>
+      </div>
+      <div class="lc-body">
+        <!-- Q1: AI -->
+        <div class="lc-quad">
+          <div class="lc-quad-title"><span></span>AI Copilot</div>
+          <div class="lc-ai-msg">Hey Gustavo — <span class="lc-ai-highlight">James Chen replied</span> to your DataFlow email. He wants a demo. Shall I draft a response?</div>
+          <div class="lc-suggest-row">
+            <div class="lc-chip">Draft reply →</div>
+            <div class="lc-chip">Book demo link</div>
+            <div class="lc-chip">Not now</div>
+          </div>
+        </div>
+        <!-- Q2: Metrics -->
+        <div class="lc-quad">
+          <div class="lc-quad-title"><span></span>This Week</div>
+          <div class="lc-metrics">
+            <div class="lc-metric"><div class="lc-m-val">23%</div><div class="lc-m-label">Reply Rate</div></div>
+            <div class="lc-metric"><div class="lc-m-val">847</div><div class="lc-m-label">Sent</div></div>
+            <div class="lc-metric"><div class="lc-m-val">12</div><div class="lc-m-label">New Signals</div></div>
+            <div class="lc-metric"><div class="lc-m-val">3</div><div class="lc-m-label">Hot Replies</div></div>
+          </div>
+        </div>
+        <!-- Q3: Activity -->
+        <div class="lc-quad">
+          <div class="lc-quad-title"><span></span>Live Feed</div>
+          <div class="lc-activity">
+            <div class="lc-act-row"><span class="lc-act-icon">📨</span><div class="lc-act-text">James Chen replied · DataFlow Series A</div><span class="lc-act-time">2m</span></div>
+            <div class="lc-act-row"><span class="lc-act-icon">📡</span><div class="lc-act-text">New signal: CloudSync hiring VP Sales</div><span class="lc-act-time">14m</span></div>
+            <div class="lc-act-row"><span class="lc-act-icon">✅</span><div class="lc-act-text">47 emails delivered · SaaS campaign</div><span class="lc-act-time">1h</span></div>
+          </div>
+        </div>
+        <!-- Q4: Quick actions -->
+        <div class="lc-quad">
+          <div class="lc-quad-title"><span></span>Quick Actions</div>
+          <div class="lc-actions">
+            <div class="lc-action-btn primary"><span class="lc-action-emoji">🚀</span><span class="lc-action-label">New Campaign</span></div>
+            <div class="lc-action-btn"><span class="lc-action-emoji">🔍</span><span class="lc-action-label">Find Prospects</span></div>
+            <div class="lc-action-btn"><span class="lc-action-emoji">📊</span><span class="lc-action-label">View Analytics</span></div>
+            <div class="lc-action-btn"><span class="lc-action-emoji">✍️</span><span class="lc-action-label">Train Writer</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-footer">
+      <h3>C — Cockpit / Quadrant</h3>
+      <p>Four equal panels: AI Copilot, live metrics, activity feed, quick actions. Top nav for all sections. Everything above the fold — no scrolling needed to see your full status.</p>
+    </div>
+  </div>
+
+</div>
+
+<div class="note">Click a layout → then reply in the terminal with your choice (or describe what you'd mix)</div>
+
+<script>
+function selectCard(el) {
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  const choice = el.getAttribute('data-choice');
+  const name = el.querySelector('h3').textContent;
+  if (window.__recordEvent) window.__recordEvent(choice, name);
+}
+</script>
+</body>
+</html>
