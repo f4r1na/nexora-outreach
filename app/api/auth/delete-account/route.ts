@@ -30,7 +30,9 @@ export async function POST(req: NextRequest) {
     admin.from("subscriptions").delete().eq("user_id", user.id),
     admin.from("gmail_connections").delete().eq("user_id", user.id),
     admin.from("style_profiles").delete().eq("user_id", user.id),
-    admin.from("signal_results").delete().eq("user_id", user.id),
+    admin.from("writing_styles").delete().eq("user_id", user.id),
+    admin.from("company_profiles").delete().eq("user_id", user.id),
+    admin.from("replies").delete().eq("user_id", user.id),
   ]);
 
   // Delete auth user (must be last)
