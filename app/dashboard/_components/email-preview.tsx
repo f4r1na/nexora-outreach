@@ -20,6 +20,7 @@ export function EmailPreview({ prospects, onSendAll, onBack }: Props) {
 
   useEffect(() => {
     if (!current || emails[current.id]) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false)
       return
     }

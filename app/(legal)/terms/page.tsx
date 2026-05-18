@@ -62,7 +62,7 @@ export default function TermsPage() {
       </div>
 
       <Section title="Who these terms apply to">
-        <P>By creating a Nexora account or using the service, you agree to these terms. If you are using Nexora on behalf of a company, you are agreeing on that company's behalf.</P>
+        <P>By creating a Nexora account or using the service, you agree to these terms. If you are using Nexora on behalf of a company, you are agreeing on that company&apos;s behalf.</P>
       </Section>
 
       <Section title="Acceptable use">

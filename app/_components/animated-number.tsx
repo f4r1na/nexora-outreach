@@ -21,6 +21,7 @@ export default function AnimatedNumber({
 
   useEffect(() => {
     if (!inView || reduced) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (reduced) setDisplay(value);
       return;
     }
