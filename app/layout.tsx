@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Space_Grotesk, Outfit } from "next/font/google";
+import { Space_Grotesk, Outfit, Syne } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
 
@@ -12,6 +12,12 @@ const spaceGrotesk = Space_Grotesk({
 const outfit = Outfit({
   variable: "--font-outfit",
   subsets: ["latin"],
+});
+
+const syne = Syne({
+  variable: "--font-syne",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -27,7 +33,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} ${outfit.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${spaceGrotesk.variable} ${outfit.variable} ${syne.variable}`} suppressHydrationWarning>
       <body>
         <Providers>{children}</Providers>
       </body>
