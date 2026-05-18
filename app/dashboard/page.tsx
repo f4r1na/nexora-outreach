@@ -1,20 +1,16 @@
-// app/dashboard/page.tsx
 import { createClient } from "@/lib/supabase/server"
 import { redirect } from "next/navigation"
-import { CommandCenter } from "./_components/command-center"
+import ChatArea from "./_components/chat-area"
 
 export default async function DashboardPage() {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect("/login")
 
-  const { data: styleProfile } = await supabase
-    .from("style_profiles")
-    .select("id")
-    .eq("user_id", user.id)
-    .maybeSingle()
+  const userName =
+    (user.user_metadata?.full_name as string | undefined) ||
+    user.email?.split("@")[0] ||
+    "User"
 
-  return <CommandCenter hasProductDescription={!!styleProfile} />
+  return <ChatArea userName={userName} />
 }
